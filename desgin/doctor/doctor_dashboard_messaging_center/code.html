@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Messaging Center - MedClinical</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .glass-header {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e1e2ed;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #c3c6d7;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#2e3039",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container-highest": "#e1e2ed",
+                        "secondary": "#006591",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "surface-tint": "#0053db",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-container": "#ffede6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "outline": "#737686",
+                        "surface": "#faf8ff",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "secondary-container": "#39b8fd",
+                        "primary": "#004ac6",
+                        "inverse-primary": "#b4c5ff",
+                        "secondary-fixed-dim": "#89ceff",
+                        "tertiary": "#943700",
+                        "on-secondary-container": "#004666",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#faf8ff",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e1e2ed",
+                        "on-secondary-fixed": "#001e2f",
+                        "on-surface-variant": "#434655",
+                        "surface-dim": "#d9d9e5",
+                        "secondary-fixed": "#c9e6ff",
+                        "background": "#faf8ff",
+                        "surface-container-low": "#f3f3fe",
+                        "on-surface": "#191b23",
+                        "tertiary-container": "#bc4800",
+                        "on-background": "#191b23",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "surface-container": "#ededf9",
+                        "on-tertiary-fixed": "#360f00",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "1.5rem",
+                        "gutter": "24px",
+                        "xl": "4rem",
+                        "xs": "0.5rem",
+                        "lg": "2.5rem",
+                        "container-max": "1280px",
+                        "base": "4px",
+                        "sm": "1rem"
+                    },
+                    "fontFamily": {
+                        "display": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "caption": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background font-body-md text-on-surface flex h-screen overflow-hidden">
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline bg-surface dark:bg-inverse-surface z-50">
+<div class="flex flex-col h-full p-4 gap-2">
+<div class="px-4 py-6">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary">MedClinical</h1>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-body-md">Appointments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md">Patients</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md">Payments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-xl font-semibold" href="#">
+<span class="material-symbols-outlined">mail</span>
+<span class="font-body-md">Messages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">web</span>
+<span class="font-body-md">Website CMS</span>
+</a>
+</nav>
+<div class="mt-auto p-4 bg-surface-container-low rounded-2xl flex items-center gap-3 border border-outline-variant/30">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a female doctor in a white lab coat, clean studio lighting, minimalist medical clinic background, soft depth of field, looking confidently into the camera, high-end medical professional photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFXCYRNp2a0gCzuN-sGegrrUBtS9y2AytdyO8zpPL7Mx6smH11zYM02TV7OTd5Lq4nIStj4bYHlgI4JzVBH4ipMMERM03e4Q7svvgxc7_QNythIhcTvGuWoP2bn9DOdPZ2ejVUYSRtSZrsDwJcWJrpWfLx2ykDVWECLsDxzvsP4aDVPsjTF3txr91Kfl2IWd-mNCPo92xC3vixuG3P6Nsy4qWaZiYWIoLEoAEI5ZKOwamfXgHXJRhaaE3uOhwJf_iebwg68DbAAhw"/>
+<div class="overflow-hidden">
+<p class="text-label-md font-semibold truncate text-on-surface">Dr. Specialist</p>
+<p class="text-caption text-on-surface-variant truncate">Clinical Director</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col h-full relative">
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface/70 backdrop-blur-md border-b border-outline-variant z-40 flex justify-between items-center px-8">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-xl pl-10 pr-4 py-2 text-label-md focus:ring-0" placeholder="Search patients or messages..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-xl font-label-md hover:bg-primary/90 transition-all shadow-sm">
+                    New Appointment
+                </button>
+</div>
+</header>
+<!-- Messaging Three-Pane Layout -->
+<div class="flex flex-1 mt-16 overflow-hidden">
+<!-- Pane 1: Conversation List -->
+<section class="w-80 border-r border-outline-variant bg-surface flex flex-col">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+<h2 class="font-headline-md text-headline-md text-on-surface">Chats</h2>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined text-primary">edit_square</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Active Conversation -->
+<div class="p-4 bg-primary-container/10 border-l-4 border-primary cursor-pointer transition-colors">
+<div class="flex gap-3">
+<div class="relative flex-shrink-0">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="Close up portrait of an elderly man with silver hair and kind eyes, looking directly into the camera, clinical white background, soft professional lighting, sharp focus, 8k resolution, conveying a sense of patient-doctor trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxa0EH42oehjmgTSySVGvdaD8FA7TzFjvByQkjgB4EQ1HQBvLqf_yU5V4exGNGNoKfsFu0l9GOd3saZ3aPTnE6XiLgKyNiSu0lYSHI0F2XJvs_ON9LAfGC_Fe_anH6F2DiP6fd9H7Qhm7re_PxiYrsQ96-pg0E6FweZg8J3Pd8MkMAou73Sxghy35MdzKpQbAAfjy8gjnl3QrK16GR8KVCNSQvTw9atjIRP9rOTLHTiee8U2n_uZcYNEGtr59bdnu1QbReZ97Es4s"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-success-container border-2 border-surface rounded-full"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="text-label-md font-bold text-on-surface truncate">Robert Peterson</h3>
+<span class="text-caption text-on-surface-variant">10:24 AM</span>
+</div>
+<p class="text-caption font-semibold text-primary truncate">Follow-up on MRI results...</p>
+</div>
+</div>
+</div>
+<!-- Other Conversations -->
+<div class="p-4 hover:bg-surface-container-low cursor-pointer transition-colors border-b border-outline-variant/30">
+<div class="flex gap-3">
+<img class="w-12 h-12 rounded-full object-cover flex-shrink-0" data-alt="A portrait of a middle-aged woman with short dark hair, wearing a neutral colored sweater, clean and bright clinical environment, professional photography style, soft shadows, focusing on authentic expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAolaWHwPKRMeClsVFHTxtQMHXpM5xifheC-IAYsyqyVnzkCD39ut4ofI4fyU-0QN1_dACGsqReDzJoED6SLHlau5l1KQlVuyMWFZUTi_A1MEKt-KH7bPvSyEhgl0P0I6KGKFZkxltyDudKhShuXk90lS4801mFv7sREVoiXrLx3znfXZvMVkWXkkKthqo53onGXL5CYJ9mpIXntKYcBYQvPTNoPdld4mgQmUGtL43hjMCLkvY8H6m1_MeRwaYZdFgpheJxLo2Jcmg"/>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="text-label-md font-medium text-on-surface truncate">Sarah Jenkins</h3>
+<span class="text-caption text-on-surface-variant">Yesterday</span>
+</div>
+<p class="text-caption text-on-surface-variant truncate">Thank you for the prescription adjustment.</p>
+</div>
+<div class="flex-shrink-0 flex flex-col items-end gap-1">
+<span class="bg-primary text-on-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">2</span>
+</div>
+</div>
+</div>
+<div class="p-4 hover:bg-surface-container-low cursor-pointer transition-colors border-b border-outline-variant/30">
+<div class="flex gap-3">
+<img class="w-12 h-12 rounded-full object-cover flex-shrink-0" data-alt="High resolution portrait of a young man with a slight beard, wearing a casual shirt, modern medical office setting in background with soft bokeh, high-key lighting, bright and airy feel, professional medical UI stock photo." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAX0SZD1Wr9SbeFNJqP-2Tb8RPjE4puAMD1TqV6gd2ltS0PlW3a5z2KSiO8ll9y7kAoKCn1BklSjoooylnyjKpZARrOLL_P9IWuhs3P4wD8sQIlu1xjqDlBEeEVCpfrtByXff6W0YZP3VJREIrj_icjqliNNSJG6GRecp0j1_IF6WCvamGgeeqNAeqei2N5r6s0KLGYwrq_vmUn33VDGdcV8kR0u1QIQ1ySHnyWjqBM3R-qn5_-f2-lEinTZMgBuAqdTnlYJCF2x24"/>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="text-label-md font-medium text-on-surface truncate">Michael Chen</h3>
+<span class="text-caption text-on-surface-variant">Mon</span>
+</div>
+<p class="text-caption text-on-surface-variant truncate">The symptoms have subsided significantly.</p>
+</div>
+</div>
+</div>
+<div class="p-4 hover:bg-surface-container-low cursor-pointer transition-colors border-b border-outline-variant/30">
+<div class="flex gap-3">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="text-on-secondary-container font-bold">LW</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="text-label-md font-medium text-on-surface truncate">Linda Wright</h3>
+<span class="text-caption text-on-surface-variant">24 Oct</span>
+</div>
+<p class="text-caption text-on-surface-variant truncate">Attached: lab_results_oct.pdf</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pane 2: Active Chat Window -->
+<section class="flex-1 flex flex-col bg-surface-container-lowest">
+<!-- Chat Header -->
+<div class="h-20 border-b border-outline-variant flex items-center justify-between px-6 bg-surface-container-lowest/80 backdrop-blur-md z-10">
+<div class="flex items-center gap-4">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Close up portrait of an elderly man with silver hair and kind eyes, looking directly into the camera, clinical white background, soft professional lighting, sharp focus, 8k resolution, conveying a sense of patient-doctor trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkGOx9A7SI0ftsZt5TDk8_moUew4mRw35IdmnNKJeHZTBoJDVKKErmcdZLXZ_j6hbfKM4OVUlmNp_OZZW-RktzlrgpapLeDVTmgVswYehWkY6ycISOdQoWlxUyDQWqrkKahha1e4jAaEDkDF6fHjB5xYvlSSn-_HuPsHIGQScSmAuDNE1QZfDPNz7kE97ASbqNkAYE1GopVz0ruhrfokXpfAA9wV8JVF8V3sqT06DeV39QLmuFHXnEB5PcVqZX7tiGf63FISClx6U"/>
+<div>
+<h2 class="text-body-md font-bold text-on-surface">Robert Peterson</h2>
+<p class="text-caption text-primary flex items-center gap-1">
+<span class="w-2 h-2 bg-success-container rounded-full block"></span> Online
+                            </p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Messages Area -->
+<div class="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-slate-50/50">
+<div class="flex justify-center">
+<span class="px-3 py-1 bg-surface-container-high rounded-full text-caption text-on-surface-variant font-medium">Today</span>
+</div>
+<!-- Patient Bubble -->
+<div class="flex items-start gap-3 max-w-[80%]">
+<img class="w-8 h-8 rounded-full object-cover mt-1" data-alt="Close up portrait of an elderly man with silver hair and kind eyes, looking directly into the camera, clinical white background, soft professional lighting, sharp focus, 8k resolution, conveying a sense of patient-doctor trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLo6mjfP-GYH5cDNqhGoSW4PaXt9nQRta7a3ObKyVxYJR-0qXl0fWN1_xh-e-Q2gI-s96I9ixGfpHgpYyZaPH-nUhGviYcATeCgvJ2vy6xrdImWCJy98bMioKJVG7o-_Es75bMah_931PFXkWB0fphD6NYtaWbnyIA4UnuF_Its8FhDmZ6ZXzoom_xhOF35tIaJdzSVyuBDCSKLItHpFFVoFbt2ekwd1T1S5aYOGWXBWeHYsmAWTu9exjeAz_OyQXAUiUwN4KFzpw"/>
+<div>
+<div class="bg-surface border border-outline-variant rounded-2xl rounded-tl-none p-4 shadow-sm">
+<p class="text-body-md text-on-surface">Hello Dr. Specialist, I've received the MRI results notification. Could you help me understand the findings regarding the L4-L5 disc? I'm still feeling some numbness in my left leg.</p>
+</div>
+<span class="text-caption text-on-surface-variant mt-1 ml-1">10:12 AM</span>
+</div>
+</div>
+<!-- Doctor Bubble -->
+<div class="flex flex-row-reverse items-start gap-3 max-w-[80%] ml-auto">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center mt-1 text-[10px] text-on-primary font-bold">DS</div>
+<div class="flex flex-col items-end">
+<div class="bg-primary-container text-on-primary-container rounded-2xl rounded-tr-none p-4 shadow-sm">
+<p class="text-body-md">Good morning, Robert. I've just reviewed the scans. There is a mild protrusion at L4-L5 which explains the nerve irritation. It's nothing that requires surgery at this stage.</p>
+</div>
+<div class="flex items-center gap-1 mt-1 mr-1">
+<span class="text-caption text-on-surface-variant">10:24 AM</span>
+<span class="material-symbols-outlined text-[16px] text-primary">done_all</span>
+</div>
+</div>
+</div>
+<!-- Patient Bubble -->
+<div class="flex items-start gap-3 max-w-[80%]">
+<img class="w-8 h-8 rounded-full object-cover mt-1" data-alt="Close up portrait of an elderly man with silver hair and kind eyes, looking directly into the camera, clinical white background, soft professional lighting, sharp focus, 8k resolution, conveying a sense of patient-doctor trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQDbkvzIfMKCHkumIMxUVtYPSgiPgl0UPQ4iSU3Lw1knLjxl8GHjXOkzKgdxAy8dB5Tsiv6ihQVS3U3V94BYjP2zCZsZ3oCLaQWNxvmnPIuR1SMzpudXp1G86BNB2feaGV5lUcm7Fs6FOjH-_tKn0HfNf1gQbF7FZV0W_rHkNvjM9vzUv---aRNnH95jkDOts3OwVCyL2e74_HA_21NDGfiNeTBXDm54-RuSaY88vJqUg9jE74IiQaDweoWtKZSi2zDFctWOc7f7A"/>
+<div>
+<div class="bg-surface border border-outline-variant rounded-2xl rounded-tl-none p-4 shadow-sm">
+<p class="text-body-md">That's a relief. What would you recommend for the next steps? Should I continue the physical therapy?</p>
+</div>
+<span class="text-caption text-on-surface-variant mt-1 ml-1">10:25 AM</span>
+</div>
+</div>
+<!-- Typing Indicator (Simulated) -->
+<div class="flex items-start gap-3">
+<div class="bg-surface-container-high rounded-full px-4 py-2 flex gap-1">
+<div class="w-1.5 h-1.5 bg-on-surface-variant/40 rounded-full animate-bounce"></div>
+<div class="w-1.5 h-1.5 bg-on-surface-variant/40 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+<div class="w-1.5 h-1.5 bg-on-surface-variant/40 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+</div>
+</div>
+</div>
+<!-- Chat Input -->
+<div class="p-6 bg-surface border-t border-outline-variant">
+<div class="flex items-end gap-4 bg-surface-container-low border border-outline-variant rounded-2xl p-2 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 text-body-md py-2 resize-none max-h-32" placeholder="Type a clinical response..." rows="1"></textarea>
+<button class="bg-primary text-on-primary p-3 rounded-xl hover:bg-primary/90 transition-all shadow-md">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<div class="flex gap-4 mt-3 ml-2">
+<button class="text-caption text-primary hover:underline flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[14px]">bolt</span> Quick Templates
+                        </button>
+<button class="text-caption text-on-surface-variant hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span> HIPAA Secure
+                        </button>
+</div>
+</div>
+</section>
+<!-- Pane 3: Patient Summary -->
+<section class="w-72 border-l border-outline-variant bg-surface flex flex-col p-6 overflow-y-auto custom-scrollbar">
+<div class="text-center mb-8">
+<img class="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-surface-container-highest shadow-sm" data-alt="Close up portrait of an elderly man with silver hair and kind eyes, looking directly into the camera, clinical white background, soft professional lighting, sharp focus, 8k resolution, conveying a sense of patient-doctor trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBp3hC9X-_EQipaL7tUiRI-2eIhnF2ZE8jx0KEJl2ChVelQ5nimTWHS5yZwF97t8gzTR-X4fCb8KcG1ceQMUoHNFTlu_XRNvYWlbfpCgdzM1O0rdjgOn0SDcYIEtD7ldLCSmt1UJI_aq268DTs7YtbVrzEaLVrgGXy8tkU6Xs8TqvO1_B1lKLsxkq8zy0rzTJrPrsCvp31xgxm0Ao3C-2oWAaIWgXcdUT2SxPXu8S3YdvRcj-rzA52U1qKO3WPU2O0mbwgqVQW2T_w"/>
+<h2 class="font-headline-md text-on-surface">Robert Peterson</h2>
+<p class="text-caption text-on-surface-variant mb-4">Patient ID: #MED-88421</p>
+<div class="flex justify-center gap-2">
+<span class="px-3 py-1 bg-secondary/10 text-secondary rounded-full text-caption font-bold">Chronic Care</span>
+<span class="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-caption font-bold">Priority</span>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<h4 class="text-label-md font-bold text-on-surface-variant mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">info</span> Patient Information
+                        </h4>
+<div class="space-y-3">
+<div class="flex justify-between">
+<span class="text-caption text-on-surface-variant">Phone</span>
+<span class="text-caption font-semibold text-on-surface">+1 (555) 012-3456</span>
+</div>
+<div class="flex justify-between">
+<span class="text-caption text-on-surface-variant">Date of Birth</span>
+<span class="text-caption font-semibold text-on-surface">Oct 12, 1954 (69)</span>
+</div>
+<div class="flex justify-between">
+<span class="text-caption text-on-surface-variant">Blood Type</span>
+<span class="text-caption font-semibold text-on-surface">A+ Positive</span>
+</div>
+</div>
+</div>
+<div class="p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30">
+<h4 class="text-label-md font-bold text-on-surface-variant mb-2">Next Appointment</h4>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex flex-col items-center justify-center text-on-primary-container">
+<span class="text-[10px] font-bold">NOV</span>
+<span class="text-label-md font-extrabold leading-none">04</span>
+</div>
+<div>
+<p class="text-caption font-bold text-on-surface">Follow-up Consultation</p>
+<p class="text-caption text-on-surface-variant">09:30 AM — Room 302</p>
+</div>
+</div>
+</div>
+<div>
+<h4 class="text-label-md font-bold text-on-surface-variant mb-3 flex items-center justify-between">
+                            Recent Documents
+                            <span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-primary">open_in_new</span>
+</h4>
+<ul class="space-y-2">
+<li class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded-lg transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<span class="material-symbols-outlined text-error">picture_as_pdf</span>
+<div class="min-w-0">
+<p class="text-caption font-semibold truncate text-on-surface">MRI_Scan_Lumbar.pdf</p>
+<p class="text-[10px] text-on-surface-variant">Oct 26, 2023 • 4.2 MB</p>
+</div>
+</li>
+<li class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded-lg transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<span class="material-symbols-outlined text-primary">description</span>
+<div class="min-w-0">
+<p class="text-caption font-semibold truncate text-on-surface">Physio_Plan_Phase1.docx</p>
+<p class="text-[10px] text-on-surface-variant">Oct 15, 2023 • 1.1 MB</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-outline-variant flex gap-2">
+<button class="flex-1 border border-outline-variant text-on-surface py-2 rounded-xl text-caption font-bold hover:bg-surface-container-high transition-colors">View Profile</button>
+<button class="p-2 border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">flag</span>
+</button>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Simple micro-interaction for the chat send button lift effect
+        const sendBtn = document.querySelector('button .material-symbols-outlined:contains("send")')?.parentElement;
+        if (sendBtn) {
+            sendBtn.addEventListener('mousedown', () => {
+                sendBtn.style.transform = 'scale(0.95)';
+            });
+            sendBtn.addEventListener('mouseup', () => {
+                sendBtn.style.transform = 'scale(1)';
+            });
+        }
+
+        // Adjust textarea height automatically
+        const tx = document.getElementsByTagName("textarea");
+        for (let i = 0; i < tx.length; i++) {
+            tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+            tx[i].addEventListener("input", OnInput, false);
+        }
+
+        function OnInput() {
+            this.style.height = 0;
+            this.style.height = (this.scrollHeight) + "px";
+        }
+    </script>
+</body></html>

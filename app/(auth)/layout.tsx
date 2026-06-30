@@ -1,0 +1,38 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "../(public)/globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Login | Dr. Specialist",
+  description: "Securely access your medical portal.",
+};
+
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          rel="stylesheet"
+        />
+      </head>
+      <body
+        className={`${inter.className} min-h-screen bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden`}
+      >
+        {children}
+      </body>
+    </html>
+  );
+}

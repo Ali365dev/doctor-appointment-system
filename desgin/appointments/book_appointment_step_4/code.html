@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Review Your Appointment - MedSpecialist Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Shared Components JSON Integrity & Style Guidance Implementation -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#0053db",
+                    "outline": "#737686",
+                    "on-tertiary-fixed": "#360f00",
+                    "on-error-container": "#93000a",
+                    "surface-container-low": "#f3f3fe",
+                    "secondary": "#006591",
+                    "on-secondary-fixed": "#001e2f",
+                    "inverse-surface": "#2e3039",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#ffdbcd",
+                    "surface-container": "#ededf9",
+                    "secondary-container": "#39b8fd",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface-variant": "#434655",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-background": "#191b23",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-primary-container": "#eeefff",
+                    "outline-variant": "#c3c6d7",
+                    "surface-variant": "#e1e2ed",
+                    "surface-container-high": "#e7e7f3",
+                    "secondary-fixed": "#c9e6ff",
+                    "on-secondary-fixed-variant": "#004c6e",
+                    "tertiary-container": "#bc4800",
+                    "on-secondary-container": "#004666",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-highest": "#e1e2ed",
+                    "surface": "#faf8ff",
+                    "primary-container": "#2563eb",
+                    "primary": "#004ac6",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#d9d9e5",
+                    "surface-bright": "#faf8ff",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#b4c5ff",
+                    "secondary-fixed-dim": "#89ceff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary-container": "#ffede6",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-on-surface": "#f0f0fb",
+                    "error": "#ba1a1a",
+                    "on-surface": "#191b23",
+                    "background": "#faf8ff",
+                    "tertiary": "#943700"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "1.5rem",
+                    "lg": "2.5rem",
+                    "xs": "0.5rem",
+                    "sm": "1rem",
+                    "base": "4px",
+                    "xl": "4rem",
+                    "gutter": "24px",
+                    "container-max": "1280px"
+            },
+            "fontFamily": {
+                    "caption": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "display": ["Inter"]
+            },
+            "fontSize": {
+                    "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf8ff;
+            color: #191b23;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-header {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .step-active {
+            box-shadow: 0 0 0 4px rgba(0, 74, 198, 0.1);
+        }
+        .bento-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bento-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm">
+<div class="flex justify-between items-center px-8 lg:px-20 h-20 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl">medical_services</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">MedSpecialist Pro</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Find Doctors</a>
+<a class="font-label-md text-label-md text-primary font-bold border-b-2 border-primary pb-1" href="#">My Bookings</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Resources</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="font-label-md text-label-md text-primary px-6 py-2 rounded-lg border border-primary/20 hover:bg-surface-container-low transition-all active:scale-95">Sign In</button>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-32 pb-20 px-4 md:px-8 lg:px-20 max-w-container-max mx-auto w-full">
+<!-- Progress Stepper -->
+<div class="mb-12">
+<div class="flex items-center justify-between max-w-3xl mx-auto relative">
+<!-- Line background -->
+<div class="absolute top-1/2 left-0 w-full h-0.5 bg-outline-variant/30 -translate-y-1/2 z-0"></div>
+<!-- Progress Line -->
+<div class="absolute top-1/2 left-0 w-[75%] h-0.5 bg-primary -translate-y-1/2 z-0 transition-all duration-500"></div>
+<!-- Step 1-3 (Done) -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+<span class="text-caption font-caption text-on-surface-variant hidden md:block">Specialty</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+<span class="text-caption font-caption text-on-surface-variant hidden md:block">Doctor</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+<span class="text-caption font-caption text-on-surface-variant hidden md:block">Patient Details</span>
+</div>
+<!-- Step 4 (Active) -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center font-bold step-active">
+                        4
+                    </div>
+<span class="text-caption font-caption text-primary font-bold">Review</span>
+</div>
+<!-- Step 5 (Future) -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-surface-container border-2 border-outline-variant text-outline flex items-center justify-center font-bold">
+                        5
+                    </div>
+<span class="text-caption font-caption text-outline hidden md:block">Payment</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Side: Detailed Summary -->
+<div class="lg:col-span-8 space-y-6">
+<header class="mb-8">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Review Your Appointment</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Please double-check the details below before proceeding to secure payment.</p>
+</header>
+<!-- Section: Appointment Info -->
+<section class="bg-white rounded-xl border border-outline-variant/30 p-8 bento-card">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">calendar_today</span>
+<h2 class="font-headline-md text-headline-md">Appointment Details</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="flex items-start gap-4">
+<img class="w-16 h-16 rounded-full object-cover border-2 border-surface-container" data-alt="A professional studio portrait of a middle-aged male doctor with a kind expression, wearing a crisp white medical coat and a stethoscope. The background is a soft-focus modern clinic with clean white walls and subtle blue lighting. The overall mood is clinical, trustworthy, and authoritative, matching a high-end medical design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTgZgaG5JKAl7-o3kab8PyoVBBih6x5tuPrH0hqZuhMT5kDnwmS8kVn34kMxjscjlBiDWRpajga1Ub_emCD74Zwcw2arsVKCQynC5FsVsYDT9F-FiNy7fwMMWO79zBtaHXXAGhkQEga3wJ4FEwD08DviDifP4buL5_JmVSE4a5YsKfHugo9AhFGSYK3Uvb8Z0pqNS9uufLV-XwSWg2RNUn4s72yXRFDaEaO-V9CllqhgSkzl4fzt0MOGK4_k8RKpBVx-9a1aEwV4A"/>
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Medical Specialist</p>
+<p class="text-body-lg font-body-lg font-bold text-on-surface">Dr. Alexander Sterling</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Consultant Cardiologist</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Date &amp; Time</p>
+<p class="text-body-md font-body-md font-semibold text-on-surface">Oct 24, 2024</p>
+<p class="text-body-md font-body-md text-on-surface-variant">10:30 AM EST</p>
+</div>
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Visit Type</p>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary mt-1">
+<span class="material-symbols-outlined text-sm">video_chat</span>
+<span class="text-caption font-caption font-bold">Video Consult</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Patient Info -->
+<section class="bg-white rounded-xl border border-outline-variant/30 p-8 bento-card">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">person</span>
+<h2 class="font-headline-md text-headline-md">Patient Information</h2>
+</div>
+<button class="text-primary font-label-md text-label-md hover:underline">Edit Details</button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Full Name</p>
+<p class="text-body-md font-body-md font-semibold text-on-surface">Jonathan Doe</p>
+</div>
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Phone</p>
+<p class="text-body-md font-body-md font-semibold text-on-surface">+1 (555) 012-3456</p>
+</div>
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Age</p>
+<p class="text-body-md font-body-md font-semibold text-on-surface">34 years</p>
+</div>
+<div>
+<p class="text-caption font-caption text-outline uppercase tracking-wider">Gender</p>
+<p class="text-body-md font-body-md font-semibold text-on-surface">Male</p>
+</div>
+</div>
+</section>
+<!-- Confirmation Checkbox -->
+<div class="flex items-start gap-3 p-4 bg-surface-container-low rounded-lg border border-outline-variant/20">
+<input class="mt-1 w-5 h-5 text-primary border-outline-variant rounded focus:ring-primary/20 cursor-pointer" id="confirm-check" type="checkbox"/>
+<label class="text-body-md font-body-md text-on-surface-variant cursor-pointer" for="confirm-check">
+                        I confirm that all information provided is correct and I have read the <a class="text-primary hover:underline" href="#">Clinical Guidelines</a> for this specialist consultation.
+                    </label>
+</div>
+</div>
+<!-- Right Side: Sticky Summary & CTA -->
+<aside class="lg:col-span-4 sticky top-28">
+<div class="bg-white rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
+<div class="bg-primary px-6 py-4">
+<h3 class="text-white font-label-md text-label-md uppercase tracking-widest">Payment Breakdown</h3>
+</div>
+<div class="p-6 space-y-4">
+<div class="flex justify-between items-center text-body-md">
+<span class="text-on-surface-variant">Specialist Consultation Fee</span>
+<span class="font-semibold text-on-surface">$150.00</span>
+</div>
+<div class="flex justify-between items-center text-body-md">
+<span class="text-on-surface-variant">Booking Service Fee</span>
+<span class="font-semibold text-on-surface">$0.00</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center">
+<span class="font-bold text-body-lg">Total Amount</span>
+<span class="font-bold text-headline-md text-primary">$150.00</span>
+</div>
+<div class="pt-6">
+<button class="w-full bg-primary hover:bg-primary-container text-white py-4 rounded-xl font-bold text-body-lg transition-all active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                                Proceed to Payment
+                                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<p class="text-caption font-caption text-outline text-center mt-4">Secure encrypted transaction via Stripe</p>
+</div>
+</div>
+<!-- Policy Note -->
+<div class="bg-surface-container-low p-4 m-2 rounded-lg border border-outline-variant/10">
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">info</span>
+<p class="text-caption font-caption text-on-surface-variant">Cancellation Policy: Full refund if cancelled 24h prior to appointment.</p>
+</div>
+</div>
+</div>
+<!-- Support Card -->
+<div class="mt-6 p-6 rounded-xl border border-dashed border-outline-variant text-center">
+<p class="text-caption font-caption text-outline">Need assistance with your booking?</p>
+<a class="inline-block mt-2 font-label-md text-label-md text-primary hover:underline" href="#">Contact Patient Concierge</a>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full py-12 bg-surface-container-lowest border-t border-outline-variant/50">
+<div class="flex flex-col md:flex-row justify-between items-center px-8 lg:px-20 w-full max-w-container-max mx-auto">
+<div class="mb-6 md:mb-0">
+<span class="font-headline-md text-headline-md font-bold text-primary">MedSpecialist Pro</span>
+<p class="text-caption font-caption text-outline mt-2">© 2024 MedSpecialist Pro. Clinical Excellence Defined.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-caption font-caption text-outline hover:text-on-surface hover:underline decoration-primary/30 transition-colors" href="#">Privacy Policy</a>
+<a class="text-caption font-caption text-outline hover:text-on-surface hover:underline decoration-primary/30 transition-colors" href="#">Terms of Service</a>
+<a class="text-caption font-caption text-outline hover:text-on-surface hover:underline decoration-primary/30 transition-colors" href="#">Clinical Standards</a>
+<a class="text-caption font-caption text-outline hover:text-on-surface hover:underline decoration-primary/30 transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for the checkbox and button
+        const checkbox = document.getElementById('confirm-check');
+        const payBtn = document.querySelector('button.bg-primary.hover\\:bg-primary-container');
+        
+        // Initial state
+        if(payBtn) {
+            payBtn.style.opacity = '0.5';
+            payBtn.style.pointerEvents = 'none';
+        }
+
+        checkbox.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                payBtn.style.opacity = '1';
+                payBtn.style.pointerEvents = 'auto';
+            } else {
+                payBtn.style.opacity = '0.5';
+                payBtn.style.pointerEvents = 'none';
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Select Date &amp; Time | MedSpecialist Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-header {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E5E7EB;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#0053db",
+                        "outline": "#737686",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f3f3fe",
+                        "secondary": "#006591",
+                        "on-secondary-fixed": "#001e2f",
+                        "inverse-surface": "#2e3039",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "surface-container": "#ededf9",
+                        "secondary-container": "#39b8fd",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-background": "#191b23",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "outline-variant": "#c3c6d7",
+                        "surface-variant": "#e1e2ed",
+                        "surface-container-high": "#e7e7f3",
+                        "secondary-fixed": "#c9e6ff",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "tertiary-container": "#bc4800",
+                        "on-secondary-container": "#004666",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-highest": "#e1e2ed",
+                        "surface": "#faf8ff",
+                        "primary-container": "#2563eb",
+                        "primary": "#004ac6",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#d9d9e5",
+                        "surface-bright": "#faf8ff",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "secondary-fixed-dim": "#89ceff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-container": "#ffede6",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-on-surface": "#f0f0fb",
+                        "error": "#ba1a1a",
+                        "on-surface": "#191b23",
+                        "background": "#faf8ff",
+                        "tertiary": "#943700"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "1.5rem",
+                        "lg": "2.5rem",
+                        "xs": "0.5rem",
+                        "sm": "1rem",
+                        "base": "4px",
+                        "xl": "4rem",
+                        "gutter": "24px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "caption": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+<!-- Top Navigation Bar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm">
+<div class="flex justify-between items-center px-8 lg:px-20 h-20 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">MedSpecialist Pro</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Find Doctors</a>
+<a class="font-label-md text-label-md text-primary font-bold border-b-2 border-primary pb-1" href="#">My Bookings</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Resources</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-label-md text-label-md px-6 py-2.5 rounded-xl border border-outline-variant text-on-surface hover:bg-surface-container-low transition-all active:scale-95">
+                    Sign In
+                </button>
+</div>
+</div>
+</header>
+<main class="pt-32 pb-20 px-8 lg:px-20 max-w-container-max mx-auto min-h-screen">
+<!-- Progress Stepper -->
+<div class="mb-12">
+<div class="flex items-center justify-between max-w-3xl mx-auto relative">
+<!-- Connector Line -->
+<div class="absolute top-1/2 left-0 w-full h-[2px] bg-outline-variant -translate-y-1/2 z-0"></div>
+<!-- Step 1 (Done) -->
+<div class="relative z-10 flex flex-col items-center gap-2 group">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary ring-4 ring-surface transition-all">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<span class="font-label-md text-caption text-primary">1. Appointment</span>
+</div>
+<!-- Step 2 (Active) -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary ring-4 ring-primary/20 transition-all">
+<span class="text-label-md">2</span>
+</div>
+<span class="font-label-md text-caption text-primary font-bold">2. Date &amp; Time</span>
+</div>
+<!-- Step 3 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center text-outline ring-4 ring-surface">
+<span class="text-label-md">3</span>
+</div>
+<span class="font-label-md text-caption text-outline">3. Details</span>
+</div>
+<!-- Step 4 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center text-outline ring-4 ring-surface">
+<span class="text-label-md">4</span>
+</div>
+<span class="font-label-md text-caption text-outline">4. Review</span>
+</div>
+<!-- Step 5 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center text-outline ring-4 ring-surface">
+<span class="text-label-md">5</span>
+</div>
+<span class="font-label-md text-caption text-outline">5. Payment</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-gutter items-start">
+<!-- Main Content Area -->
+<div class="w-full lg:w-2/3 space-y-8">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Select Date &amp; Time</h1>
+<p class="text-body-md text-on-surface-variant">Please choose your preferred appointment slot with Dr. Aris Thorne.</p>
+</div>
+<!-- Calendar Section -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-8 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-headline-md text-headline-md">October 2024</h3>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors border border-outline-variant/20">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors border border-outline-variant/20">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="calendar-grid text-center font-label-md text-outline mb-4">
+<div class="py-2">Sun</div>
+<div class="py-2">Mon</div>
+<div class="py-2">Tue</div>
+<div class="py-2">Wed</div>
+<div class="py-2">Thu</div>
+<div class="py-2">Fri</div>
+<div class="py-2">Sat</div>
+</div>
+<div class="calendar-grid text-center font-body-md">
+<!-- Past Days (Disabled) -->
+<div class="py-4 text-outline/30 cursor-not-allowed">29</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">30</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">1</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">2</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">3</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">4</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">5</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">6</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">7</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">8</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">9</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">10</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">11</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">12</div>
+<!-- Today and Future -->
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl bg-primary text-on-primary font-bold shadow-md ring-4 ring-primary/10">13</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">14</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">15</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">16</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">17</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">18</button>
+</div>
+<!-- Weekend -->
+<div class="py-4 text-outline/30 cursor-not-allowed">19</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">20</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">21</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">22</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">23</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">24</button>
+</div>
+<div class="py-2 flex items-center justify-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">25</button>
+</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">26</div>
+<div class="py-4 text-outline/30 cursor-not-allowed">27</div>
+</div>
+</div>
+<!-- Time Slot Section -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-8 shadow-sm">
+<h3 class="font-headline-md text-headline-md mb-8">Available Time Slots</h3>
+<div class="space-y-8">
+<!-- Morning Slots -->
+<div>
+<div class="flex items-center gap-2 text-outline mb-4">
+<span class="material-symbols-outlined text-body-md">wb_sunny</span>
+<span class="font-label-md">Morning (9:00 AM - 12:00 PM)</span>
+</div>
+<div class="flex flex-wrap gap-3">
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">09:00 AM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">09:45 AM</button>
+<button class="px-6 py-2.5 rounded-full bg-primary text-on-primary border border-primary shadow-sm active:scale-95 transition-all text-label-md">10:30 AM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">11:15 AM</button>
+</div>
+</div>
+<!-- Afternoon Slots -->
+<div>
+<div class="flex items-center gap-2 text-outline mb-4">
+<span class="material-symbols-outlined text-body-md">light_mode</span>
+<span class="font-label-md">Afternoon (1:00 PM - 4:00 PM)</span>
+</div>
+<div class="flex flex-wrap gap-3">
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">01:00 PM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">01:45 PM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">02:30 PM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">03:15 PM</button>
+</div>
+</div>
+<!-- Evening Slots -->
+<div>
+<div class="flex items-center gap-2 text-outline mb-4">
+<span class="material-symbols-outlined text-body-md">nights_stay</span>
+<span class="font-label-md">Evening (5:00 PM - 8:00 PM)</span>
+</div>
+<div class="flex flex-wrap gap-3">
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">05:00 PM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant opacity-50 cursor-not-allowed line-through text-label-md">05:45 PM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">06:30 PM</button>
+<button class="px-6 py-2.5 rounded-full border border-outline-variant hover:border-primary hover:text-primary transition-all text-label-md">07:15 PM</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<button class="flex items-center gap-2 px-8 py-3 rounded-xl border border-outline-variant text-on-surface hover:bg-surface-container transition-all active:scale-95 font-label-md">
+<span class="material-symbols-outlined">arrow_back</span>
+                        Previous
+                    </button>
+<button class="flex items-center gap-2 px-10 py-3 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all active:scale-95 font-label-md shadow-md shadow-primary/20">
+                        Continue to Details
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Sticky Summary Sidebar -->
+<aside class="w-full lg:w-1/3 sticky top-32">
+<div class="bg-surface-container-highest/50 backdrop-blur-md rounded-xl border border-outline-variant/40 p-8">
+<h3 class="font-headline-md text-headline-md mb-6">Appointment Summary</h3>
+<div class="space-y-6">
+<!-- Provider Info -->
+<div class="flex items-start gap-4">
+<div class="w-16 h-16 rounded-xl overflow-hidden bg-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged male doctor with silvering hair and sharp, kind eyes. He is wearing a crisp white laboratory coat over a light blue shirt. The background is a clean, minimalist clinical setting with soft, diffused bright white lighting. The image conveys high clinical authority and empathetic medical care, fitting a modern professional healthcare platform aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbuvA4cqkJ_THcKTbgQ4Sfh-GPp5yoG5Dbkz6Vv19rHLXpYBEmXS1D5L2zAvjSpofq5aSb-STwyQgVytimTIKWI3prG7zHw0APBuMM4e0naPEVq8IfUc0MqYCDy6GrZVPNJLRdCFqtecARnHD63ydP9Onas2Z4tcwwdEjHSGvcS0TsCjihn28UGxlaYoh0587Me39o57WVROxIOcEt-d619vUmeX3OpO63eI1T21dc9Wjv9d6mkv4rf77JuLEBhIrp9U3f_qjBDBc"/>
+</div>
+<div>
+<p class="font-label-md text-primary mb-0.5">Specialist</p>
+<p class="font-headline-md text-[18px]">Dr. Aris Thorne</p>
+<p class="text-caption text-on-surface-variant">Chief Cardiologist</p>
+</div>
+</div>
+<hr class="border-outline-variant/30"/>
+<!-- Clinic Info -->
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined">medical_services</span>
+</div>
+<div>
+<p class="font-label-md text-on-surface mb-0.5">Central Health Precinct</p>
+<p class="text-caption text-on-surface-variant">Suite 402, Level 4, Specialist Wing</p>
+</div>
+</div>
+<!-- Date/Time Display -->
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/20 space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
+<span class="text-body-md font-semibold">Oct 13, 2024</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant cursor-pointer hover:text-primary transition-colors">edit</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">schedule</span>
+<span class="text-body-md font-semibold">10:30 AM</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant cursor-pointer hover:text-primary transition-colors">edit</span>
+</div>
+</div>
+<hr class="border-outline-variant/30"/>
+<!-- Booking Fee Note -->
+<div class="flex justify-between items-center font-label-md">
+<span class="text-on-surface-variant">Initial Consultation</span>
+<span class="text-on-surface">$240.00</span>
+</div>
+<div class="bg-primary/5 p-4 rounded-lg flex gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">info</span>
+<p class="text-caption text-primary/80">Confirming this slot reserves the doctor's time specifically for your case. Cancellation fees apply within 24 hours.</p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full py-12 bg-surface-container-lowest border-t border-outline-variant/50">
+<div class="flex flex-col md:flex-row justify-between items-center px-8 lg:px-20 w-full max-w-container-max mx-auto gap-8">
+<div class="flex flex-col gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary">MedSpecialist Pro</span>
+<p class="font-caption text-caption text-outline max-w-xs">© 2024 MedSpecialist Pro. Clinical Excellence Defined.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-8">
+<a class="font-caption text-caption text-outline hover:text-on-surface transition-colors hover:underline decoration-primary/30" href="#">Privacy Policy</a>
+<a class="font-caption text-caption text-outline hover:text-on-surface transition-colors hover:underline decoration-primary/30" href="#">Terms of Service</a>
+<a class="font-caption text-caption text-outline hover:text-on-surface transition-colors hover:underline decoration-primary/30" href="#">Clinical Standards</a>
+<a class="font-caption text-caption text-outline hover:text-on-surface transition-colors hover:underline decoration-primary/30" href="#">Contact Support</a>
+</nav>
+</div>
+</footer>
+<script>
+        // Simple Micro-interaction for slots
+        document.querySelectorAll('button[class*="rounded-full"]').forEach(btn => {
+            if (!btn.classList.contains('cursor-not-allowed')) {
+                btn.addEventListener('click', function() {
+                    // Reset others in the same container
+                    const container = this.closest('.flex-wrap');
+                    container.querySelectorAll('button').forEach(b => {
+                        b.classList.remove('bg-primary', 'text-on-primary', 'border-primary', 'shadow-sm');
+                        b.classList.add('border-outline-variant');
+                    });
+                    
+                    // Style this one (if not already active)
+                    this.classList.remove('border-outline-variant');
+                    this.classList.add('bg-primary', 'text-on-primary', 'border-primary', 'shadow-sm');
+                });
+            }
+        });
+
+        // Calendar Day Select
+        document.querySelectorAll('.calendar-grid button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.calendar-grid button').forEach(b => {
+                    b.classList.remove('bg-primary', 'text-on-primary', 'font-bold', 'shadow-md', 'ring-4', 'ring-primary/10');
+                    b.classList.add('hover:bg-surface-container');
+                });
+                this.classList.add('bg-primary', 'text-on-primary', 'font-bold', 'shadow-md', 'ring-4', 'ring-primary/10');
+                this.classList.remove('hover:bg-surface-container');
+            });
+        });
+    </script>
+</body></html>

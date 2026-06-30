@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings | MedClinical Specialist Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "tertiary": "#943700",
+                        "on-secondary-container": "#004666",
+                        "inverse-primary": "#b4c5ff",
+                        "secondary-fixed-dim": "#89ceff",
+                        "on-surface-variant": "#434655",
+                        "on-secondary-fixed": "#001e2f",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e1e2ed",
+                        "surface-bright": "#faf8ff",
+                        "tertiary-container": "#bc4800",
+                        "surface-container-low": "#f3f3fe",
+                        "on-surface": "#191b23",
+                        "background": "#faf8ff",
+                        "surface-dim": "#d9d9e5",
+                        "secondary-fixed": "#c9e6ff",
+                        "on-tertiary-fixed": "#360f00",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "surface-container": "#ededf9",
+                        "on-background": "#191b23",
+                        "secondary": "#006591",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "surface-container-highest": "#e1e2ed",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#f0f0fb",
+                        "inverse-surface": "#2e3039",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "outline": "#737686",
+                        "surface-tint": "#0053db",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-container": "#ffede6",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error": "#ffffff",
+                        "surface": "#faf8ff",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#39b8fd",
+                        "primary": "#004ac6",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "0.5rem",
+                        "xl": "4rem",
+                        "sm": "1rem",
+                        "lg": "2.5rem",
+                        "container-max": "1280px",
+                        "base": "4px",
+                        "md": "1.5rem",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "caption": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-nav {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .settings-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 74, 198, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col p-4 gap-2 z-50">
+<div class="mb-8 px-2 flex items-center gap-2">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[20px]">medical_services</span>
+</div>
+<span class="text-headline-md font-bold text-primary">MedClinical</span>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-body-md">Appointments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-md">Patients</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-md">Payments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span class="font-body-md">Messages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="web">web</span>
+<span class="font-body-md">Website CMS</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant">
+<div class="flex items-center gap-3 px-2 py-2">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a medical specialist in a clean, high-end clinic setting. The lighting is bright and warm, reflecting a premium healthcare environment with soft textures and professional attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbWNzlzOSpu-dRmd3-pKqMfpf1-2fAxYHUh3tGi7cIKLItmHUcCXNgQvTtv7XOg9Yh54in9DX3X_NBUmn0UfGO9WbLhm4qEaqpRG6DXtp7_-gvxAG58erW7c37fz-ZOh0dZy0FZL9I416cE_NP_E2DKvR55PCOe6uWUSeLHL-h6DTba_ljMWppWk0JBFGx1sI9FsZYVnywjKlwu5qEZxGfLxyb2rLPvR5UIqTAbaOwb3bnCV0ZA77nR8u6YXIj_7s5audlyryDCos"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-on-surface">Dr. Specialist</span>
+<span class="text-caption text-on-surface-variant">Clinical Director</span>
+</div>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-xl font-semibold mt-2" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 flex justify-between items-center px-8 z-40 bg-surface/70 glass-nav border-b border-outline-variant">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-label-md focus:ring-2 focus:ring-primary/20" placeholder="Search settings, patients, records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-on-surface-variant">Clinic: Aura Wellness Center</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">verified</span>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="pt-24 px-8 pb-12 max-w-6xl mx-auto">
+<div class="mb-8">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Settings</h1>
+<p class="font-body-md text-on-surface-variant mt-1">Manage your clinical operations, payments, and system preferences.</p>
+</div>
+<!-- Tabs Section -->
+<div class="mb-8 border-b border-outline-variant">
+<div class="flex gap-8 overflow-x-auto no-scrollbar">
+<button class="pb-4 font-label-md text-primary border-b-2 border-primary whitespace-nowrap transition-all" id="tab-clinic" onclick="switchTab('clinic')">Clinic Settings</button>
+<button class="pb-4 font-label-md text-on-surface-variant hover:text-primary whitespace-nowrap transition-all" id="tab-payment" onclick="switchTab('payment')">Payment Settings</button>
+<button class="pb-4 font-label-md text-on-surface-variant hover:text-primary whitespace-nowrap transition-all" id="tab-notification" onclick="switchTab('notification')">Notifications</button>
+<button class="pb-4 font-label-md text-on-surface-variant hover:text-primary whitespace-nowrap transition-all" id="tab-security" onclick="switchTab('security')">Security</button>
+</div>
+</div>
+<!-- Tab Contents -->
+<div class="tab-content space-y-6" id="content-clinic">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Availability Card -->
+<div class="lg:col-span-2 space-y-6">
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">schedule</span>
+                                    Availability &amp; Scheduling
+                                </h3>
+</div>
+<div class="space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Default Slot Duration</label>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 font-body-md">
+<option>15 minutes</option>
+<option selected="">30 minutes</option>
+<option>45 minutes</option>
+<option>60 minutes</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Buffer Time Between Appointments</label>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 font-body-md">
+<option>None</option>
+<option selected="">5 minutes</option>
+<option>10 minutes</option>
+<option>15 minutes</option>
+</select>
+</div>
+</div>
+<div class="space-y-4">
+<p class="font-label-md text-on-surface">Working Days</p>
+<div class="space-y-3">
+<!-- Day Row -->
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary border-outline-variant" type="checkbox"/>
+<span class="font-body-md text-on-surface font-semibold w-24">Monday</span>
+</div>
+<div class="flex items-center gap-3">
+<input class="bg-transparent border-none font-body-md p-1 focus:ring-0" type="time" value="09:00"/>
+<span class="text-on-surface-variant">to</span>
+<input class="bg-transparent border-none font-body-md p-1 focus:ring-0" type="time" value="17:00"/>
+</div>
+</div>
+<!-- Repeat for other days -->
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary border-outline-variant" type="checkbox"/>
+<span class="font-body-md text-on-surface font-semibold w-24">Tuesday</span>
+</div>
+<div class="flex items-center gap-3">
+<input class="bg-transparent border-none font-body-md p-1 focus:ring-0" type="time" value="09:00"/>
+<span class="text-on-surface-variant">to</span>
+<input class="bg-transparent border-none font-body-md p-1 focus:ring-0" type="time" value="17:00"/>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary border-outline-variant" type="checkbox"/>
+<span class="font-body-md text-on-surface font-semibold w-24">Wednesday</span>
+</div>
+<div class="flex items-center gap-3">
+<input class="bg-transparent border-none font-body-md p-1 focus:ring-0" type="time" value="09:00"/>
+<span class="text-on-surface-variant">to</span>
+<input class="bg-transparent border-none font-body-md p-1 focus:ring-0" type="time" value="17:00"/>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg opacity-50">
+<div class="flex items-center gap-3">
+<input class="w-5 h-5 rounded text-primary focus:ring-primary border-outline-variant" type="checkbox"/>
+<span class="font-body-md text-on-surface font-semibold w-24">Sunday</span>
+</div>
+<span class="font-label-md text-on-surface-variant italic">Closed</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Actions Card -->
+<div class="space-y-6">
+<section class="bg-primary/5 p-6 rounded-xl border border-primary/20">
+<h4 class="font-label-md text-primary uppercase tracking-wider mb-4">Quick Actions</h4>
+<div class="space-y-3">
+<button class="w-full bg-primary text-on-primary py-3 px-4 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">save</span>
+                                    Save Changes
+                                </button>
+<button class="w-full bg-white border border-outline-variant text-on-surface py-3 px-4 rounded-xl font-semibold hover:bg-surface-container-high transition-all flex items-center justify-center gap-2">
+                                    Discard
+                                </button>
+</div>
+</section>
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant">
+<h4 class="font-label-md text-on-surface-variant mb-4">Clinic Branding</h4>
+<div class="flex flex-col items-center gap-4">
+<div class="w-32 h-32 rounded-2xl bg-surface-container-high flex items-center justify-center border-2 border-dashed border-outline relative group overflow-hidden">
+<img class="absolute inset-0 w-full h-full object-contain p-4" data-alt="A minimalist clinic logo design featuring clean geometric lines and a calming color palette of deep blue and soft gray, representing professional healthcare and specialist services." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfuZHBrQC4vNg0ykj0Q_ulFgxUCdVxh6AQ1-d967VF_tUBPfKpa2NjrTb3sd30ncQR94RfgsLuu2kR8TkaKX2SC0hn9LJctkh1jbSijMAUQHksGSsxWua3UOycWzE-ptmlKqIWpZa8uKd9Nx8ImfFlUDsMMzFQnwLTgdBdjKS-wS5llFwfegbIL3LX0m5UFe_5LKYgR12jdBVaF8oKj-Z2zp-eebdMPfe-zMihdbDNb_xFp3vOutJWiOXU1Y2ANq5HOHPV7fmurLI"/>
+<div class="absolute inset-0 bg-on-surface/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white">edit</span>
+</div>
+</div>
+<p class="text-caption text-on-surface-variant text-center">Upload high-res PNG or SVG clinic logo.</p>
+</div>
+</section>
+</div>
+</div>
+</div>
+<div class="tab-content hidden space-y-6" id="content-payment">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Global Payments -->
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-[#635BFF]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#635BFF]">account_balance_wallet</span>
+</div>
+<div>
+<h3 class="font-headline-md text-on-surface">Stripe Checkout</h3>
+<p class="text-caption text-on-surface-variant">Accept international cards &amp; Apple Pay</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="p-4 bg-surface-container rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-600">check_circle</span>
+<span class="font-label-md text-on-surface">Connected: aura_wellness_acct_8291</span>
+</div>
+<button class="text-primary font-label-md">Manage Dashboard</button>
+</div>
+</section>
+<!-- Local Payments -->
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant">
+<h3 class="font-headline-md text-on-surface mb-6">Local Payment Gateway</h3>
+<div class="space-y-6">
+<div class="space-y-4">
+<label class="font-label-md text-on-surface">Select Primary Account</label>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex flex-col items-center gap-2 p-4 border-2 border-primary bg-primary/5 rounded-xl transition-all">
+<div class="w-10 h-10 rounded bg-[#FFD700] flex items-center justify-center font-bold text-black text-[12px]">Jazz</div>
+<span class="font-label-md text-on-surface">JazzCash</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 border border-outline-variant bg-surface rounded-xl hover:bg-surface-container-high transition-all">
+<div class="w-10 h-10 rounded bg-[#1BA345] flex items-center justify-center font-bold text-white text-[12px]">EP</div>
+<span class="font-label-md text-on-surface">Easypaisa</span>
+</button>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Account Number</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 font-body-md" type="text" value="+92 300 1234567"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Merchant QR Code</label>
+<div class="w-full h-48 bg-surface-container border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center gap-2 relative group cursor-pointer overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant text-[32px]">qr_code_2</span>
+<span class="font-label-md text-on-surface-variant">Click to upload QR Image</span>
+<img class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-10 transition-opacity" data-alt="A crisp, high-resolution QR code placed on a minimalist, professional background with medical subtle watermarks, intended for a healthcare payment portal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5yAM1wFRi11TURtphWvtTvVnWuNIoJhqZz-r1eryaidP3QvqdYggoBwWqHRewjoEYIhFZvWPj6UE3NNxUd8wLuHh7J0nQaPM-NZiMK3F9wfDruAk68FK-iSDW2P75nHjQy6k9_e4Dw2vAZdeIrI_IYiX1074i1Xs1XdL9o_o4AZTO9aWcJ5c1pwnGoD4LdFguh7lv-6B0HcVjWHjsnTZrgxs2F4bXHvKJcE9UQ_-b38aJIhu67xgFtjPOzpP9SGU7ErPGbVCspGs"/>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<div class="tab-content hidden" id="content-notification">
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant max-w-2xl">
+<h3 class="font-headline-md text-on-surface mb-6">Patient Notification Rules</h3>
+<div class="space-y-6">
+<div class="flex items-center justify-between py-4 border-b border-outline-variant">
+<div>
+<p class="font-label-md text-on-surface">Appointment Confirmation</p>
+<p class="text-caption text-on-surface-variant">Send instant alerts when a booking is confirmed.</p>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center gap-1">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">Email</span>
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary" type="checkbox"/>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">SMS</span>
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary" type="checkbox"/>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between py-4 border-b border-outline-variant">
+<div>
+<p class="font-label-md text-on-surface">24h Reminders</p>
+<p class="text-caption text-on-surface-variant">Send automated reminder 24 hours before visit.</p>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center gap-1">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">Email</span>
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary" type="checkbox"/>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">SMS</span>
+<input class="w-5 h-5 rounded text-primary focus:ring-primary" type="checkbox"/>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between py-4 border-b border-outline-variant">
+<div>
+<p class="font-label-md text-on-surface">Follow-up Surveys</p>
+<p class="text-caption text-on-surface-variant">Request feedback 3 days after completion.</p>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center gap-1">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">Push</span>
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary" type="checkbox"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div class="tab-content hidden" id="content-security">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant">
+<h3 class="font-headline-md text-on-surface mb-6">Password &amp; Access</h3>
+<form class="space-y-4">
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Current Password</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5" type="password"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">New Password</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5" type="password"/>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-lg font-semibold mt-4">Update Password</button>
+</form>
+</section>
+<section class="bg-surface-container-lowest p-6 rounded-xl settings-card border border-outline-variant">
+<h3 class="font-headline-md text-on-surface mb-6">Active Sessions</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 bg-surface-container rounded-lg">
+<span class="material-symbols-outlined text-primary">laptop</span>
+<div class="flex-1">
+<p class="font-label-md text-on-surface">MacBook Pro M2 - Karachi, PK</p>
+<p class="text-caption text-on-surface-variant">Active now • Safari 17.1</p>
+</div>
+<span class="text-green-600 font-label-md">This device</span>
+</div>
+<div class="flex items-center gap-4 p-4 bg-surface-container rounded-lg opacity-70">
+<span class="material-symbols-outlined text-on-surface-variant">smartphone</span>
+<div class="flex-1">
+<p class="font-label-md text-on-surface">iPhone 15 Pro - Karachi, PK</p>
+<p class="text-caption text-on-surface-variant">Last active: 2 hours ago</p>
+</div>
+<button class="text-error font-label-md">Logout</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+<script>
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show target content
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+
+            // Reset tab styles
+            const tabs = ['clinic', 'payment', 'notification', 'security'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                el.classList.remove('text-primary', 'border-b-2', 'border-primary');
+                el.classList.add('text-on-surface-variant');
+            });
+
+            // Set active tab style
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            activeTab.classList.add('text-primary', 'border-b-2', 'border-primary');
+            activeTab.classList.remove('text-on-surface-variant');
+        }
+
+        // Add a subtle entrance animation for elements
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('opacity-100', 'translate-y-0');
+                        entry.target.classList.remove('opacity-0', 'translate-y-4');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.settings-card').forEach(card => {
+                card.classList.add('transition-all', 'duration-500', 'opacity-0', 'translate-y-4');
+                observer.observe(card);
+            });
+        });
+    </script>
+</body></html>
