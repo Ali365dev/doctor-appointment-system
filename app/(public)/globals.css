@@ -168,14 +168,18 @@
 
 :root {
   --space-xs: 0.5rem;    /* 8px  */
-  --space-sm: 1rem;      /* 16px */
-  --space-md: 1.5rem;    /* 24px */
-  --space-lg: 2.5rem;    /* 40px */
-  --space-xl: 4rem;      /* 64px */
+  --space-sm: 0.75rem;      /* 16px */
+  --space-md: 1rem;    /* 24px */
+  --space-lg: 2rem;    /* 40px */
+  --space-xl: 3rem;      /* 64px */
+
+
   --space-gutter: 1.5rem;
   --container-padding: 1.5rem;
   --container-max-width: 1280px;
 }
+
+
 
 /* ===================================
    Custom spacing utilities

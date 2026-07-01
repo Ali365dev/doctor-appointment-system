@@ -20,11 +20,8 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col h-screen w-64 bg-surface border-r border-outline-variant/30 py-md px-sm fixed left-0 top-0 z-40">
       {/* Brand */}
-      <div className="flex items-center gap-xs px-xs mb-lg">
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-on-primary text-lg">local_hospital</span>
-        </div>
-        <span className="text-headline-md font-bold text-primary leading-none">MedClinical</span>
+      <div className="flex items-center px-xs mb-lg">
+        <img src="/dr_zaid_gul_logo.svg" alt="Dr. Zaid Gul" className="h-14 w-auto" />
       </div>
 
       {/* Doctor profile */}

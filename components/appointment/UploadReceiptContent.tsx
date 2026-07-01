@@ -3,6 +3,8 @@
 import { useState, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useBookingStore } from "@/store/bookingStore";
+import { doctor } from "@/lib/data";
 
 type UploadState = "idle" | "uploading" | "done";
 
@@ -12,11 +14,23 @@ export default function UploadReceiptContent() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { selectedClinic, selectedDate, selectedTime, setReceiptUploaded } = useBookingStore();
+
+  const fee = selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+
+  const formattedDate = selectedDate
+    ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      })
+    : "—";
 
   const handleFile = (file: File) => {
     setFileName(file.name);
     setUploadState("uploading");
-    setTimeout(() => setUploadState("done"), 1500);
+    setTimeout(() => {
+      setUploadState("done");
+      setReceiptUploaded(true);
+    }, 1500);
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -34,6 +48,7 @@ export default function UploadReceiptContent() {
   const reset = () => {
     setUploadState("idle");
     setFileName(null);
+    setReceiptUploaded(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -41,11 +56,11 @@ export default function UploadReceiptContent() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       {/* Left */}
       <div className="lg:col-span-8 space-y-6">
-        <div className="bg-surface-container-lowest rounded-xl p-6 md:p-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] border border-outline-variant/30">
+        <div className="bg-surface-container-lowest rounded-xl p-6 md:p-10 shadow-sm border border-outline-variant/30">
           <h1 className="text-headline-lg font-bold text-on-surface mb-2">Submit Payment Receipt</h1>
           <p className="text-body-md text-on-surface-variant mb-10">
             Please upload a clear image or PDF of your bank transfer receipt to complete your
-            appointment booking.
+            appointment booking with {doctor.name}.
           </p>
 
           {/* Drop Zone */}
@@ -57,15 +72,10 @@ export default function UploadReceiptContent() {
             className={`rounded-xl p-16 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 border-2 border-dashed ${
               isDragging
                 ? "border-primary bg-primary/5 scale-[1.01]"
-                : "border-outline-variant hover:bg-surface-container-low"
+                : uploadState === "idle"
+                ? "border-outline-variant hover:bg-surface-container-low hover:border-primary/50"
+                : "border-outline-variant/30"
             }`}
-            style={{
-              backgroundImage:
-                uploadState === "idle"
-                  ? "url(\"data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%23C3C6D7FF' stroke-width='2' stroke-dasharray='8%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e\")"
-                  : "none",
-              border: uploadState === "idle" ? "none" : undefined,
-            }}
           >
             <input
               ref={fileInputRef}
@@ -77,7 +87,7 @@ export default function UploadReceiptContent() {
 
             {uploadState === "idle" && (
               <>
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                   <span className="material-symbols-outlined text-primary text-[40px]">cloud_upload</span>
                 </div>
                 <h3 className="text-headline-md font-semibold text-on-surface mb-2">
@@ -111,7 +121,9 @@ export default function UploadReceiptContent() {
                 >
                   check_circle
                 </span>
-                <p className="text-headline-md font-semibold text-on-surface">{fileName} uploaded successfully</p>
+                <p className="text-headline-md font-semibold text-on-surface">
+                  {fileName} uploaded successfully
+                </p>
                 <button
                   onClick={(e) => { e.stopPropagation(); reset(); }}
                   className="mt-4 text-primary text-[14px] font-semibold hover:underline"
@@ -127,8 +139,8 @@ export default function UploadReceiptContent() {
             <span className="material-symbols-outlined text-secondary shrink-0">info</span>
             <p className="text-body-md text-on-surface leading-relaxed">
               Ensure the receipt includes the <strong>Transaction Reference</strong>,{" "}
-              <strong>Amount</strong>, and <strong>Date</strong>. Standard verification time is
-              1–2 hours.
+              <strong>Amount (Rs. {fee.toLocaleString()})</strong>, and <strong>Date</strong>.
+              Standard verification time is 1–2 hours.
             </p>
           </div>
 
@@ -138,7 +150,7 @@ export default function UploadReceiptContent() {
               onClick={() => router.push("/book-appointment/step-5")}
               className="px-10 py-3 rounded-lg border border-outline-variant text-[14px] font-semibold text-primary hover:bg-surface-container-high/50 transition-all"
             >
-              Cancel
+              Back to Payment
             </button>
             <button
               onClick={() => router.push("/book-appointment/success")}
@@ -155,7 +167,7 @@ export default function UploadReceiptContent() {
 
       {/* Right: Summary */}
       <aside className="lg:col-span-4 lg:sticky lg:top-24">
-        <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] border border-outline-variant/30 overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
           <div className="bg-primary/5 p-6 border-b border-outline-variant/20">
             <h2 className="text-headline-md font-semibold text-on-surface">Appointment Summary</h2>
           </div>
@@ -163,8 +175,8 @@ export default function UploadReceiptContent() {
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 rounded-xl bg-surface-container shadow-inner overflow-hidden shrink-0">
                 <Image
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoVXlCiSn2ouB_4dgLdwMjDv6OQX3SbGnGXM_bN5t_InmWUojWtyQuDeQWxbZoJ3vcUfB0QWZVOwGLWf1_9CpELpiDIopDSBE2dkVU8MMp7WFMI27FfYrjewMxGgHKPrnkdkw2cIqhY3xE9nUGYFx3n3jsnkBB_WIVJ5Cg-mz0Nc9KJexfwUUw2_FNPuv6WPte5Ip7M5FXR96puDzBbKB7WH_LT_Lqs6R_B2wqUfCbRTbL9Au3DeTDq34gx7iFHd9HA2XR2A8K_uw"
-                  alt="Dr. Julian Sterling"
+                  src={doctor.profile_image}
+                  alt={doctor.name}
                   width={64}
                   height={64}
                   className="w-full h-full object-cover"
@@ -173,31 +185,31 @@ export default function UploadReceiptContent() {
               </div>
               <div>
                 <p className="text-[14px] font-semibold text-primary mb-1 uppercase tracking-wider">
-                  Cardiology Specialist
+                  {doctor.specialization[0]}
                 </p>
-                <p className="text-headline-md font-semibold text-on-surface">Dr. Julian Sterling</p>
+                <p className="text-headline-md font-semibold text-on-surface">{doctor.name}</p>
               </div>
             </div>
 
             <div className="space-y-3 pt-3 border-t border-outline-variant/10">
               {[
-                { icon: "calendar_today", label: "Date", value: "Jun 30, 2026" },
-                { icon: "schedule", label: "Time", value: "10:30 AM" },
-                { icon: "location_on", label: "Type", value: "In-Clinic Visit" },
+                { icon: "location_on", label: "Clinic", value: selectedClinic?.name ?? "—" },
+                { icon: "calendar_today", label: "Date", value: formattedDate },
+                { icon: "schedule", label: "Time", value: selectedTime ?? "—" },
               ].map(({ icon, label, value }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-on-surface-variant text-body-md flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">{icon}</span>
                     {label}
                   </span>
-                  <span className="text-on-surface font-bold">{value}</span>
+                  <span className="text-on-surface font-bold text-right max-w-[55%] truncate">{value}</span>
                 </div>
               ))}
             </div>
 
             <div className="pt-4 mt-2 border-t border-outline-variant/30 flex justify-between items-center">
               <span className="text-headline-md font-semibold text-on-surface">Total Amount</span>
-              <span className="text-primary text-[28px] font-bold">Rs. 2,000</span>
+              <span className="text-primary text-[28px] font-bold">Rs. {fee.toLocaleString()}</span>
             </div>
           </div>
         </div>

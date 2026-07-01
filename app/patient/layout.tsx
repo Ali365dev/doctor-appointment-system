@@ -37,8 +37,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             {/* Footer */}
             <footer className="w-full py-lg px-gutter flex flex-col items-center gap-md border-t border-outline-variant/30 bg-surface-container-low">
               <div className="flex flex-col items-center gap-sm">
-                <h2 className="text-headline-md font-bold text-primary">CarePlus</h2>
-                <p className="text-caption text-on-surface-variant">© 2024 CarePlus Specialist Portal. All rights reserved.</p>
+                <img src="/dr_zaid_gul_logo.svg" alt="Dr. Zaid Gul" className="h-12 w-auto" />
+                <p className="text-caption text-on-surface-variant">© 2024 Dr. Zaid Gul Specialist Portal. All rights reserved.</p>
               </div>
               <div className="flex gap-lg">
                 <a href="#" className="text-body-md text-on-surface-variant hover:text-secondary transition-colors">Privacy Policy</a>

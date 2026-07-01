@@ -1,0 +1,229 @@
+{
+  "name": "Dr. Zaid Gul",
+  "profile_url": "https://oladoc.com/pakistan/faisalabad/dr/gastroenterologist/zaid-gul/910961",
+  "profile_image": "https://d1t78adged64l7.cloudfront.net/images/profile-pics/doctors/1618497514_039ba82e-4200-4041-b5db-2846d8244705.webp?t=1669880941",
+  "verification": "PMDC Verified",
+  "specialization": ["Gastroenterologist", "Hepatologist"],
+  "qualifications": "M.B.B.S., M.D. (Gastroenterology), M.R.C.P (UK), ESEGH (UK)",
+  "wait_time": "15 - 30 Min",
+  "experience_years": 8,
+  "rating": {
+    "score": 4.9,
+    "reviews_count": 418,
+    "satisfaction_percent": 99,
+    "breakdown": {
+      "doctor_checkup": "99%",
+      "clinic_environment": "99%",
+      "staff_behaviour": "99%"
+    }
+  },
+  "city": "Faisalabad",
+  "country": "Pakistan",
+  "about": "GASTROENTEROLOGIST AND HEPATOLOGIST",
+  "education": [
+    {
+      "degree": "M.B.B.S.",
+      "institute": "Independent Medical College, Pakistan",
+      "year": 2014
+    },
+    {
+      "degree": "M.D. (Gastroenterology)",
+      "institute": "Shaheed Zulfiqar Ali Bhutto Medical University, Pakistan",
+      "year": 2021
+    },
+    {
+      "degree": "M.R.C.P (UK)",
+      "institute": "Royal College of Physicians and Surgeons, United Kingdom",
+      "year": 2018
+    },
+    {
+      "degree": "ESEGH (UK)",
+      "institute": "United Kingdom",
+      "year": null
+    }
+  ],
+  "experience": [
+    "Present, Consultant Gastroenterologist, Ghulam Muhammadabad General Hospital, Faisalabad",
+    "Present, Ex-Registrar Gastroenterology Department, PIMS Hospital, Islamabad"
+  ],
+  "professional_memberships": [
+    "Pakistan Medical Commission (PMC)",
+    "Member of Royal College of Physicians (UK)"
+  ],
+  "languages_spoken": ["English"],
+  "fee_summary": {
+    "min_fee_pkr": 1200,
+    "max_fee_pkr": 2000
+  },
+  "practice_locations": [
+    {
+      "name": "Chughtai Medical Centre (Satyana Road)",
+      "address": "571-B, Saleemi Chowk, Main Satyana Road, Faisalabad.",
+      "map_link": "https://maps.google.com/maps?travelmode=driving&daddr=31.40588300,73.10158004",
+      "coordinates": {"lat": 31.40588300, "lng": 73.10158004},
+      "fee_pkr": 2000,
+      "booking_link": "https://oladoc.com/appointment/5668/910961",
+      "hospital_page": "https://oladoc.com/pakistan/faisalabad/h/chughtai-medical-centre-satyana-road/5668",
+      "timings": {
+        "Monday": "05:00 PM - 07:00 PM",
+        "Tuesday": "05:00 PM - 07:00 PM",
+        "Wednesday": "05:00 PM - 07:00 PM",
+        "Thursday": "05:00 PM - 07:00 PM",
+        "Saturday": "05:00 PM - 07:00 PM"
+      }
+    },
+    {
+      "name": "Faisal Hospital (New Building)",
+      "address": "545, Lower Canal Road E, Muhammadia Colony, Block A, Peoples Colony, No 1, Faisalabad",
+      "map_link": "https://maps.google.com/maps?travelmode=driving&daddr=31.41637240,73.10280970",
+      "coordinates": {"lat": 31.41637240, "lng": 73.10280970},
+      "fee_pkr": 2000,
+      "booking_link": "https://oladoc.com/appointment/2235/910961",
+      "hospital_page": "https://oladoc.com/pakistan/faisalabad/h/faisal-hospital-faisalabad/2235",
+      "timings": {
+        "Monday": "07:00 PM - 09:00 PM",
+        "Tuesday": "07:00 PM - 09:00 PM",
+        "Wednesday": "07:00 PM - 09:00 PM",
+        "Thursday": "07:00 PM - 09:00 PM",
+        "Friday": "07:00 PM - 09:00 PM",
+        "Saturday": "07:00 PM - 09:00 PM"
+      }
+    },
+    {
+      "name": "United Hospital (Faisalabad)",
+      "address": null,
+      "fee_pkr": 1200,
+      "timings": {
+        "Monday": "09:00 PM - 10:00 PM",
+        "Tuesday": "09:00 PM - 10:00 PM",
+        "Wednesday": "09:00 PM - 10:00 PM",
+        "Thursday": "09:00 PM - 10:00 PM",
+        "Friday": "09:00 PM - 10:00 PM",
+        "Saturday": "09:00 PM - 10:00 PM"
+      }
+    }
+  ],
+  "services": [
+    "Biopsy",
+    "Colonoscopy",
+    "Constipation Treatment",
+    "Diarrhea Treatment",
+    "Digital Rectal Examination",
+    "Endoscopist",
+    "Endoscopy",
+    "Gastroscopy",
+    "Hepatitis A Treatment",
+    "Hepatitis B Treatment",
+    "Hepatitis C Treatment",
+    "Oesophagoscopy"
+  ],
+  "conditions_treated": [
+    "Abdomen Pain",
+    "Abdominal Pain",
+    "Acid Peptic Disease",
+    "Anemia",
+    "Black Stools",
+    "Bloating",
+    "Chronic Hepatitis",
+    "Diarrhea",
+    "Dyspepsia",
+    "Enteric Fever",
+    "Fatigue",
+    "Fever",
+    "Fissures",
+    "Gastric Ulcer",
+    "Gastroenteritis",
+    "GERD (Gastroesophageal Reflux Disease)",
+    "Helicobacter Pylori Bacteria",
+    "Hemorrhoids",
+    "Hepatitis B",
+    "Hepatitis C",
+    "Jaundice",
+    "Liver Diseases",
+    "Pancreas Disease",
+    "Stomach pain",
+    "Typhoid Fever"
+  ],
+  "treatments_offered": [
+    {
+      "name": "Colonoscopy",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 25000,
+      "original_price_pkr": 30000,
+      "discount_percent": 17
+    },
+    {
+      "name": "Endoscopy",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 15000,
+      "original_price_pkr": 20000,
+      "discount_percent": 25
+    },
+    {
+      "name": "ERCP",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 100000,
+      "original_price_pkr": 120000,
+      "discount_percent": 17
+    },
+    {
+      "name": "Foreign Body Removal via Endoscopy from Esophagus and Stomach",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 35000,
+      "original_price_pkr": 40000,
+      "discount_percent": 13
+    },
+    {
+      "name": "Polypectomies",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 30000,
+      "original_price_pkr": 35000,
+      "discount_percent": 14
+    },
+    {
+      "name": "Stricture Dilatation",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 35000,
+      "original_price_pkr": 40000,
+      "discount_percent": 13
+    },
+    {
+      "name": "PEG Tube Placement",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 35000,
+      "original_price_pkr": 40000,
+      "discount_percent": 13
+    },
+    {
+      "name": "Esophageal Banding for Bleeding from Varices",
+      "location": "Faisal Hospital (New Building), Faisalabad",
+      "price_pkr": 25000,
+      "original_price_pkr": 30000,
+      "discount_percent": 17
+    }
+  ],
+  "sample_reviews": [
+    {
+      "text": "It was a great experience with Dr. Zaid Gul. He listened to everything carefully and gave treatment accordingly.",
+      "reviewer": "M** ***a",
+      "time_ago": "2 years ago",
+      "verified": true
+    },
+    {
+      "text": "The doc was really nice, he examined thoroughly and was calm while listening the details by patient",
+      "reviewer": "M** ***l",
+      "time_ago": "2 years ago",
+      "verified": true
+    },
+    {
+      "text": "best service",
+      "reviewer": "M** ***R",
+      "time_ago": "3 years ago",
+      "verified": true
+    }
+  ],
+  "contact": {
+    "whatsapp": "https://api.whatsapp.com/send?phone=+923238633454&text=Hi%2C+I%E2%80%99m+interested+in+booking+an+appointment+with+Dr.+Zaid+Gul.",
+    "helpline": "0415068065"
+  }
+}

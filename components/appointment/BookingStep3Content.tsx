@@ -3,13 +3,66 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useBookingStore } from "@/store/bookingStore";
+import { doctor } from "@/lib/data";
 
 const cities = ["Select City", "Lahore", "Karachi", "Islamabad", "Faisalabad", "Rawalpindi"];
 
 export default function BookingStep3Content() {
-  const [gender, setGender] = useState<"Male" | "Female" | "Other">("Male");
-  const [isExisting, setIsExisting] = useState(false);
   const router = useRouter();
+  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo, setPatientInfo } =
+    useBookingStore();
+
+  const [gender, setGender] = useState<"Male" | "Female" | "Other">(patientInfo.gender);
+  const [form, setForm] = useState({
+    fullName: patientInfo.fullName,
+    phone: patientInfo.phone,
+    age: patientInfo.age,
+    cnic: patientInfo.cnic,
+    email: patientInfo.email,
+    city: patientInfo.city || cities[0],
+    condition: patientInfo.condition,
+    notes: patientInfo.notes,
+    isExisting: patientInfo.isExisting,
+  });
+  const [errors, setErrors] = useState<Partial<typeof form>>({});
+
+  const formattedDate = selectedDate
+    ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      })
+    : "—";
+
+  const set = (field: keyof typeof form, value: string | boolean) => {
+    setForm((p) => ({ ...p, [field]: value }));
+    if (errors[field as keyof typeof errors])
+      setErrors((p) => ({ ...p, [field]: undefined }));
+  };
+
+  const validate = () => {
+    const e: Partial<typeof form> = {};
+    if (!form.fullName.trim()) (e as Record<string, string>).fullName = "Full name is required";
+    if (!form.phone.trim()) (e as Record<string, string>).phone = "Phone is required";
+    if (!form.age.trim()) (e as Record<string, string>).age = "Age is required";
+    else if (Number(form.age) < 1 || Number(form.age) > 120)
+      (e as Record<string, string>).age = "Enter a valid age";
+    if (!form.condition.trim())
+      (e as Record<string, string>).condition = "Please describe your reason for visit";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setPatientInfo({ ...form, gender });
+    router.push("/book-appointment/step-4");
+  };
+
+  const inputCls = (field: string) =>
+    `w-full h-12 px-4 rounded-xl border ${
+      (errors as Record<string, string>)[field] ? "border-error" : "border-outline-variant"
+    } bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
@@ -23,54 +76,35 @@ export default function BookingStep3Content() {
             </p>
           </header>
 
-          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); router.push("/book-appointment/step-4"); }}>
-            {/* Name + Phone */}
+          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">person</span>
-                  Full Name
+                  <span className="material-symbols-outlined text-[18px]">person</span>Full Name
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Johnathan Doe"
-                  required
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                />
+                <input type="text" value={form.fullName} onChange={(e) => set("fullName", e.target.value)}
+                  placeholder="e.g. Ahmed Khan" required className={inputCls("fullName")} />
+                {(errors as Record<string, string>).fullName && <p className="text-caption text-error">{(errors as Record<string, string>).fullName}</p>}
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">phone</span>
-                  Phone Number
+                  <span className="material-symbols-outlined text-[18px]">phone</span>Phone Number
                 </label>
-                <input
-                  type="tel"
-                  placeholder="+92 300 0000000"
-                  required
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                />
+                <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
+                  placeholder="+92 300 0000000" required className={inputCls("phone")} />
+                {(errors as Record<string, string>).phone && <p className="text-caption text-error">{(errors as Record<string, string>).phone}</p>}
               </div>
             </div>
 
-            {/* Gender + Age + CNIC */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">wc</span>
-                  Gender
+                  <span className="material-symbols-outlined text-[18px]">wc</span>Gender
                 </label>
-                <div className="flex bg-surface-container-low rounded-xl p-1 border border-outline-variant">
+                <div className="flex bg-surface-container-low rounded-xl p-1 border border-outline-variant h-12">
                   {(["Male", "Female", "Other"] as const).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setGender(g)}
-                      className={`flex-1 py-2 text-center rounded-lg text-[14px] font-semibold transition-all ${
-                        gender === g
-                          ? "bg-white shadow-sm text-primary"
-                          : "text-on-surface-variant hover:bg-surface-container-high"
-                      }`}
-                    >
+                    <button key={g} type="button" onClick={() => setGender(g)}
+                      className={`flex-1 py-2 text-center rounded-lg text-[14px] font-semibold transition-all ${gender === g ? "bg-white shadow-sm text-primary" : "text-on-surface-variant hover:bg-surface-container-high"}`}>
                       {g}
                     </button>
                   ))}
@@ -78,124 +112,87 @@ export default function BookingStep3Content() {
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">cake</span>
-                  Age
+                  <span className="material-symbols-outlined text-[18px]">cake</span>Age
                 </label>
-                <input
-                  type="number"
-                  placeholder="24"
-                  required
-                  min={1}
-                  max={120}
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                />
+                <input type="number" value={form.age} onChange={(e) => set("age", e.target.value)}
+                  placeholder="24" min={1} max={120} className={inputCls("age")} />
+                {(errors as Record<string, string>).age && <p className="text-caption text-error">{(errors as Record<string, string>).age}</p>}
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">badge</span>
-                  CNIC (Optional)
+                  <span className="material-symbols-outlined text-[18px]">badge</span>CNIC (Optional)
                 </label>
-                <input
-                  type="text"
-                  placeholder="00000-0000000-0"
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                />
+                <input type="text" value={form.cnic} onChange={(e) => set("cnic", e.target.value)}
+                  placeholder="00000-0000000-0" className={inputCls("cnic")} />
               </div>
             </div>
 
-            {/* Email + City */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">mail</span>
-                  Email Address (Optional)
+                  <span className="material-symbols-outlined text-[18px]">mail</span>Email (Optional)
                 </label>
-                <input
-                  type="email"
-                  placeholder="john@example.com"
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                />
+                <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
+                  placeholder="example@email.com" className={inputCls("email")} />
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">location_on</span>
-                  City
+                  <span className="material-symbols-outlined text-[18px]">location_on</span>City
                 </label>
-                <select className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none">
+                <select value={form.city} onChange={(e) => set("city", e.target.value)}
+                  className={inputCls("city")}>
                   {cities.map((c) => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
 
-            {/* Existing patient */}
             <div className="space-y-4 pt-2">
               <label className="text-[14px] font-semibold text-on-surface-variant block">
                 Have you visited this clinic before?
               </label>
               <div className="flex gap-8">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="existing"
-                    checked={isExisting}
-                    onChange={() => setIsExisting(true)}
-                    className="w-5 h-5 text-primary border-outline-variant focus:ring-primary/20"
-                  />
-                  <span className="text-body-md text-on-surface">Yes, I am an existing patient</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="existing"
-                    checked={!isExisting}
-                    onChange={() => setIsExisting(false)}
-                    className="w-5 h-5 text-primary border-outline-variant focus:ring-primary/20"
-                  />
-                  <span className="text-body-md text-on-surface">No, this is my first visit</span>
-                </label>
+                {[true, false].map((val) => (
+                  <label key={String(val)} className="flex items-center gap-3 cursor-pointer">
+                    <input type="radio" name="existing" checked={form.isExisting === val}
+                      onChange={() => set("isExisting", val)}
+                      className="w-5 h-5 text-primary border-outline-variant focus:ring-primary/20" />
+                    <span className="text-body-md text-on-surface">
+                      {val ? "Yes, I am an existing patient" : "No, this is my first visit"}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
 
-            {/* Medical Condition + Notes */}
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">medical_services</span>
                   Medical Condition / Reason for Visit
                 </label>
-                <textarea
-                  rows={3}
+                <textarea rows={3} value={form.condition} onChange={(e) => set("condition", e.target.value)}
                   placeholder="Briefly describe your symptoms or medical concern..."
-                  className="w-full p-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none"
-                />
+                  className={`w-full p-4 rounded-xl border ${(errors as Record<string, string>).condition ? "border-error" : "border-outline-variant"} bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none`} />
+                {(errors as Record<string, string>).condition && <p className="text-caption text-error">{(errors as Record<string, string>).condition}</p>}
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">sticky_note_2</span>
                   Notes for Doctor (Optional)
                 </label>
-                <textarea
-                  rows={2}
+                <textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)}
                   placeholder="Any specific instructions or additional info..."
-                  className="w-full p-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none"
-                />
+                  className="w-full p-4 rounded-xl border border-outline-variant bg-surface-container-low text-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none" />
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between pt-6 border-t border-outline-variant/30">
-              <button
-                type="button"
-                onClick={() => router.push("/book-appointment/step-2")}
-                className="px-8 py-3 rounded-xl border border-outline-variant text-[14px] font-semibold text-on-surface-variant hover:bg-surface-container-high transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                Back
+              <button type="button" onClick={() => router.push("/book-appointment/step-2")}
+                className="px-8 py-3 rounded-xl border border-outline-variant text-[14px] font-semibold text-on-surface-variant hover:bg-surface-container-high transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span>Back
               </button>
-              <button
-                type="submit"
-                className="px-10 py-3 rounded-xl bg-primary-container text-on-primary text-[14px] font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2"
-              >
+              <button type="submit"
+                className="px-10 py-3 rounded-xl bg-primary text-on-primary text-[14px] font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2">
                 Continue to Review
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
@@ -204,7 +201,7 @@ export default function BookingStep3Content() {
         </section>
       </div>
 
-      {/* Right: Sidebar */}
+      {/* Right: Summary Sidebar */}
       <div className="lg:col-span-4">
         <aside className="sticky top-28 space-y-6">
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
@@ -212,30 +209,26 @@ export default function BookingStep3Content() {
               <h2 className="text-headline-md font-semibold text-primary">Appointment Summary</h2>
             </div>
             <div className="p-6 space-y-6">
-              {/* Doctor */}
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-surface-container-high border-2 border-white shadow-sm">
-                  <Image
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoVXlCiSn2ouB_4dgLdwMjDv6OQX3SbGnGXM_bN5t_InmWUojWtyQuDeQWxbZoJ3vcUfB0QWZVOwGLWf1_9CpELpiDIopDSBE2dkVU8MMp7WFMI27FfYrjewMxGgHKPrnkdkw2cIqhY3xE9nUGYFx3n3jsnkBB_WIVJ5Cg-mz0Nc9KJexfwUUw2_FNPuv6WPte5Ip7M5FXR96puDzBbKB7WH_LT_Lqs6R_B2wqUfCbRTbL9Au3DeTDq34gx7iFHd9HA2XR2A8K_uw"
-                    alt="Dr. Julian Sterling"
-                    width={64}
-                    height={64}
-                    className="w-full h-full object-cover"
-                    unoptimized
-                  />
+                  <Image src={doctor.profile_image} alt={doctor.name} width={64} height={64}
+                    className="w-full h-full object-cover" unoptimized />
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold text-primary">Your Doctor</p>
-                  <h3 className="text-[18px] font-semibold leading-tight text-on-surface">Dr. Julian Sterling</h3>
-                  <p className="text-caption text-on-surface-variant">Cardiology Specialist</p>
+                  <h3 className="text-body-lg font-semibold leading-tight text-on-surface">{doctor.name}</h3>
+                  <p className="text-caption text-on-surface-variant">{doctor.specialization.join(" & ")}</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 {[
-                  { icon: "festival", label: "Clinic", value: "Faisal Hospital" },
-                  { icon: "calendar_today", label: "Date & Time", value: "Jun 30, 2026 at 10:30 AM" },
-                  { icon: "stethoscope", label: "Visit Type", value: "In-Clinic Consultation" },
+                  { icon: "festival", label: "Clinic", value: selectedClinic?.name ?? "—" },
+                  {
+                    icon: "calendar_today", label: "Date & Time",
+                    value: `${formattedDate}${selectedTime ? ` at ${selectedTime}` : ""}`,
+                  },
+                  { icon: "stethoscope", label: "Visit Type", value: visitType === "online" ? "Online Consultation" : "In-Clinic Consultation" },
                 ].map(({ icon, label, value }) => (
                   <div key={label} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary shrink-0">
@@ -250,26 +243,11 @@ export default function BookingStep3Content() {
               </div>
 
               <div className="pt-6 border-t border-outline-variant/30 flex justify-between items-center">
-                <span className="text-[20px] font-semibold text-on-surface">Total Fee</span>
-                <span className="text-[24px] font-bold text-primary">Rs. 2,000</span>
+                <span className="text-body-lg font-semibold text-on-surface">Total Fee</span>
+                <span className="text-headline-md font-bold text-primary">
+                  Rs. {(selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr).toLocaleString()}
+                </span>
               </div>
-            </div>
-            <div className="p-6 bg-surface-container-low/50 flex gap-3">
-              <span className="material-symbols-outlined text-secondary text-[20px]">info</span>
-              <p className="text-caption text-on-surface-variant italic">
-                Secure encryption protects your data. We never share patient records with third parties.
-              </p>
-            </div>
-          </div>
-
-          {/* Support card */}
-          <div className="bg-surface-container-highest/20 rounded-2xl p-6 border border-outline-variant/30 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined">support_agent</span>
-            </div>
-            <div>
-              <p className="text-[14px] font-semibold text-on-surface">Need help?</p>
-              <p className="text-caption text-on-surface-variant">Call (800) Specialist-Support</p>
             </div>
           </div>
         </aside>

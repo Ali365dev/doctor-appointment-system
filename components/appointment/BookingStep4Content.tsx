@@ -3,10 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useBookingStore } from "@/store/bookingStore";
+import { doctor } from "@/lib/data";
 
 export default function BookingStep4Content() {
   const [confirmed, setConfirmed] = useState(false);
   const router = useRouter();
+  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo } = useBookingStore();
+
+  const formattedDate = selectedDate
+    ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      })
+    : "—";
+
+  const fee = selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -30,8 +41,8 @@ export default function BookingStep4Content() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex items-start gap-4">
               <Image
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoVXlCiSn2ouB_4dgLdwMjDv6OQX3SbGnGXM_bN5t_InmWUojWtyQuDeQWxbZoJ3vcUfB0QWZVOwGLWf1_9CpELpiDIopDSBE2dkVU8MMp7WFMI27FfYrjewMxGgHKPrnkdkw2cIqhY3xE9nUGYFx3n3jsnkBB_WIVJ5Cg-mz0Nc9KJexfwUUw2_FNPuv6WPte5Ip7M5FXR96puDzBbKB7WH_LT_Lqs6R_B2wqUfCbRTbL9Au3DeTDq34gx7iFHd9HA2XR2A8K_uw"
-                alt="Dr. Julian Sterling"
+                src={doctor.profile_image}
+                alt={doctor.name}
                 width={64}
                 height={64}
                 className="w-16 h-16 rounded-full object-cover border-2 border-surface-container shrink-0"
@@ -39,25 +50,36 @@ export default function BookingStep4Content() {
               />
               <div>
                 <p className="text-caption text-outline uppercase tracking-wider">Medical Specialist</p>
-                <p className="text-body-lg font-bold text-on-surface">Dr. Julian Sterling</p>
-                <p className="text-body-md text-on-surface-variant">Consultant Cardiologist</p>
+                <p className="text-body-lg font-bold text-on-surface">{doctor.name}</p>
+                <p className="text-body-md text-on-surface-variant">{doctor.specialization.join(" & ")}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-caption text-outline uppercase tracking-wider">Date &amp; Time</p>
-                <p className="text-body-md font-semibold text-on-surface">Jun 30, 2026</p>
-                <p className="text-body-md text-on-surface-variant">10:30 AM PKT</p>
+                <p className="text-body-md font-semibold text-on-surface">{formattedDate}</p>
+                <p className="text-body-md text-on-surface-variant">{selectedTime ?? "—"}</p>
               </div>
               <div>
                 <p className="text-caption text-outline uppercase tracking-wider">Visit Type</p>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary mt-1">
-                  <span className="material-symbols-outlined text-sm">local_hospital</span>
-                  <span className="text-caption font-bold">In-Clinic</span>
+                  <span className="material-symbols-outlined text-sm">
+                    {visitType === "online" ? "videocam" : "local_hospital"}
+                  </span>
+                  <span className="text-caption font-bold">
+                    {visitType === "online" ? "Online" : "In-Clinic"}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
+          {selectedClinic && (
+            <div className="mt-6 pt-4 border-t border-outline-variant/20 flex items-center gap-2 text-on-surface-variant text-body-md">
+              <span className="material-symbols-outlined text-primary">location_on</span>
+              <span>{selectedClinic.name}</span>
+              {selectedClinic.address && <span>— {selectedClinic.address}</span>}
+            </div>
+          )}
         </section>
 
         {/* Patient Info Card */}
@@ -76,10 +98,10 @@ export default function BookingStep4Content() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { label: "Full Name", value: "Jonathan Doe" },
-              { label: "Phone", value: "+92 300 0000000" },
-              { label: "Age", value: "34 years" },
-              { label: "Gender", value: "Male" },
+              { label: "Full Name", value: patientInfo.fullName || "—" },
+              { label: "Phone", value: patientInfo.phone || "—" },
+              { label: "Age", value: patientInfo.age ? `${patientInfo.age} years` : "—" },
+              { label: "Gender", value: patientInfo.gender },
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="text-caption text-outline uppercase tracking-wider">{label}</p>
@@ -87,6 +109,12 @@ export default function BookingStep4Content() {
               </div>
             ))}
           </div>
+          {patientInfo.condition && (
+            <div className="mt-6 pt-4 border-t border-outline-variant/20">
+              <p className="text-caption text-outline uppercase tracking-wider mb-1">Reason for Visit</p>
+              <p className="text-body-md text-on-surface-variant">{patientInfo.condition}</p>
+            </div>
+          )}
         </section>
 
         {/* Confirmation checkbox */}
@@ -99,9 +127,8 @@ export default function BookingStep4Content() {
             className="mt-1 w-5 h-5 text-primary border-outline-variant rounded focus:ring-primary/20 cursor-pointer"
           />
           <label htmlFor="confirm-check" className="text-body-md text-on-surface-variant cursor-pointer">
-            I confirm that all information provided is correct and I have read the{" "}
-            <a href="#" className="text-primary hover:underline">Clinical Guidelines</a>{" "}
-            for this specialist consultation.
+            I confirm that all information provided is correct and I agree to the consultation
+            terms for {doctor.name}.
           </label>
         </div>
       </div>
@@ -117,7 +144,7 @@ export default function BookingStep4Content() {
           <div className="p-6 space-y-4">
             <div className="flex justify-between items-center text-body-md">
               <span className="text-on-surface-variant">Specialist Consultation Fee</span>
-              <span className="font-semibold text-on-surface">Rs. 2,000</span>
+              <span className="font-semibold text-on-surface">Rs. {fee.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center text-body-md">
               <span className="text-on-surface-variant">Booking Service Fee</span>
@@ -125,7 +152,7 @@ export default function BookingStep4Content() {
             </div>
             <div className="pt-4 border-t border-outline-variant/20 flex justify-between items-center">
               <span className="font-bold text-body-lg">Total Amount</span>
-              <span className="font-bold text-headline-md text-primary">Rs. 2,000</span>
+              <span className="font-bold text-headline-md text-primary">Rs. {fee.toLocaleString()}</span>
             </div>
             <div className="pt-6">
               <button
@@ -138,9 +165,7 @@ export default function BookingStep4Content() {
                 Proceed to Payment
                 <span className="material-symbols-outlined">arrow_forward</span>
               </button>
-              <p className="text-caption text-outline text-center mt-4">
-                Secure encrypted transaction
-              </p>
+              <p className="text-caption text-outline text-center mt-4">Secure encrypted transaction</p>
             </div>
           </div>
           <div className="bg-surface-container-low p-4 m-2 rounded-lg border border-outline-variant/10">
@@ -153,11 +178,15 @@ export default function BookingStep4Content() {
           </div>
         </div>
 
-        {/* Support */}
         <div className="mt-6 p-6 rounded-xl border border-dashed border-outline-variant text-center">
           <p className="text-caption text-outline">Need assistance with your booking?</p>
-          <a href="#" className="inline-block mt-2 text-[14px] font-semibold text-primary hover:underline">
-            Contact Patient Concierge
+          <a
+            href={doctor.contact.whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 text-[14px] font-semibold text-primary hover:underline"
+          >
+            Contact via WhatsApp
           </a>
         </div>
       </aside>

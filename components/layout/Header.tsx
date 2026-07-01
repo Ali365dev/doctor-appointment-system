@@ -10,14 +10,8 @@ export default function Header() {
     <header className="fixed top-0 left-0 w-full z-1030 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm">
       <div className="max-w-[1280px] mx-auto flex justify-between items-center px-gutter py-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-xs">
-          <span
-            className="material-symbols-outlined text-primary text-3xl"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            medical_services
-          </span>
-          <span className="text-headline-md font-bold text-primary">Dr. Specialist</span>
+        <Link href="/" className="flex items-center">
+          <img src="/dr_zaid_gul_logo_navbar.svg" alt="Dr. Zaid Gul" className="h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}

@@ -16,8 +16,7 @@ export default function PatientSidebar() {
   return (
     <aside className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 py-md px-sm border-r border-outline-variant/30 bg-surface z-40">
       <div className="mb-lg px-xs">
-        <h1 className="text-headline-md font-bold text-primary">CarePlus</h1>
-        <p className="text-label-md text-on-surface-variant/70 uppercase tracking-widest mt-1">Patient Portal</p>
+        <img src="/dr_zaid_gul_logo.svg" alt="Dr. Zaid Gul" className="h-14 w-auto" />
       </div>
 
       <nav className="flex-1 space-y-1">

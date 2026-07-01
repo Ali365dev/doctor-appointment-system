@@ -1,0 +1,36 @@
+<svg viewBox="0 0 600 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#155E63"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Emblem: circle with abstract GI/liver leaf-drop motif -->
+  <g transform="translate(70,120)">
+    <circle cx="0" cy="0" r="58" fill="none" stroke="url(#tealGrad)" stroke-width="3"/>
+
+    <!-- Stylized organ/leaf shape suggesting digestive & liver care -->
+    <path d="M -22 -30
+             C -40 -20, -40 20, -18 34
+             C 2 46, 30 36, 34 12
+             C 37 -8, 22 -12, 14 -26
+             C 8 -36, -6 -38, -22 -30 Z"
+          fill="url(#tealGrad)" opacity="0.92"/>
+
+    <!-- Winding line representing GI tract -->
+    <path d="M -24 8 C -10 -4, 4 16, 20 4 C 30 -3, 26 -14, 14 -14"
+          fill="none" stroke="#F4F1EA" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- small dot accent (like a droplet / cell) -->
+    <circle cx="20" cy="4" r="4.2" fill="#F4F1EA"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g font-family="Georgia, 'Times New Roman', serif">
+    <text x="150" y="108" font-size="40" fill="#1A1A1A" font-weight="600" letter-spacing="0.5">Dr. Zaid Gul</text>
+    <text x="150" y="140" font-size="17" fill="#0F766E" font-family="Helvetica, Arial, sans-serif" letter-spacing="2.5">GASTROENTEROLOGIST &amp; HEPATOLOGIST</text>
+    <line x1="150" y1="152" x2="470" y2="152" stroke="#C9A24B" stroke-width="1.5"/>
+    <text x="150" y="172" font-size="13" fill="#555555" font-family="Helvetica, Arial, sans-serif" letter-spacing="1.5">MBBS &#8226; MD (GASTROENTEROLOGY) &#8226; MRCP (UK)</text>
+  </g>
+</svg>

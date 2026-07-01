@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { useBookingStore } from "@/store/bookingStore";
+import { doctor } from "@/lib/data";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -10,62 +11,79 @@ const MONTHS = [
   "July","August","September","October","November","December",
 ];
 
-const TIME_SLOTS = [
-  {
-    key: "morning",
-    label: "Morning (9:00 AM - 12:00 PM)",
-    icon: "wb_sunny",
-    slots: [
-      { time: "09:00 AM", available: true },
-      { time: "09:45 AM", available: true },
-      { time: "10:30 AM", available: true },
-      { time: "11:15 AM", available: true },
-    ],
-  },
-  {
-    key: "afternoon",
-    label: "Afternoon (1:00 PM - 4:00 PM)",
-    icon: "light_mode",
-    slots: [
-      { time: "01:00 PM", available: true },
-      { time: "01:45 PM", available: true },
-      { time: "02:30 PM", available: true },
-      { time: "03:15 PM", available: true },
-    ],
-  },
-  {
-    key: "evening",
-    label: "Evening (5:00 PM - 8:00 PM)",
-    icon: "nights_stay",
-    slots: [
-      { time: "05:00 PM", available: true },
-      { time: "05:45 PM", available: false },
-      { time: "06:30 PM", available: true },
-      { time: "07:15 PM", available: true },
-    ],
-  },
-];
-
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
-
 function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
+}
+
+function getAvailableDaysForClinic(clinicIndex: number): Set<number> {
+  const loc = doctor.practice_locations[clinicIndex];
+  if (!loc) return new Set([1, 2, 3, 4, 5]);
+  const timings = loc.timings as Record<string, string>;
+  const dayMap: Record<string, number> = {
+    Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+    Thursday: 4, Friday: 5, Saturday: 6,
+  };
+  return new Set(Object.keys(timings).map((d) => dayMap[d]).filter((d) => d !== undefined));
+}
+
+function buildTimeSlots(clinicIndex: number): { time: string; available: boolean }[] {
+  const loc = doctor.practice_locations[clinicIndex];
+  if (!loc) return [];
+  const timings = loc.timings as Record<string, string>;
+  const firstTiming = Object.values(timings)[0];
+  if (!firstTiming) return [];
+
+  const [startStr, endStr] = firstTiming.split(" - ");
+  const toMinutes = (t: string) => {
+    const [timePart, period] = t.trim().split(" ");
+    const [h, m] = timePart.split(":").map(Number);
+    let hours = h % 12;
+    if (period === "PM") hours += 12;
+    return hours * 60 + m;
+  };
+
+  const startMin = toMinutes(startStr);
+  const endMin = toMinutes(endStr);
+  const slots: { time: string; available: boolean }[] = [];
+
+  for (let min = startMin; min < endMin; min += 30) {
+    const h24 = Math.floor(min / 60);
+    const m = min % 60;
+    const period = h24 >= 12 ? "PM" : "AM";
+    const h12 = h24 % 12 || 12;
+    slots.push({
+      time: `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`,
+      available: true,
+    });
+  }
+  return slots;
 }
 
 export default function BookingStep2Content() {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
-  const [selectedTime, setSelectedTime] = useState<string | null>("10:30 AM");
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const router = useRouter();
+
+  const { selectedClinic, setDate, setTime } = useBookingStore();
+  const clinicIndex = doctor.practice_locations.findIndex(
+    (l) => l.name === selectedClinic?.name
+  );
+  const availableDayNums = getAvailableDaysForClinic(clinicIndex >= 0 ? clinicIndex : 0);
+  const timeSlots = buildTimeSlots(clinicIndex >= 0 ? clinicIndex : 0);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
 
   const goToPrevMonth = () => {
+    const now = new Date();
+    if (currentYear === now.getFullYear() && currentMonth === now.getMonth()) return;
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear((y) => y - 1); }
     else setCurrentMonth((m) => m - 1);
     setSelectedDay(null);
@@ -80,7 +98,7 @@ export default function BookingStep2Content() {
   const isDisabled = (day: number) => {
     const d = new Date(currentYear, currentMonth, day);
     const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return d < todayMidnight || d.getDay() === 0 || d.getDay() === 6;
+    return d < todayMidnight || !availableDayNums.has(d.getDay());
   };
 
   const isToday = (day: number) =>
@@ -99,6 +117,19 @@ export default function BookingStep2Content() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  const handleContinue = () => {
+    if (!selectedDay) { setError("Please select a date."); return; }
+    if (!selectedTime) { setError("Please select a time slot."); return; }
+    const isoDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    setDate(isoDate);
+    setTime(selectedTime);
+    router.push("/book-appointment/step-3");
+  };
+
+  const clinicTimingNote = selectedClinic
+    ? `Available days based on ${selectedClinic.name} timings`
+    : "Select a clinic in step 1 to see available days";
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* Left column */}
@@ -106,7 +137,7 @@ export default function BookingStep2Content() {
         <div>
           <h1 className="text-headline-lg font-bold text-on-surface mb-2">Select Date &amp; Time</h1>
           <p className="text-body-md text-on-surface-variant">
-            Please choose your preferred appointment slot with Dr. Zaid Gul.
+            {clinicTimingNote}
           </p>
         </div>
 
@@ -119,7 +150,7 @@ export default function BookingStep2Content() {
             <div className="flex gap-2">
               <button
                 onClick={goToPrevMonth}
-                className="p-2 rounded-lg hover:bg-surface-container-low transition-colors border border-outline-variant/20"
+                className="p-2 rounded-lg hover:bg-surface-container-low transition-colors border border-outline-variant/20 disabled:opacity-30"
                 aria-label="Previous month"
               >
                 <span className="material-symbols-outlined">chevron_left</span>
@@ -134,12 +165,10 @@ export default function BookingStep2Content() {
             </div>
           </div>
 
-          {/* Day-of-week headers */}
           <div className="grid grid-cols-7 text-center text-[14px] font-semibold text-outline mb-4">
             {DAYS.map((d) => <div key={d} className="py-2">{d}</div>)}
           </div>
 
-          {/* Day grid */}
           <div className="grid grid-cols-7 text-center text-body-md">
             {cells.map((day, idx) => {
               if (!day) return <div key={`e-${idx}`} className="py-4" />;
@@ -149,16 +178,14 @@ export default function BookingStep2Content() {
 
               if (disabled) {
                 return (
-                  <div key={day} className="py-4 text-outline/30 cursor-not-allowed">
-                    {day}
-                  </div>
+                  <div key={day} className="py-4 text-outline/30 cursor-not-allowed">{day}</div>
                 );
               }
 
               return (
                 <div key={day} className="py-2 flex items-center justify-center">
                   <button
-                    onClick={() => setSelectedDay(day)}
+                    onClick={() => { setSelectedDay(day); setError(""); }}
                     className={`w-12 h-12 flex items-center justify-center rounded-xl font-bold transition-all ${
                       selected || todayHighlight
                         ? "bg-primary text-on-primary shadow-md ring-4 ring-primary/10"
@@ -174,44 +201,33 @@ export default function BookingStep2Content() {
         </div>
 
         {/* Time Slots */}
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-8 shadow-sm">
-          <h3 className="text-headline-md font-semibold mb-8">Available Time Slots</h3>
-          <div className="space-y-8">
-            {TIME_SLOTS.map((group) => (
-              <div key={group.key}>
-                <div className="flex items-center gap-2 text-outline mb-4">
-                  <span className="material-symbols-outlined text-body-md">{group.icon}</span>
-                  <span className="text-[14px] font-semibold">{group.label}</span>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {group.slots.map((slot) =>
-                    slot.available ? (
-                      <button
-                        key={slot.time}
-                        onClick={() => setSelectedTime(slot.time)}
-                        className={`px-6 py-2.5 rounded-full border text-[14px] font-semibold transition-all active:scale-95 ${
-                          selectedTime === slot.time
-                            ? "bg-primary text-on-primary border-primary shadow-sm"
-                            : "border-outline-variant hover:border-primary hover:text-primary"
-                        }`}
-                      >
-                        {slot.time}
-                      </button>
-                    ) : (
-                      <button
-                        key={slot.time}
-                        disabled
-                        className="px-6 py-2.5 rounded-full border border-outline-variant opacity-50 cursor-not-allowed line-through text-[14px] font-semibold"
-                      >
-                        {slot.time}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-            ))}
+        {timeSlots.length > 0 && (
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-8 shadow-sm">
+            <h3 className="text-headline-md font-semibold mb-4">Available Time Slots</h3>
+            {selectedClinic && (
+              <p className="text-caption text-on-surface-variant mb-6">
+                {Object.entries(selectedClinic.timings ?? {}).map(([d, t]) => `${d}: ${t}`).join(" · ")}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-3">
+              {timeSlots.map((slot) => (
+                <button
+                  key={slot.time}
+                  onClick={() => { setSelectedTime(slot.time); setError(""); }}
+                  className={`px-6 py-2.5 rounded-full border text-[14px] font-semibold transition-all active:scale-95 ${
+                    selectedTime === slot.time
+                      ? "bg-primary text-on-primary border-primary shadow-sm"
+                      : "border-outline-variant hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {slot.time}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {error && <p className="text-error text-body-md font-semibold">{error}</p>}
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
@@ -223,7 +239,7 @@ export default function BookingStep2Content() {
             Previous
           </button>
           <button
-            onClick={() => router.push("/book-appointment/step-3")}
+            onClick={handleContinue}
             className="flex items-center gap-2 px-10 py-3 rounded-xl bg-primary text-on-primary hover:opacity-90 transition-all active:scale-95 text-[14px] font-semibold shadow-md shadow-primary/20"
           >
             Continue to Details
@@ -232,44 +248,30 @@ export default function BookingStep2Content() {
         </div>
       </div>
 
-      {/* Sidebar */}
+      {/* Summary Sidebar */}
       <aside className="w-full lg:w-1/3 sticky top-32">
         <div className="bg-surface-container-highest/50 backdrop-blur-md rounded-xl border border-outline-variant/40 p-8">
           <h3 className="text-headline-md font-semibold mb-6">Appointment Summary</h3>
           <div className="space-y-6">
-            {/* Provider */}
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-container-high shrink-0">
-                <Image
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoVXlCiSn2ouB_4dgLdwMjDv6OQX3SbGnGXM_bN5t_InmWUojWtyQuDeQWxbZoJ3vcUfB0QWZVOwGLWf1_9CpELpiDIopDSBE2dkVU8MMp7WFMI27FfYrjewMxGgHKPrnkdkw2cIqhY3xE9nUGYFx3n3jsnkBB_WIVJ5Cg-mz0Nc9KJexfwUUw2_FNPuv6WPte5Ip7M5FXR96puDzBbKB7WH_LT_Lqs6R_B2wqUfCbRTbL9Au3DeTDq34gx7iFHd9HA2XR2A8K_uw"
-                  alt="Dr. Julian Sterling"
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-cover"
-                  unoptimized
-                />
-              </div>
-              <div>
-                <p className="text-[14px] font-semibold text-primary mb-0.5">Specialist</p>
-                <p className="text-[18px] font-semibold leading-tight">Dr. Julian Sterling</p>
-                <p className="text-caption text-on-surface-variant">Cardiology Specialist</p>
-              </div>
-            </div>
-
-            <hr className="border-outline-variant/30" />
-
-            {/* Clinic */}
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
                 <span className="material-symbols-outlined">medical_services</span>
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-on-surface mb-0.5">Faisal Hospital</p>
-                <p className="text-caption text-on-surface-variant">545 Lower Canal Road East, Faisalabad</p>
+                <p className="text-[14px] font-semibold text-on-surface mb-0.5">
+                  {selectedClinic?.name ?? "No clinic selected"}
+                </p>
+                {selectedClinic?.address && (
+                  <p className="text-caption text-on-surface-variant">{selectedClinic.address}</p>
+                )}
+                {selectedClinic && (
+                  <p className="text-caption text-primary font-semibold mt-xs">
+                    Rs. {selectedClinic.fee_pkr.toLocaleString()}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Date/Time */}
             <div className="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/20 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -278,9 +280,6 @@ export default function BookingStep2Content() {
                     {formattedDate ?? "Select a date"}
                   </span>
                 </div>
-                <span className="material-symbols-outlined text-outline-variant cursor-pointer hover:text-primary transition-colors">
-                  edit
-                </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -289,24 +288,13 @@ export default function BookingStep2Content() {
                     {selectedTime ?? "Select a time"}
                   </span>
                 </div>
-                <span className="material-symbols-outlined text-outline-variant cursor-pointer hover:text-primary transition-colors">
-                  edit
-                </span>
               </div>
-            </div>
-
-            <hr className="border-outline-variant/30" />
-
-            <div className="flex justify-between items-center text-[14px] font-semibold">
-              <span className="text-on-surface-variant">Initial Consultation</span>
-              <span className="text-on-surface">Rs. 2,000</span>
             </div>
 
             <div className="bg-primary/5 p-4 rounded-lg flex gap-3">
               <span className="material-symbols-outlined text-primary text-[20px]">info</span>
               <p className="text-caption text-primary/80">
-                Confirming this slot reserves the doctor&apos;s time specifically for your case.
-                Cancellation fees apply within 24 hours.
+                Days shown are based on {selectedClinic?.name ?? "the selected clinic"}&apos;s schedule.
               </p>
             </div>
           </div>
