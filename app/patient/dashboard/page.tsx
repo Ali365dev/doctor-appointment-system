@@ -67,7 +67,7 @@ export default function PatientDashboardPage() {
       </section>
 
       {/* Summary Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+      <section className="grid my-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
         {summaryCards.map((card) => (
           <div
             key={card.label}

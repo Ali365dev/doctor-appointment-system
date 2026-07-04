@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep1Form from "@/components/appointment/BookingStep1Form";
+import { doctor } from "@/lib/data";
 
 export const metadata = {
-  title: "Book Appointment – Step 1 | Dr. Specialist",
+  title: `Book Appointment – Step 1 | ${doctor.name}`,
   description: "Select your appointment type and preferred visit method.",
 };
 
@@ -16,11 +18,13 @@ export default function BookAppointmentStep1() {
           Select Appointment &amp; Visit Type
         </h1>
         <p className="text-body-lg text-on-surface-variant mt-2">
-          Begin your booking by choosing your preferred consultation method with Dr. Sterling.
+          Begin your booking by choosing your preferred consultation method with {doctor.name}.
         </p>
       </header>
 
-      <BookingStep1Form />
+      <Suspense>
+        <BookingStep1Form />
+      </Suspense>
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
 
@@ -40,21 +41,28 @@ export default function BookingStep3Content() {
   };
 
   const validate = () => {
-    const e: Partial<typeof form> = {};
-    if (!form.fullName.trim()) (e as Record<string, string>).fullName = "Full name is required";
-    if (!form.phone.trim()) (e as Record<string, string>).phone = "Phone is required";
-    if (!form.age.trim()) (e as Record<string, string>).age = "Age is required";
-    else if (Number(form.age) < 1 || Number(form.age) > 120)
-      (e as Record<string, string>).age = "Enter a valid age";
-    if (!form.condition.trim())
-      (e as Record<string, string>).condition = "Please describe your reason for visit";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const e: Record<string, string> = {};
+    if (!form.fullName.trim()) e.fullName = "Full name is required";
+    if (!form.phone.trim()) e.phone = "Phone number is required";
+    else if (!/^[0-9+\-\s()]{7,15}$/.test(form.phone.trim())) e.phone = "Enter a valid phone number";
+    if (!form.age.trim()) e.age = "Age is required";
+    else if (Number(form.age) < 1 || Number(form.age) > 120) e.age = "Enter a valid age";
+    if (!form.city || form.city === cities[0]) e.city = "Please select your city";
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      e.email = "Enter a valid email address";
+    setErrors(e as Partial<typeof form>);
+    return e;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    const validationErrors = validate();
+    const errorFields = Object.keys(validationErrors);
+    if (errorFields.length > 0) {
+      toast.error(validationErrors[errorFields[0]]);
+      document.querySelector(`[name="${errorFields[0]}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setPatientInfo({ ...form, gender });
     router.push("/book-appointment/step-4");
   };
@@ -81,17 +89,19 @@ export default function BookingStep3Content() {
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">person</span>Full Name
+                  <span className="text-error">*</span>
                 </label>
-                <input type="text" value={form.fullName} onChange={(e) => set("fullName", e.target.value)}
-                  placeholder="e.g. Ahmed Khan" required className={inputCls("fullName")} />
+                <input type="text" name="fullName" value={form.fullName} onChange={(e) => set("fullName", e.target.value)}
+                  placeholder="e.g. Ahmed Khan" required aria-invalid={!!(errors as Record<string, string>).fullName} className={inputCls("fullName")} />
                 {(errors as Record<string, string>).fullName && <p className="text-caption text-error">{(errors as Record<string, string>).fullName}</p>}
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">phone</span>Phone Number
+                  <span className="text-error">*</span>
                 </label>
-                <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+92 300 0000000" required className={inputCls("phone")} />
+                <input type="tel" name="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)}
+                  placeholder="+92 300 0000000" required aria-invalid={!!(errors as Record<string, string>).phone} className={inputCls("phone")} />
                 {(errors as Record<string, string>).phone && <p className="text-caption text-error">{(errors as Record<string, string>).phone}</p>}
               </div>
             </div>
@@ -113,9 +123,10 @@ export default function BookingStep3Content() {
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">cake</span>Age
+                  <span className="text-error">*</span>
                 </label>
-                <input type="number" value={form.age} onChange={(e) => set("age", e.target.value)}
-                  placeholder="24" min={1} max={120} className={inputCls("age")} />
+                <input type="number" name="age" value={form.age} onChange={(e) => set("age", e.target.value)}
+                  placeholder="24" min={1} max={120} required aria-invalid={!!(errors as Record<string, string>).age} className={inputCls("age")} />
                 {(errors as Record<string, string>).age && <p className="text-caption text-error">{(errors as Record<string, string>).age}</p>}
               </div>
               <div className="space-y-2">
@@ -132,17 +143,20 @@ export default function BookingStep3Content() {
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">mail</span>Email (Optional)
                 </label>
-                <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
-                  placeholder="example@email.com" className={inputCls("email")} />
+                <input type="email" name="email" value={form.email} onChange={(e) => set("email", e.target.value)}
+                  placeholder="example@email.com" aria-invalid={!!(errors as Record<string, string>).email} className={inputCls("email")} />
+                {(errors as Record<string, string>).email && <p className="text-caption text-error">{(errors as Record<string, string>).email}</p>}
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">location_on</span>City
+                  <span className="text-error">*</span>
                 </label>
-                <select value={form.city} onChange={(e) => set("city", e.target.value)}
-                  className={inputCls("city")}>
+                <select name="city" value={form.city} onChange={(e) => set("city", e.target.value)}
+                  required aria-invalid={!!(errors as Record<string, string>).city} className={inputCls("city")}>
                   {cities.map((c) => <option key={c}>{c}</option>)}
                 </select>
+                {(errors as Record<string, string>).city && <p className="text-caption text-error">{(errors as Record<string, string>).city}</p>}
               </div>
             </div>
 
@@ -169,6 +183,7 @@ export default function BookingStep3Content() {
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
                   <span className="material-symbols-outlined text-[18px]">medical_services</span>
                   Medical Condition / Reason for Visit
+                  <span className="normal-case tracking-normal font-normal text-outline text-[12px]">(Optional)</span>
                 </label>
                 <textarea rows={3} value={form.condition} onChange={(e) => set("condition", e.target.value)}
                   placeholder="Briefly describe your symptoms or medical concern..."

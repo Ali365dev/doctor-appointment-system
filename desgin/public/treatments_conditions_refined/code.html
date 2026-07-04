@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Treatments &amp; Conditions | Dr. Zaid Gul</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#ffede6",
+                        "secondary-container": "#39b8fd",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#faf8ff",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-tertiary": "#ffffff",
+                        "background": "#faf8ff",
+                        "on-error-container": "#93000a",
+                        "primary": "#004ac6",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-secondary-container": "#004666",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "surface-container-high": "#e7e7f3",
+                        "surface-container": "#ededf9",
+                        "inverse-surface": "#2e3039",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "secondary": "#006591",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container-low": "#f3f3fe",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-background": "#191b23",
+                        "on-primary-container": "#eeefff",
+                        "tertiary": "#943700",
+                        "inverse-primary": "#b4c5ff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#001e2f",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#bc4800",
+                        "surface-container-highest": "#e1e2ed",
+                        "outline-variant": "#c3c6d7",
+                        "outline": "#737686",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ba1a1a",
+                        "primary-container": "#2563eb",
+                        "surface-dim": "#d9d9e5",
+                        "on-surface": "#191b23",
+                        "secondary-fixed-dim": "#89ceff",
+                        "surface": "#faf8ff",
+                        "surface-variant": "#e1e2ed",
+                        "secondary-fixed": "#c9e6ff",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "surface-tint": "#0053db",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "0.5rem",
+                        "gutter": "24px",
+                        "sm": "1rem",
+                        "lg": "2.5rem",
+                        "base": "4px",
+                        "container-max": "1280px",
+                        "xl": "4rem",
+                        "md": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "caption": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-nav { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); }
+        .hero-gradient { background: radial-gradient(circle at top right, #dbe1ff 0%, #faf8ff 50%); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopAppBar -->
+<header class="docked full-width top-0 sticky z-50 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm">
+<div class="flex justify-between items-center w-full px-lg py-md max-w-container-max mx-auto">
+<div class="text-headline-md font-headline-md font-bold text-primary">Dr. Zaid Gul</div>
+<nav class="hidden md:flex items-center gap-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">About</a>
+<a class="text-primary font-semibold border-b-2 border-primary font-body-md text-body-md" href="#">Services</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Locations</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Articles</a>
+</nav>
+<button class="bg-primary-container text-on-primary font-label-md text-label-md px-md py-xs rounded-lg active:opacity-80 active:scale-95 transition-all">
+                Book Appointment
+            </button>
+</div>
+</header>
+<main class="min-h-screen">
+<!-- Hero Section -->
+<section class="hero-gradient pt-xl pb-lg px-lg">
+<div class="max-w-container-max mx-auto text-center">
+<span class="inline-block bg-primary/10 text-primary px-sm py-xs rounded-full font-label-md text-label-md mb-md">Expert Gastrointestinal Care</span>
+<h1 class="font-display text-display mb-md text-on-background">Treatments &amp; Conditions</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                    Advanced clinical solutions for digestive health, specializing in minimally invasive procedures and personalized therapeutic plans.
+                </p>
+</div>
+</section>
+<!-- Search and Filter -->
+<section class="px-lg pb-xl">
+<div class="max-w-container-max mx-auto">
+<div class="relative max-w-xl mx-auto -mt-8">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-xl pr-md py-md bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md" id="conditionSearch" placeholder="Search treatments, conditions, or services..." type="text"/>
+</div>
+</div>
+</section>
+<!-- Main Content Canvas -->
+<section class="px-lg pb-xl">
+<div class="max-w-container-max mx-auto">
+<!-- Specialized Services Section (Bento Grid) -->
+<div class="mb-xl">
+<div class="flex items-center gap-xs mb-lg">
+<span class="material-symbols-outlined text-primary">biotech</span>
+<h2 class="font-headline-lg text-headline-lg">Diagnostic &amp; Procedural Services</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Endoscopy -->
+<div class="md:col-span-2 group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant card-shadow hover:border-primary transition-all cursor-pointer relative overflow-hidden">
+<div class="relative z-10">
+<div class="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mb-md">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-sm">Upper Endoscopy (EGD)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md">Comprehensive visual examination of the upper digestive system to diagnose issues with the esophagus, stomach, and duodenum.</p>
+<ul class="mt-md space-y-2">
+<li class="flex items-center gap-xs font-body-md text-body-md text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span> Fast recovery</li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span> High-definition imaging</li>
+</ul>
+</div>
+<div class="absolute right-0 bottom-0 w-48 h-48 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[192px]">medical_services</span>
+</div>
+</div>
+<!-- Colonoscopy -->
+<div class="group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant card-shadow hover:border-primary transition-all cursor-pointer">
+<div class="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-md">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-sm">Colonoscopy</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Preventative screenings and detailed examinations for colorectal health and cancer prevention.</p>
+</div>
+<!-- Biopsy -->
+<div class="group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant card-shadow hover:border-primary transition-all cursor-pointer">
+<div class="w-12 h-12 bg-tertiary/10 text-tertiary rounded-lg flex items-center justify-center mb-md">
+<span class="material-symbols-outlined" data-weight="fill">science</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-sm">Biopsy</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Precision tissue sampling and histopathological analysis for definitive diagnosis.</p>
+</div>
+<!-- General Services -->
+<div class="md:col-span-2 bg-primary text-on-primary p-lg rounded-xl card-shadow flex flex-col md:flex-row items-center gap-lg">
+<div class="flex-1">
+<h3 class="font-headline-md text-headline-md mb-sm">Advanced Liver Imaging</h3>
+<p class="font-body-md text-body-md opacity-90 mb-md">Utilizing state-of-the-art non-invasive technology to assess liver health and fibrosis levels without surgical intervention.</p>
+<button class="bg-surface text-primary font-label-md text-label-md px-md py-xs rounded-lg">Learn More</button>
+</div>
+<div class="w-full md:w-1/3 aspect-video bg-on-primary/10 rounded-lg overflow-hidden relative">
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[64px] opacity-40">monitor_heart</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Conditions Section -->
+<div class="mb-xl">
+<div class="flex items-center gap-xs mb-lg">
+<span class="material-symbols-outlined text-primary">healing</span>
+<h2 class="font-headline-lg text-headline-lg">Conditions Treated</h2>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md" id="conditionsGrid">
+<!-- Condition Cards (Dynamically filterable) -->
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">personal_injury</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">Abdominal Pain</h4>
+<p class="font-caption text-caption text-on-surface-variant">Chronic or acute pain management and diagnostics.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">bathroom</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">Acid Peptic Disease</h4>
+<p class="font-caption text-caption text-on-surface-variant">Treatment for ulcers and digestive acidity.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">relax</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">GERD</h4>
+<p class="font-caption text-caption text-on-surface-variant">Specialized care for Gastroesophageal Reflux Disease.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">vital_signs</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">Liver Diseases</h4>
+<p class="font-caption text-caption text-on-surface-variant">Hepatitis, fatty liver, and cirrhosis management.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">stack</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">IBS &amp; IBD</h4>
+<p class="font-caption text-caption text-on-surface-variant">Comprehensive Irritable Bowel Syndrome management.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">health_metrics</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">Gallstones</h4>
+<p class="font-caption text-caption text-on-surface-variant">Diagnosis and therapeutic interventions for biliary health.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">ecg</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">Pancreatitis</h4>
+<p class="font-caption text-caption text-on-surface-variant">Acute and chronic pancreatic care pathways.</p>
+</div>
+<div class="condition-card bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform">warning</span>
+<h4 class="font-headline-md text-headline-md text-[18px] mb-xs">Digestive Bleeding</h4>
+<p class="font-caption text-caption text-on-surface-variant">Emergency and elective diagnostic endoscopies.</p>
+</div>
+</div>
+</div>
+<!-- Call to Action Section -->
+<div class="relative rounded-2xl overflow-hidden mb-xl">
+<div class="bg-cover bg-center absolute inset-0" data-alt="A clean, sterile modern medical office with high-tech equipment, soft professional lighting, and a serene atmosphere that emphasizes clinical excellence and patient comfort. The color palette is dominated by professional blues and clean whites." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlS9i9X3D7eSwgbotdQBSy-l6wUCl-D5Q-7Qq_ifyGDm1-MAhI_jOfOJ4eErR6E-ra1M-1nAGDnNtty-XARCorCrNExwQuIywmnpefjYyuNvSgJIGTRYztFsbtUE69IYn4K6nx249SktVrG_RIHjWmdDxmB5F9-aSP5fd8P1C6shZqGTLOyQIbTlm4XQ3yzfhUTh4fpKDbJ8JM49vzlOiDiw_78fHM7EAXsvQOpLJ3uz-9veljTX1OE2VDSO3YD5JD-smDa0BeIuA')"></div>
+<div class="absolute inset-0 bg-primary/80 backdrop-blur-sm"></div>
+<div class="relative z-10 px-lg py-xl text-center">
+<h3 class="font-headline-lg text-headline-lg text-on-primary mb-sm">Ready to Discuss Your Symptoms?</h3>
+<p class="font-body-md text-body-md text-on-primary/90 mb-lg max-w-xl mx-auto">Dr. Zaid Gul provides personalized consultation to ensure you receive the most accurate diagnosis and treatment plan.</p>
+<div class="flex flex-col sm:flex-row gap-md justify-center">
+<button class="bg-surface text-primary px-lg py-md rounded-lg font-label-md text-label-md shadow-lg active:scale-95 transition-transform">Book a Consultation</button>
+<button class="border-2 border-on-primary text-on-primary px-lg py-md rounded-lg font-label-md text-label-md hover:bg-on-primary/10 transition-colors">Contact Clinic</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-inverse-surface border-t border-outline/20">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-xl px-lg py-xl max-w-container-max mx-auto w-full">
+<div class="col-span-1">
+<div class="text-headline-md font-headline-md text-primary-fixed mb-sm">Dr. Zaid Gul</div>
+<p class="font-body-md text-body-md text-surface-variant mb-md">Specialist Gastroenterologist dedicated to providing clinical excellence and empathetic patient care.</p>
+<div class="flex gap-md">
+<a class="text-primary-fixed hover:text-primary-fixed-dim" href="#"><span class="material-symbols-outlined">mail</span></a>
+<a class="text-primary-fixed hover:text-primary-fixed-dim" href="#"><span class="material-symbols-outlined">call</span></a>
+<a class="text-primary-fixed hover:text-primary-fixed-dim" href="#"><span class="material-symbols-outlined">pin_drop</span></a>
+</div>
+</div>
+<div class="col-span-1">
+<h4 class="text-on-primary font-label-md text-label-md mb-md uppercase tracking-wider">Quick Links</h4>
+<div class="flex flex-col gap-sm">
+<a class="font-body-md text-body-md text-surface-variant hover:text-primary-fixed-dim transition-all underline" href="#">Privacy Policy</a>
+<a class="font-body-md text-body-md text-surface-variant hover:text-primary-fixed-dim transition-all underline" href="#">Terms of Service</a>
+<a class="font-body-md text-body-md text-surface-variant hover:text-primary-fixed-dim transition-all underline" href="#">Disclaimer</a>
+</div>
+</div>
+<div class="col-span-1">
+<h4 class="text-on-primary font-label-md text-label-md mb-md uppercase tracking-wider">Registration</h4>
+<p class="font-caption text-caption text-surface-variant">© 2024 Dr. Zaid Gul. All rights reserved. PMDC Registration: 12345-P.</p>
+<div class="mt-lg">
+<p class="font-body-md text-body-md text-surface-variant">Available for consultation at leading medical centers in Lahore and Islamabad.</p>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple Search Interaction
+        const searchInput = document.getElementById('conditionSearch');
+        const conditionCards = document.querySelectorAll('.condition-card');
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            conditionCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    card.style.display = 'block';
+                    card.classList.add('animate-fade-in');
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Hover Micro-interactions
+        conditionCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px)';
+                card.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = 'none';
+            });
+            card.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+    </script>
+</body></html>

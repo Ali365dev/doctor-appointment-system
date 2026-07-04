@@ -280,96 +280,8 @@ export default function HomePage() {
       {/* ── Practice Locations ── */}
       <PracticeLocations />
 
-      {/* ── Conditions Treated ── */}
-      {conditions_treated.length > 0 && (
-        <section id="conditions" className="py-xl px-gutter max-w-[1280px] mx-auto">
-          <div className="text-center mb-xl">
-            <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
-              Conditions Treated
-            </h2>
-            <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
-              Expert diagnosis and management of a wide range of gastrointestinal and liver conditions.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-sm justify-center">
-            {conditions_treated.map((condition) => (
-              <span
-                key={condition}
-                className="px-md py-xs rounded-full border border-primary/20 bg-primary/5 text-primary text-label-md font-medium hover:bg-primary hover:text-on-primary transition-all cursor-default"
-              >
-                {condition}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Treatments Offered ── */}
-      {treatments_offered.length > 0 && (
-        <section id="treatments" className="py-xl px-gutter bg-surface-container-low/50">
-          <div className="max-w-[1280px] mx-auto">
-            <div className="text-center mb-xl">
-              <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
-                Treatments Offered
-              </h2>
-              <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
-                Discounted procedure packages available at our partner hospitals.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-md">
-              {treatments_offered.map((t) => (
-                <div
-                  key={t.name}
-                  className="bg-surface rounded-2xl border border-outline-variant/30 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden flex flex-col"
-                >
-                  {/* Discount Badge */}
-                  <div className="bg-primary px-md py-xs flex justify-between items-center">
-                    <span className="text-on-primary text-caption font-bold uppercase tracking-wider">
-                      {t.discount_percent}% OFF
-                    </span>
-                    <span className="material-symbols-outlined text-on-primary/70 text-[18px]">
-                      local_offer
-                    </span>
-                  </div>
-
-                  <div className="p-md flex flex-col flex-1 gap-sm">
-                    <h3 className="text-label-md font-bold text-on-surface leading-snug">{t.name}</h3>
-
-                    <div className="flex items-center gap-xs text-caption text-on-surface-variant">
-                      <span className="material-symbols-outlined text-[16px]">location_on</span>
-                      <span className="truncate">{t.location}</span>
-                    </div>
-
-                    <div className="mt-auto space-y-xs">
-                      <div className="flex items-baseline gap-sm">
-                        <span className="text-headline-md font-bold text-primary">
-                          Rs. {t.price_pkr.toLocaleString()}
-                        </span>
-                        <span className="text-caption text-on-surface-variant line-through">
-                          Rs. {t.original_price_pkr.toLocaleString()}
-                        </span>
-                      </div>
-
-                      <a
-                        href={doctor.practice_locations.find((l) =>
-                          l.name.includes("Faisal Hospital")
-                        )?.booking_link ?? contact.whatsapp}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-xs bg-primary/10 text-primary border border-primary/20 px-sm py-xs rounded-xl text-label-md font-semibold hover:bg-primary hover:text-on-primary transition-all"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-                        Book Now
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+   
+ 
 
       {/* ── Reviews ── */}
       <ReviewsCarousel />
@@ -394,15 +306,21 @@ export default function HomePage() {
           <div className="relative z-10 flex flex-col sm:flex-row gap-sm w-full md:w-auto">
             <Link
               href="#hero"
-              className="bg-on-primary text-primary px-lg py-sm rounded-xl font-bold text-center hover:bg-on-primary/90 transition-all"
+              className="  bg-on-primary text-primary px-lg py-sm rounded-xl font-bold text-center hover:bg-on-primary/90 transition-all"
             >
               Book Online
+            </Link>
+            <Link
+              href="/book-appointment/step-1?visitType=online"
+              className="bg-on-primary/10 border-2 border-on-primary/40 text-on-primary px-lg py-sm rounded-xl font-bold text-center flex items-center justify-center gap-2 hover:bg-on-primary/20 transition-all"
+            >
+              Video Consultation
             </Link>
             <a
               href={`tel:${helpline}`}
               className="border-2 border-on-primary/30 text-on-primary px-lg py-sm rounded-xl font-bold text-center hover:bg-on-primary/10 transition-all"
             >
-              Call {helpline}
+              Call helpline
             </a>
           </div>
         </div>

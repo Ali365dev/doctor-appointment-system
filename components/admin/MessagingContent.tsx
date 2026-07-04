@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { doctor } from "@/lib/data";
 
 const contacts = [
   {
@@ -104,7 +105,7 @@ export default function MessagingContent() {
             <Image src={patientSrc} alt="Robert" width={32} height={32} className="w-8 h-8 rounded-full object-cover mt-xs" unoptimized />
             <div>
               <div className="bg-surface border border-outline-variant rounded-2xl rounded-tl-none p-md shadow-sm">
-                <p className="text-body-md text-on-surface">Hello Dr. Specialist, I&apos;ve received the MRI results notification. Could you help me understand the findings regarding the L4-L5 disc? I&apos;m still feeling some numbness in my left leg.</p>
+                <p className="text-body-md text-on-surface">Hello {doctor.name}, I&apos;ve received the MRI results notification. Could you help me understand the findings regarding the L4-L5 disc? I&apos;m still feeling some numbness in my left leg.</p>
               </div>
               <span className="text-caption text-on-surface-variant mt-xs ml-xs">10:12 AM</span>
             </div>

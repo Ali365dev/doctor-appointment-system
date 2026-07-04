@@ -1,8 +1,9 @@
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep5Content from "@/components/appointment/BookingStep5Content";
+import { doctor } from "@/lib/data";
 
 export const metadata = {
-  title: "Secure Payment – Step 5 | Dr. Specialist",
+  title: `Secure Payment – Step 5 | ${doctor.name}`,
   description: "Complete your payment to confirm your appointment.",
 };
 

@@ -1,191 +1,328 @@
 "use client";
 
-import { useState } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  memo,
+} from "react";
+import { useRouter } from "next/navigation";
 import { doctor } from "@/lib/data";
+import { useBookingStore } from "@/store/bookingStore";
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+interface Loc {
+  name: string;
+  address: string | null;
+  fee_pkr: number;
+  timings: Record<string, string>;
+  map_link?: string;
+  coordinates?: { lat: number; lng: number };
+  booking_link?: string;
+}
+
+const DAYS = [
+  "Monday", "Tuesday", "Wednesday", "Thursday",
+  "Friday", "Saturday", "Sunday",
+];
+
+function buildEmbedUrl(loc: Loc): string {
+  if (loc.coordinates) {
+    const { lat, lng } = loc.coordinates;
+    return `https://maps.google.com/maps?q=${lat},${lng}&z=15&ie=UTF8&iwloc=&output=embed`;
+  }
+  const q = encodeURIComponent(`${loc.name} Faisalabad Pakistan`);
+  return `https://maps.google.com/maps?q=${q}&z=14&ie=UTF8&iwloc=&output=embed`;
+}
+
+const PersistentMap = memo(function PersistentMap({
+  locations,
+  activeIndex,
+  containerRef,
+}: {
+  locations: Loc[];
+  activeIndex: number;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const embedUrls = useMemo(() => locations.map(buildEmbedUrl), [locations]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative h-[380px] lg:h-full lg:min-h-[460px] rounded-2xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container-low"
+      aria-label={`Map for ${locations[activeIndex]?.name}`}
+    >
+      {locations.map((loc, i) => (
+        <iframe
+          key={i}
+          src={embedUrls[i]}
+          className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-in-out ${
+            i === activeIndex
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`Google Map — ${loc.name}`}
+          aria-hidden={i !== activeIndex}
+        />
+      ))}
+      <div className="absolute bottom-3 left-3 z-10 bg-surface/90 backdrop-blur-sm px-sm py-xs rounded-lg border border-outline-variant/30 shadow-sm pointer-events-none">
+        <p className="text-caption font-semibold text-on-surface truncate max-w-[200px]">
+          {locations[activeIndex]?.name}
+        </p>
+      </div>
+    </div>
+  );
+});
+
+const LocationCard = memo(function LocationCard({
+  loc,
+  index,
+  isActive,
+  onSelect,
+  cardRef,
+}: {
+  loc: Loc;
+  index: number;
+  isActive: boolean;
+  onSelect: (i: number) => void;
+  cardRef: (el: HTMLDivElement | null) => void;
+}) {
+  return (
+    <div
+      ref={cardRef}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      aria-label={`Select ${loc.name}`}
+      onClick={() => onSelect(index)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect(index)}
+      className={`shrink-0 snap-center cursor-pointer rounded-xl border px-md py-sm transition-all duration-300 outline-none w-[85vw] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-11px)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center justify-center text-center ${
+        isActive
+          ? "border-primary bg-primary/5"
+          : "border-outline-variant bg-surface hover:border-primary/30"
+      }`}
+    >
+      <p className={`text-label-md font-bold leading-snug truncate ${isActive ? "text-primary" : "text-on-surface"}`}>
+        {loc.name}
+      </p>
+    </div>
+  );
+});
 
 export default function PracticeLocations() {
-  const locations = doctor.practice_locations;
+  const locations = doctor.practice_locations as unknown as Loc[];
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const router = useRouter();
+  const setClinic = useBookingStore((s) => s.setClinic);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartXRef = useRef(0);
+
   const active = locations[activeIndex];
+  const timingDays = DAYS.filter((d) => d in active.timings);
+  const closedDays = DAYS.filter((d) => !(d in active.timings));
+
+  const goTo = useCallback(
+    (i: number) => {
+      const next = ((i % locations.length) + locations.length) % locations.length;
+      setActiveIndex(next);
+      cardRefs.current[next]?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    },
+    [locations.length]
+  );
+
+  const prev = useCallback(() => goTo(activeIndex - 1), [goTo, activeIndex]);
+  const next = useCallback(() => goTo(activeIndex + 1), [goTo, activeIndex]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+    },
+    [prev, next]
+  );
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const delta = touchStartXRef.current - e.changedTouches[0].clientX;
+      if (Math.abs(delta) > 50) delta > 0 ? next() : prev();
+    },
+    [next, prev]
+  );
+
+  const handleBook = useCallback(
+    (loc: Loc, idx: number) => {
+      setClinic({
+        id: `loc-${idx}`,
+        name: loc.name,
+        address: loc.address,
+        fee_pkr: loc.fee_pkr,
+        timings: loc.timings,
+        booking_link: loc.booking_link,
+        map_link: loc.map_link,
+      });
+      router.push("/book-appointment/step-1");
+    },
+    [setClinic, router]
+  );
+
+  const handleDirections = useCallback((idx: number) => {
+    setActiveIndex(idx);
+    requestAnimationFrame(() => {
+      mapContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
+
+  const assignCardRef = useCallback(
+    (i: number) => (el: HTMLDivElement | null) => { cardRefs.current[i] = el; },
+    []
+  );
 
   if (!locations.length) return null;
 
-  const timingDays = DAYS.filter((d) => d in (active.timings as Record<string, string>));
-  const closedDays = DAYS.filter((d) => !(d in (active.timings as Record<string, string>)));
-
   return (
-    <section id="clinic-info" className="py-xl px-gutter bg-surface-container-high/50">
+    <section
+      id="clinic-info"
+      className="py-xl px-gutter bg-surface-container-high/50 focus:outline-none"
+      onKeyDown={handleKeyDown}
+      tabIndex={-1}
+      aria-label="Practice Locations carousel"
+    >
       <div className="max-w-[1280px] mx-auto">
         <div className="text-center mb-xl">
           <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
             Practice Locations
           </h2>
           <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
-            Dr. {doctor.name.split(" ").slice(1).join(" ")} consults at {locations.length} locations across {doctor.city}
+            Dr. {doctor.name.split(" ").slice(1).join(" ")} consults at{" "}
+            {locations.length} locations across {doctor.city}
           </p>
         </div>
 
-        {/* Tab Pills */}
-        <div className="flex flex-wrap gap-sm justify-center mb-lg">
-          {locations.map((loc, i) => (
+        <div className="relative mb-lg">
+        
+
+          <div
+            ref={trackRef}
+            className="flex gap-md overflow-x-auto scroll-smooth [scroll-snap-type:x_mandatory] scrollbar-hide px-4"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            role="listbox"
+            aria-label="Practice locations"
+          >
+            {locations.map((loc, i) => (
+              <LocationCard
+                key={i}
+                loc={loc}
+                index={i}
+                isActive={activeIndex === i}
+                onSelect={goTo}
+                cardRef={assignCardRef(i)}
+              />
+            ))}
+          </div>
+
+        </div>
+
+        <div className="flex justify-center items-center gap-xs mb-xl" role="tablist">
+          {locations.map((_, i) => (
             <button
               key={i}
-              onClick={() => setActiveIndex(i)}
-              className={`px-md py-xs rounded-full text-label-md font-semibold transition-all border ${
-                activeIndex === i
-                  ? "bg-primary text-on-primary border-primary shadow-md"
-                  : "border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary bg-surface"
+              role="tab"
+              aria-selected={activeIndex === i}
+              aria-label={`Location ${i + 1}: ${locations[i].name}`}
+              onClick={() => goTo(i)}
+              className={`rounded-full transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary ${
+                activeIndex === i ? "w-6 h-2 bg-primary" : "w-2 h-2 bg-outline-variant hover:bg-primary/40"
               }`}
-            >
-              {loc.name}
-            </button>
+            />
           ))}
         </div>
 
-        {/* Active Location Card */}
-        <div className="bg-surface rounded-2xl shadow-md border border-outline-variant/30 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            {/* Info */}
-            <div className="p-lg space-y-md">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg items-stretch">
+          <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-lg space-y-md flex flex-col">
+            <div>
+              <span className="text-caption font-bold uppercase tracking-widest text-primary">
+                Location {activeIndex + 1} of {locations.length}
+              </span>
+              <h3 className="text-headline-md font-bold text-on-surface mt-xs">{active.name}</h3>
+              {active.address && (
+                <p className="text-on-surface-variant mt-xs flex items-start gap-xs">
+                  <span className="material-symbols-outlined text-primary mt-0.5 shrink-0">location_on</span>
+                  {active.address}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-sm p-sm bg-primary/5 rounded-xl border border-primary/10">
+              <span className="material-symbols-outlined text-primary">payments</span>
               <div>
-                <span className="text-caption font-bold uppercase tracking-widest text-primary">
-                  Location {activeIndex + 1} of {locations.length}
-                </span>
-                <h3 className="text-headline-md font-bold text-on-surface mt-xs">{active.name}</h3>
-                {active.address && (
-                  <p className="text-on-surface-variant mt-xs flex items-start gap-xs">
-                    <span className="material-symbols-outlined text-primary mt-0.5 shrink-0">location_on</span>
-                    {active.address}
-                  </p>
-                )}
-              </div>
-
-              {/* Fee */}
-              <div className="flex items-center gap-sm p-sm bg-primary/5 rounded-xl border border-primary/10">
-                <span className="material-symbols-outlined text-primary">payments</span>
-                <div>
-                  <p className="text-caption text-on-surface-variant">Consultation Fee</p>
-                  <p className="text-headline-md font-bold text-primary">
-                    Rs. {active.fee_pkr.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Timings */}
-              <div>
-                <div className="flex items-center gap-xs mb-sm">
-                  <span className="material-symbols-outlined text-primary">schedule</span>
-                  <h4 className="text-label-md font-semibold text-on-surface">Clinic Timings</h4>
-                </div>
-                <div className="space-y-xs">
-                  {timingDays.map((day) => (
-                    <div key={day} className="flex justify-between text-body-md">
-                      <span className="text-on-surface-variant">{day}</span>
-                      <span className="font-semibold text-on-surface">
-                        {(active.timings as Record<string, string>)[day]}
-                      </span>
-                    </div>
-                  ))}
-                  {closedDays.map((day) => (
-                    <div key={day} className="flex justify-between text-body-md">
-                      <span className="text-on-surface-variant">{day}</span>
-                      <span className="font-semibold text-error">Closed</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-sm pt-sm">
-                {active.booking_link ? (
-                  <a
-                    href={active.booking_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-xs bg-primary text-on-primary px-md py-xs rounded-xl text-label-md font-semibold hover:opacity-90 transition-all shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-                    Book Appointment
-                  </a>
-                ) : (
-                  <a
-                    href={doctor.contact.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-xs bg-primary text-on-primary px-md py-xs rounded-xl text-label-md font-semibold hover:opacity-90 transition-all shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-                    Book via WhatsApp
-                  </a>
-                )}
-                {active.map_link && (
-                  <a
-                    href={active.map_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-xs border border-primary text-primary px-md py-xs rounded-xl text-label-md font-semibold hover:bg-primary/5 transition-all"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">directions</span>
-                    Get Directions
-                  </a>
-                )}
+                <p className="text-caption text-on-surface-variant">Consultation Fee</p>
+                <p className="text-headline-md font-bold text-primary">Rs. {active.fee_pkr.toLocaleString()}</p>
               </div>
             </div>
 
-            {/* Map placeholder / coordinates */}
-            <div className="relative min-h-[300px] lg:min-h-0 bg-surface-container-low flex items-center justify-center">
-              {active.map_link ? (
+            <div className="flex-1">
+              <div className="flex items-center gap-xs mb-sm">
+                <span className="material-symbols-outlined text-primary">schedule</span>
+                <h4 className="text-label-md font-semibold text-on-surface">Clinic Timings</h4>
+              </div>
+              <div className="space-y-xs">
+                {timingDays.map((day) => (
+                  <div key={day} className="flex justify-between text-body-md">
+                    <span className="text-on-surface-variant">{day}</span>
+                    <span className="font-semibold text-on-surface">{active.timings[day]}</span>
+                  </div>
+                ))}
+                {closedDays.map((day) => (
+                  <div key={day} className="flex justify-between text-body-md">
+                    <span className="text-on-surface-variant">{day}</span>
+                    <span className="font-semibold text-error">Closed</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-sm pt-sm">
+              <button
+                onClick={() => handleBook(active, activeIndex)}
+                className="flex items-center gap-xs bg-primary text-on-primary px-md py-xs rounded-xl text-label-md font-semibold hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+                Book Appointment
+              </button>
+              {active.map_link && (
                 <a
                   href={active.map_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-md text-center p-lg hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-xs border border-outline-variant text-on-surface-variant px-md py-xs rounded-xl text-label-md font-semibold hover:border-primary/40 hover:text-primary transition-all"
                 >
-                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-                    <span className="material-symbols-outlined text-primary text-[48px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      location_on
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-label-md font-semibold text-primary">View on Google Maps</p>
-                    <p className="text-caption text-on-surface-variant mt-xs">{active.name}</p>
-                    {active.address && (
-                      <p className="text-caption text-on-surface-variant">{active.address}</p>
-                    )}
-                  </div>
-                  <span className="text-caption text-primary font-semibold flex items-center gap-xs">
-                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                    Open Maps
-                  </span>
+                  <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                  Open in Maps
                 </a>
-              ) : (
-                <div className="flex flex-col items-center gap-md text-center p-lg">
-                  <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center">
-                    <span className="material-symbols-outlined text-on-surface-variant text-[48px]">
-                      location_off
-                    </span>
-                  </div>
-                  <p className="text-on-surface-variant text-body-md">Map not available for this location</p>
-                </div>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Location dots indicator */}
-        <div className="flex justify-center gap-xs mt-md">
-          {locations.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIndex(i)}
-              className={`rounded-full transition-all ${
-                activeIndex === i ? "w-6 h-2 bg-primary" : "w-2 h-2 bg-outline-variant hover:bg-primary/40"
-              }`}
-              aria-label={`Location ${i + 1}`}
-            />
-          ))}
+          <PersistentMap
+            locations={locations}
+            activeIndex={activeIndex}
+            containerRef={mapContainerRef}
+          />
         </div>
       </div>
     </section>

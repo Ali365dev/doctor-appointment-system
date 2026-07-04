@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { doctor } from "@/lib/data";
 import { useBookingStore } from "@/store/bookingStore";
@@ -30,24 +30,37 @@ function formatTimings(timings: Record<string, string>): string {
 }
 
 export default function BookingStep1Form() {
-  const [selectedClinicIndex, setSelectedClinicIndex] = useState<number>(0);
-  const [selectedVisitType, setSelectedVisitType] = useState<"clinic" | "online">("clinic");
-  const [reason, setReason] = useState("");
-  const [error, setError] = useState("");
-  const router = useRouter();
-
   const setClinic = useBookingStore((s) => s.setClinic);
   const setVisitType = useBookingStore((s) => s.setVisitType);
   const setReason_ = useBookingStore((s) => s.setReason);
+  const storedClinic = useBookingStore((s) => s.selectedClinic);
 
   const locations = doctor.practice_locations;
+
+  const [selectedClinicIndex, setSelectedClinicIndex] = useState<number>(() => {
+    if (storedClinic) {
+      // Match by loc-N id or by name
+      const fromId = parseInt(storedClinic.id.replace("loc-", ""), 10);
+      if (!isNaN(fromId) && fromId >= 0 && fromId < locations.length) return fromId;
+      const byName = locations.findIndex((l) => l.name === storedClinic.name);
+      if (byName >= 0) return byName;
+    }
+    return 0;
+  });
+  const searchParams = useSearchParams();
+  const [selectedVisitType, setSelectedVisitType] = useState<"clinic" | "online">(() =>
+    searchParams.get("visitType") === "online" ? "online" : "clinic"
+  );
+  const [reason, setReason] = useState("");
+  const router = useRouter();
+
   const visitTypeLabel = visitTypes.find((v) => v.value === selectedVisitType)?.label ?? null;
 
   useEffect(() => {
     if (locations.length > 0) {
       const loc = locations[selectedClinicIndex];
       setClinic({
-        id: String(selectedClinicIndex),
+        id: `loc-${selectedClinicIndex}`,
         name: loc.name,
         address: loc.address,
         fee_pkr: loc.fee_pkr,
@@ -59,10 +72,6 @@ export default function BookingStep1Form() {
   }, [selectedClinicIndex, locations, setClinic]);
 
   const handleNext = () => {
-    if (!reason.trim()) {
-      setError("Please describe your reason for visit.");
-      return;
-    }
     setVisitType(selectedVisitType);
     setReason_(reason);
     router.push("/book-appointment/step-2");
@@ -161,101 +170,109 @@ export default function BookingStep1Form() {
                 const timings = loc.timings as Record<string, string>;
                 const days = formatTimings(timings);
                 const hours = Object.values(timings)[0] ?? "";
-                const isFeatured = i === 0;
                 const isSelected = selectedClinicIndex === i;
-
-                if (isFeatured) {
-                  return (
-                    <div
-                      key={i}
-                      className={`${isSelected ? "ring-2 ring-white/50" : ""} bg-primary p-6 rounded-xl text-on-primary flex flex-col justify-between min-h-80 shadow-lg cursor-pointer transition-all`}
-                      onClick={() => setSelectedClinicIndex(i)}
-                    >
-                      <div>
-                        <span className="text-[10px] uppercase tracking-widest font-bold opacity-80">
-                          Primary Center
-                        </span>
-                        <h3 className="text-xl font-bold mt-1 mb-4">{loc.name}</h3>
-                        {loc.address && (
-                          <div className="flex items-start gap-2 text-caption opacity-90 mb-6">
-                            <span className="material-symbols-outlined text-sm mt-0.5">location_on</span>
-                            <span>{loc.address}</span>
-                          </div>
-                        )}
-                        <div className="space-y-2 text-caption">
-                          {days && (
-                            <div className="flex justify-between">
-                              <span>Days</span>
-                              <span className="font-bold">{days}</span>
-                            </div>
-                          )}
-                          {hours && (
-                            <div className="flex justify-between">
-                              <span>Hours</span>
-                              <span className="font-bold">{hours}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between">
-                            <span>Fee</span>
-                            <span className="font-bold">Rs. {loc.fee_pkr.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedClinicIndex(i); }}
-                        className={`mt-6 w-full py-3 border ${isSelected ? "bg-white/20 border-white" : "border-white/30"} rounded-lg text-caption font-bold hover:bg-white/10 transition-colors uppercase tracking-wider`}
-                      >
-                        {isSelected ? "✓ Selected" : "Book This Clinic →"}
-                      </button>
-                    </div>
-                  );
-                }
+                const LABELS = ["Primary Center", "Satellite Clinic", "Evening Clinic"];
 
                 return (
                   <div
                     key={i}
-                    className={`bg-surface p-6 rounded-xl border ${isSelected ? "border-primary ring-2 ring-primary/20" : "border-outline-variant/30"} flex flex-col justify-between min-h-80 cursor-pointer transition-all`}
                     onClick={() => setSelectedClinicIndex(i)}
+                    className={`p-6 rounded-xl flex flex-col justify-between min-h-80 cursor-pointer transition-all duration-200 ${
+                      isSelected
+                        ? "bg-primary shadow-xl shadow-primary/30 scale-[1.02]"
+                        : "bg-surface border border-outline-variant/30 hover:border-primary/40 hover:shadow-md"
+                    }`}
                   >
                     <div>
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-outline">
-                        {i === 1 ? "Satellite Clinic" : "Evening Clinic"}
+                      {/* Card type label */}
+                      <span
+                        className={`text-[10px] uppercase tracking-widest font-bold ${
+                          isSelected ? "text-white/70" : "text-outline"
+                        }`}
+                      >
+                        {LABELS[i] ?? "Clinic"}
                       </span>
-                      <h3 className="text-xl font-bold mt-1 mb-4 text-on-surface">{loc.name}</h3>
+
+                      {/* Clinic name */}
+                      <h3
+                        className={`text-xl font-bold mt-1 mb-4 leading-snug ${
+                          isSelected ? "text-white" : "text-on-surface"
+                        }`}
+                      >
+                        {loc.name}
+                      </h3>
+
+                      {/* Address */}
                       {loc.address ? (
-                        <div className="flex items-start gap-2 text-caption text-on-surface-variant mb-6">
-                          <span className="material-symbols-outlined text-sm text-primary mt-0.5">
+                        <div
+                          className={`flex items-start gap-2 text-[12px] mb-6 ${
+                            isSelected ? "text-white/80" : "text-on-surface-variant"
+                          }`}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[16px] mt-0.5 shrink-0 ${
+                              isSelected ? "text-white/70" : "text-primary"
+                            }`}
+                          >
                             location_on
                           </span>
                           <span>{loc.address}</span>
                         </div>
                       ) : (
-                        <div className="mb-6 text-caption text-on-surface-variant italic">
+                        <div
+                          className={`mb-6 text-[12px] italic ${
+                            isSelected ? "text-white/60" : "text-on-surface-variant"
+                          }`}
+                        >
                           Address not available
                         </div>
                       )}
-                      <div className="space-y-2 text-caption text-on-surface-variant border-t border-outline-variant/10 pt-4">
+
+                      {/* Timings & fee */}
+                      <div
+                        className={`space-y-2 text-[12px] border-t pt-4 ${
+                          isSelected ? "border-white/20" : "border-outline-variant/20"
+                        }`}
+                      >
                         {days && (
-                          <div className="flex justify-between">
-                            <span>Days</span>
-                            <span className="font-bold text-on-surface">{days}</span>
+                          <div className="flex justify-between gap-2">
+                            <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
+                              Days
+                            </span>
+                            <span className={`font-bold text-right ${isSelected ? "text-white" : "text-on-surface"}`}>
+                              {days}
+                            </span>
                           </div>
                         )}
                         {hours && (
-                          <div className="flex justify-between">
-                            <span>Hours</span>
-                            <span className="font-bold text-on-surface">{hours}</span>
+                          <div className="flex justify-between gap-2">
+                            <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
+                              Hours
+                            </span>
+                            <span className={`font-bold text-right ${isSelected ? "text-white" : "text-on-surface"}`}>
+                              {hours}
+                            </span>
                           </div>
                         )}
-                        <div className="flex justify-between">
-                          <span>Fee</span>
-                          <span className="font-bold text-primary">Rs. {loc.fee_pkr.toLocaleString()}</span>
+                        <div className="flex justify-between gap-2">
+                          <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
+                            Fee
+                          </span>
+                          <span className={`font-bold ${isSelected ? "text-white" : "text-primary"}`}>
+                            Rs. {loc.fee_pkr.toLocaleString()}
+                          </span>
                         </div>
                       </div>
                     </div>
+
+                    {/* Action button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); setSelectedClinicIndex(i); }}
-                      className={`mt-6 w-full py-3 border ${isSelected ? "bg-primary text-on-primary border-primary" : "border-primary/20 text-primary hover:bg-primary/5"} rounded-lg text-caption font-bold transition-colors uppercase tracking-wider`}
+                      className={`mt-6 w-full py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${
+                        isSelected
+                          ? "bg-white/20 border border-white/60 text-white hover:bg-white/30"
+                          : "border border-primary/30 text-primary bg-transparent hover:bg-primary/5"
+                      }`}
                     >
                       {isSelected ? "✓ Selected" : "Book This Clinic →"}
                     </button>
@@ -306,19 +323,21 @@ export default function BookingStep1Form() {
           <div>
             <label
               htmlFor="reason"
-              className="text-[14px] font-semibold text-on-surface-variant uppercase tracking-wider mb-4 block"
+              className="text-[14px] font-semibold text-on-surface-variant uppercase tracking-wider mb-4 flex items-center gap-2"
             >
               3. Reason for Visit
+              <span className="normal-case tracking-normal font-normal text-outline text-[12px]">
+                (Optional)
+              </span>
             </label>
             <textarea
               id="reason"
-              rows={6}
+              rows={5}
               value={reason}
-              onChange={(e) => { setReason(e.target.value); if (error) setError(""); }}
-              placeholder="Describe your symptoms or reason for visit... (e.g. stomach pain, bloating, jaundice)"
-              className={`w-full rounded-2xl border ${error ? "border-error" : "border-outline-variant"} focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all p-5 placeholder:text-outline text-[16px] resize-none`}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Briefly describe your symptoms or reason for visit... (e.g. stomach pain, bloating, jaundice)"
+              className="w-full rounded-2xl border border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all p-5 placeholder:text-outline text-[16px] resize-none"
             />
-            {error && <p className="mt-2 text-caption text-error">{error}</p>}
             <p className="mt-3 text-caption text-outline">
               Your information is protected by industry-standard clinical privacy protocols.
             </p>

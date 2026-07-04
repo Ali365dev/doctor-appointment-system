@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clinics &amp; Locations | Dr. Zaid Gul</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-tertiary-container": "#ffede6",
+                "secondary-container": "#39b8fd",
+                "on-primary": "#ffffff",
+                "surface-bright": "#faf8ff",
+                "on-tertiary-fixed": "#360f00",
+                "on-tertiary": "#ffffff",
+                "background": "#faf8ff",
+                "on-error-container": "#93000a",
+                "primary": "#004ac6",
+                "tertiary-fixed": "#ffdbcd",
+                "on-secondary-container": "#004666",
+                "primary-fixed": "#dbe1ff",
+                "on-secondary": "#ffffff",
+                "on-tertiary-fixed-variant": "#7d2d00",
+                "surface-container-high": "#e7e7f3",
+                "surface-container": "#ededf9",
+                "inverse-surface": "#2e3039",
+                "tertiary-fixed-dim": "#ffb596",
+                "secondary": "#006591",
+                "surface-container-lowest": "#ffffff",
+                "on-surface-variant": "#434655",
+                "inverse-on-surface": "#f0f0fb",
+                "surface-container-low": "#f3f3fe",
+                "on-primary-fixed-variant": "#003ea8",
+                "on-background": "#191b23",
+                "on-primary-container": "#eeefff",
+                "tertiary": "#943700",
+                "inverse-primary": "#b4c5ff",
+                "primary-fixed-dim": "#b4c5ff",
+                "on-secondary-fixed": "#001e2f",
+                "on-error": "#ffffff",
+                "tertiary-container": "#bc4800",
+                "surface-container-highest": "#e1e2ed",
+                "outline-variant": "#c3c6d7",
+                "outline": "#737686",
+                "on-primary-fixed": "#00174b",
+                "error": "#ba1a1a",
+                "primary-container": "#2563eb",
+                "surface-dim": "#d9d9e5",
+                "on-surface": "#191b23",
+                "secondary-fixed-dim": "#89ceff",
+                "surface": "#faf8ff",
+                "surface-variant": "#e1e2ed",
+                "secondary-fixed": "#c9e6ff",
+                "on-secondary-fixed-variant": "#004c6e",
+                "surface-tint": "#0053db",
+                "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "xs": "0.5rem",
+                "gutter": "24px",
+                "sm": "1rem",
+                "lg": "2.5rem",
+                "base": "4px",
+                "container-max": "1280px",
+                "xl": "4rem",
+                "md": "1.5rem"
+            },
+            "fontFamily": {
+                "headline-md": ["Inter"],
+                "headline-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "label-md": ["Inter"],
+                "caption": ["Inter"],
+                "body-lg": ["Inter"],
+                "headline-lg-mobile": ["Inter"],
+                "display": ["Inter"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-lg py-md max-w-container-max mx-auto">
+<div class="text-headline-md font-headline-md font-bold text-primary">
+                Dr. Zaid Gul
+            </div>
+<nav class="hidden md:flex gap-md items-center">
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">About</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Services</a>
+<a class="text-primary font-semibold border-b-2 border-primary font-body-md text-body-md" href="#">Locations</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Articles</a>
+</nav>
+<button class="bg-primary-container text-on-primary font-label-md text-label-md px-md py-xs rounded-lg hover:opacity-90 active:scale-95 transition-all">
+                Book Appointment
+            </button>
+</div>
+</header>
+<main class="min-h-screen">
+<!-- Hero Section -->
+<section class="relative py-xl overflow-hidden">
+
+<div class="max-w-container-max mx-auto px-lg relative z-10 text-center">
+<span class="inline-block px-sm py-1 bg-secondary-fixed text-on-secondary-fixed-variant rounded-full font-label-md text-label-md mb-md">
+                    Clinical Accessibility
+                </span>
+<h1 class="font-display text-display text-on-surface mb-md">Clinics &amp; Locations</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                    Choose the practice location most convenient for you. Dr. Zaid Gul provides specialized care across Lahore's premier medical institutions with structured consultation hours.
+                </p>
+</div>
+</section>
+<!-- Locations Bento Grid -->
+<section class="py-xl max-w-container-max mx-auto px-lg">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Location 1: Chughtai Medical Centre -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<div class="glass-card rounded-xl overflow-hidden shadow-sm flex flex-col md:flex-row h-full">
+<div class="md:w-1/2 relative h-64 md:h-auto">
+<div class="w-full h-full bg-cover bg-center" data-alt="A high-end, contemporary medical facility entrance with clean architectural lines and glass facades. The building is part of Chughtai Medical Centre, appearing professional and welcoming under clear, bright morning sunlight. The color palette is composed of soft whites and steel blues, reflecting clinical precision and trust." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDJo-DhF7JckDcOakZJqynGdQAZfh66keSQGQu5VeeIDb6jVxLz9a27fCgYK7RSslTfy7vOl4yyAJOwiiMQ99-GtiS0T-q5_YLirzLzn-Sc3WsAdKko-gIOb3QDjZdG7P6UrLIyLMNaG6vBPrat-ks_UxEdGmIoG5knXpcUpIjd1eQkPmhoZkZB83G_GhvMtDb31RH6-rlD9TRjwXX2bgsRBmnk0tfHNywvIfy4aM-B-lzb5jb08kFyy9GDG1WAa0m7kAUuNkW7SKg')"></div>
+</div>
+<div class="md:w-1/2 p-lg flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-xs text-primary mb-xs">
+<span class="material-symbols-outlined">location_on</span>
+<span class="font-label-md text-label-md">Main Gulberg Branch</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg mb-sm">Chughtai Medical Centre</h2>
+<p class="text-on-surface-variant font-body-md text-body-md mb-md">7-A, Jail Road, Main Gulberg, Lahore. Known for world-class diagnostic and clinical excellence.</p>
+<div class="space-y-xs mb-md">
+<div class="flex justify-between border-b border-outline-variant/30 pb-xs">
+<span class="text-on-surface-variant">Mon - Wed</span>
+<span class="font-semibold">05:00 PM - 08:00 PM</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-xs">
+<span class="text-on-surface-variant">Fri</span>
+<span class="font-semibold">05:00 PM - 07:00 PM</span>
+</div>
+<div class="flex justify-between pt-xs text-primary">
+<span class="font-semibold">Consultation Fee</span>
+<span class="font-bold">PKR 3,500</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary py-sm rounded-lg font-label-md text-label-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined">calendar_today</span>
+                                Book at Chughtai
+                            </button>
+</div>
+</div>
+</div>
+<!-- Map Widget 1 -->
+<div class="lg:col-span-4 glass-card rounded-xl p-xs shadow-sm overflow-hidden min-h-[300px]">
+<div class="w-full h-full rounded-lg bg-surface-container overflow-hidden relative">
+<img class="w-full h-full object-cover" data-location="Lahore" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrg7q_ad8Ielt7lhTplfYFIIPBVwHe6YWwN2CxS9PbKGnzDv3yKANXT28UbonKfloc7_uoHipiUrNzbnh6lmI324FSA14Y13yH9sW99QtGhxWNWcZtvsmGb3ZMz2mWnzsMyQKnaNNbwamLTXPr6xGfIlCEhuyOANGlrf47-8T26kAXIYoMNUVZhYhWKmmoACworRj2IzvB4FH4xwuFqDYzBOf-amLZ--1y8qMjNxZ0bZw9gvC3dV3QAH0U2JbLW63finzPliL_0Q0"/>
+<div class="absolute inset-0 bg-primary/10 flex items-center justify-center pointer-events-none">
+<div class="bg-white p-sm rounded-full shadow-lg border border-primary/20">
+<span class="material-symbols-outlined text-primary scale-150" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md p-sm rounded-lg border border-outline-variant/30">
+<p class="font-label-md text-label-md text-on-surface">Jail Road, Gulberg</p>
+<a class="text-primary text-caption font-semibold flex items-center gap-1 mt-1" href="#">Get Directions <span class="material-symbols-outlined text-sm">open_in_new</span></a>
+</div>
+</div>
+</div>
+<!-- Location 2: Faisal Hospital -->
+<div class="lg:col-span-6 glass-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="h-48 overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center" data-alt="The modern architectural entrance of Faisal Hospital in Lahore, featuring clean white surfaces and blue glass accents. The lighting is bright and airy, conveying a sense of hygiene and expert care. The surrounding environment is neatly landscaped, maintaining a professional medical campus aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAAx0fXZH7EZ_6Qy22wNHySAMCY5PuOYcF_uEn4lqr0j30Di7m3oxlD6s4qC5HHtH5z1OAuCR1aWGV0mlNMszBW56u_BUq8jae_7yI-Os1d2Vv61_KXJmtwK-rb_2YRuHFRkQJADV9LgD0Eu8ee-JdJ_wmegRR5iqc8Pwi6rvo-lIO2F79bpSjMOT0bETmDbgDNptcuVhpHXaK74mhV6jskuHqv1GlpdI3j1v1shZdyFv2kTQyUhlmOvrbTmevU5yXrBRnXgCvZ9bY')"></div>
+<div class="absolute top-4 right-4 bg-success-container/90 bg-white px-sm py-1 rounded-full text-primary font-label-md text-label-md shadow-sm">
+                            Evening Shift
+                        </div>
+</div>
+<div class="p-lg flex-grow flex flex-col justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md mb-xs">Faisal Hospital</h3>
+<p class="text-on-surface-variant mb-md font-body-md text-body-md">Faisal Town, Canal Bank Road, Lahore. A leading multi-specialty healthcare provider.</p>
+<ul class="space-y-sm mb-lg">
+<li class="flex justify-between text-body-md">
+<span class="text-on-surface-variant">Tue &amp; Thu</span>
+<span class="font-semibold">08:00 PM - 10:00 PM</span>
+</li>
+<li class="flex justify-between text-body-md">
+<span class="text-on-surface-variant">Saturday</span>
+<span class="font-semibold">04:00 PM - 06:00 PM</span>
+</li>
+<li class="flex justify-between pt-sm border-t border-outline-variant/20 text-primary">
+<span class="font-semibold">Consultation Fee</span>
+<span class="font-bold">PKR 3,000</span>
+</li>
+</ul>
+</div>
+<button class="w-full border-2 border-primary text-primary py-sm rounded-lg font-label-md text-label-md hover:bg-primary/5 transition-all active:scale-95 flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined">schedule</span>
+                            Book at Faisal Hospital
+                        </button>
+</div>
+</div>
+<!-- Location 3: United Hospital -->
+<div class="lg:col-span-6 glass-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="h-48 overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center" data-alt="A wide view of the United Hospital building exterior in Lahore. The design is contemporary with large windows and a distinct clinical feel. The atmosphere is calm and professional, with high-end finishes that signify a premium healthcare experience for patients. Warm sunset lighting reflects off the windows." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCn0liy8WBMhAnXb79c6hVznyrUUFjx45woCENTAG7HymwZVrUXyAKDM1PPmtVV88w4qYoX2n9XjOXNWmLoa_6BvuIxDbhw21i843dchJ0O9pvxlqJOQRjS2RG5w5E8P1vIYoLib3YdREXvSH1Xvi00BvvkbD_ivRNKgrPteR-NsS4WQZJyH7ZYPBOhoGV_MH1j6_k6vSckHRnHzpl4oO0jlSAx6o8A5L43DvSEVjQwyd-zxtZCTXYpgFvAoUnHYgT8V4wBoMb2ZwE')"></div>
+<div class="absolute top-4 right-4 bg-white px-sm py-1 rounded-full text-primary font-label-md text-label-md shadow-sm">
+                            Night Shift
+                        </div>
+</div>
+<div class="p-lg flex-grow flex flex-col justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md mb-xs">United Hospital</h3>
+<p class="text-on-surface-variant mb-md font-body-md text-body-md">Block G, Johar Town, Lahore. State-of-the-art medical technology and surgical facilities.</p>
+<ul class="space-y-sm mb-lg">
+<li class="flex justify-between text-body-md">
+<span class="text-on-surface-variant">Mon, Wed, Fri</span>
+<span class="font-semibold">09:00 PM - 11:00 PM</span>
+</li>
+<li class="flex justify-between text-body-md">
+<span class="text-on-surface-variant">Sunday</span>
+<span class="font-semibold">By Appointment Only</span>
+</li>
+<li class="flex justify-between pt-sm border-t border-outline-variant/20 text-primary">
+<span class="font-semibold">Consultation Fee</span>
+<span class="font-bold">PKR 3,000</span>
+</li>
+</ul>
+</div>
+<button class="w-full border-2 border-primary text-primary py-sm rounded-lg font-label-md text-label-md hover:bg-primary/5 transition-all active:scale-95 flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined">event</span>
+                            Book at United Hospital
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Informational Banner -->
+<section class="max-w-container-max mx-auto px-lg mb-xl">
+<div class="bg-primary p-lg rounded-xl flex flex-col md:flex-row items-center justify-between gap-md text-on-primary">
+<div class="flex items-center gap-md">
+<div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">medical_information</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md">Need an Emergency Consultation?</h4>
+<p class="text-on-primary/80 font-body-md">For urgent medical attention outside of clinic hours, please contact the hospital emergency desk directly.</p>
+</div>
+</div>
+<div class="flex gap-sm shrink-0">
+<a class="bg-white text-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-surface-bright transition-colors shadow-lg" href="tel:+923001234567">
+                        Call Emergency
+                    </a>
+</div>
+</div>
+</section>
+<!-- Global Map Section -->
+<section class="py-xl bg-surface-container-low border-y border-outline-variant/20">
+<div class="max-w-container-max mx-auto px-lg">
+<div class="text-center mb-xl">
+<h2 class="font-headline-lg text-headline-lg mb-sm">Consolidated Practice Map</h2>
+<p class="text-on-surface-variant font-body-md">Dr. Zaid Gul practices across key strategic points in Lahore to ensure patient proximity.</p>
+</div>
+<div class="h-[500px] rounded-2xl glass-card overflow-hidden relative shadow-lg">
+<img class="w-full h-full object-cover" data-location="Lahore City Center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-IK7yOgmJP1x4XvtyXnY31v6VFe27i5qzNYYpuHASnZ84cfpLE5EJTmarjdWC2NyeDaL8oPpndkHfPMu6cQ2IimTBo2I0w7BCFGK6uL5ePutTNm3j0fi61U51rhQHxYNpN6nViWvogD1unS-CpMgyNax-r_9ZIiVaXb6YRgVnDbudOV5RFCFQMy9RNXeT-uTDKfMxOkfsi4GQRiafmCmHLyDjHyimWA3r00etuZG5iQh_WirBNj67E0I84H-7e3EWOXl4-aOFPzE"/>
+<!-- Interactive Markers Overlay Simulation -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative w-full h-full">
+<!-- Chughtai Marker -->
+<div class="absolute top-[30%] left-[45%] group cursor-pointer">
+<span class="material-symbols-outlined text-primary text-4xl transition-transform group-hover:scale-125" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white p-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-bold text-xs text-primary mb-1">Chughtai Medical</p>
+<p class="text-[10px] text-on-surface-variant">Jail Road, Gulberg III</p>
+</div>
+</div>
+<!-- Faisal Marker -->
+<div class="absolute top-[60%] left-[35%] group cursor-pointer">
+<span class="material-symbols-outlined text-secondary text-4xl transition-transform group-hover:scale-125" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white p-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-bold text-xs text-secondary mb-1">Faisal Hospital</p>
+<p class="text-[10px] text-on-surface-variant">Faisal Town Canal Bank</p>
+</div>
+</div>
+<!-- United Marker -->
+<div class="absolute top-[75%] left-[60%] group cursor-pointer">
+<span class="material-symbols-outlined text-tertiary text-4xl transition-transform group-hover:scale-125" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white p-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-bold text-xs text-tertiary mb-1">United Hospital</p>
+<p class="text-[10px] text-on-surface-variant">Johar Town Block G</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-inverse-surface dark:bg-surface-container-lowest border-t border-outline/20">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-xl px-lg py-xl max-w-container-max mx-auto w-full">
+<div class="flex flex-col gap-sm">
+<div class="text-headline-md font-headline-md text-primary-fixed dark:text-primary">Dr. Zaid Gul</div>
+<p class="text-surface-variant dark:text-on-surface-variant font-body-md text-body-md">Dedicated specialist healthcare with clinical authority and patient-first empathy across three state-of-the-art locations in Lahore.</p>
+</div>
+<div class="flex flex-col gap-sm">
+<h4 class="text-primary-fixed dark:text-primary font-label-md text-label-md">Navigation</h4>
+<nav class="flex flex-col gap-xs">
+<a class="text-surface-variant dark:text-on-surface-variant font-body-md text-body-md hover:text-primary-fixed-dim dark:hover:text-primary transition-all underline" href="#">Privacy Policy</a>
+<a class="text-surface-variant dark:text-on-surface-variant font-body-md text-body-md hover:text-primary-fixed-dim dark:hover:text-primary transition-all underline" href="#">Terms of Service</a>
+<a class="text-surface-variant dark:text-on-surface-variant font-body-md text-body-md hover:text-primary-fixed-dim dark:hover:text-primary transition-all underline" href="#">Disclaimer</a>
+</nav>
+</div>
+<div class="flex flex-col gap-sm">
+<h4 class="text-primary-fixed dark:text-primary font-label-md text-label-md">Connect</h4>
+<div class="flex gap-md">
+<a class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors text-white" href="#">
+<span class="material-symbols-outlined">mail</span>
+</a>
+<a class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors text-white" href="#">
+<span class="material-symbols-outlined">call</span>
+</a>
+</div>
+<p class="text-surface-variant dark:text-on-surface-variant font-caption text-caption mt-auto">
+                    © 2024 Dr. Zaid Gul. All rights reserved. PMDC Registration: 12345-P.
+                </p>
+</div>
+</div>
+</footer>
+<script>
+        // Simple scroll reveal effect
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-10');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+            observer.observe(card);
+        });
+    </script>
+</body></html>

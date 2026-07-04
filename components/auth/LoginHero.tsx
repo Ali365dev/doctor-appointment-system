@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { doctor } from "@/lib/data";
 
 export default function LoginHero() {
   return (
@@ -10,7 +11,7 @@ export default function LoginHero() {
             medical_services
           </span>
           <h1 className="text-title-lg font-semibold text-primary tracking-tight">
-            Dr. Specialist
+            {doctor.name}
           </h1>
         </div>
 

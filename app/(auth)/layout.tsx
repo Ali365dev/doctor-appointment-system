@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../(public)/globals.css";
+import { doctor } from "@/lib/data";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Login | Dr. Specialist",
+  title: `Login | ${doctor.name}`,
   description: "Securely access your medical portal.",
 };
 

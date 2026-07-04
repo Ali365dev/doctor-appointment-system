@@ -223,7 +223,27 @@
     }
   ],
   "contact": {
-    "whatsapp": "https://api.whatsapp.com/send?phone=+923238633454&text=Hi%2C+I%E2%80%99m+interested+in+booking+an+appointment+with+Dr.+Zaid+Gul.",
-    "helpline": "0415068065"
+    "phone": "03326568897",
+    "whatsapp": "https://api.whatsapp.com/send?phone=+923326568897&text=Hi%2C+I%E2%80%99m+interested+in+booking+an+appointment+with+Dr.+Zaid+Gul.",
+    "helpline": "03326568897",
+    "email": "drzaidgulofficial@gmail.com"
+  },
+  "social": {
+    "facebook": {
+      "username": "drzaidgulpak",
+      "url": "https://www.facebook.com/drzaidgulpak/"
+    },
+    "instagram": {
+      "username": "dr_zaidgul",
+      "url": "https://www.instagram.com/dr_zaidgul/"
+    },
+    "youtube": {
+      "username": "@Dr.ZaidGul",
+      "url": "https://www.youtube.com/@Dr.ZaidGul"
+    },
+    "linkedin": {
+      "username": "drzaidgul",
+      "url": "https://www.linkedin.com/in/drzaidgul/"
+    }
   }
 }

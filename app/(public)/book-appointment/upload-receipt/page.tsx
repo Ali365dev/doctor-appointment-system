@@ -1,7 +1,8 @@
 import UploadReceiptContent from "@/components/appointment/UploadReceiptContent";
+import { doctor } from "@/lib/data";
 
 export const metadata = {
-  title: "Upload Payment Receipt | Dr. Specialist",
+  title: `Upload Payment Receipt | ${doctor.name}`,
   description: "Upload your payment receipt to complete your booking.",
 };
 

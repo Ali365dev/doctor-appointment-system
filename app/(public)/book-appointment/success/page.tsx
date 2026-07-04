@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import SuccessContent from "@/components/appointment/SuccessContent";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function PaymentSuccessPage() {
-  return <SuccessContent />;
+  return (
+    <Suspense>
+      <SuccessContent />
+    </Suspense>
+  );
 }

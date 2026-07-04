@@ -1,8 +1,9 @@
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep4Content from "@/components/appointment/BookingStep4Content";
+import { doctor } from "@/lib/data";
 
 export const metadata = {
-  title: "Book Appointment – Step 4 | Dr. Specialist",
+  title: `Book Appointment – Step 4 | ${doctor.name}`,
   description: "Review your appointment details before payment.",
 };
 

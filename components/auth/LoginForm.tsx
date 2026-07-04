@@ -5,6 +5,7 @@ import Link from "next/link";
 import RoleToggle from "./RoleToggle";
 import PatientForm from "./PatientForm";
 import DoctorForm from "./DoctorForm";
+import { doctor } from "@/lib/data";
 
 type Role = "patient" | "doctor";
 
@@ -20,7 +21,7 @@ export default function LoginForm() {
             medical_services
           </span>
           <span className="text-title-lg font-bold text-primary">
-            Dr. Specialist
+            {doctor.name}
           </span>
         </div>
 

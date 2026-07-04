@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
 
@@ -49,7 +50,7 @@ function buildTimeSlots(clinicIndex: number): { time: string; available: boolean
   const endMin = toMinutes(endStr);
   const slots: { time: string; available: boolean }[] = [];
 
-  for (let min = startMin; min < endMin; min += 30) {
+  for (let min = startMin; min < endMin; min += 5) {
     const h24 = Math.floor(min / 60);
     const m = min % 60;
     const period = h24 >= 12 ? "PM" : "AM";
@@ -66,7 +67,7 @@ export default function BookingStep2Content() {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -118,8 +119,16 @@ export default function BookingStep2Content() {
   ];
 
   const handleContinue = () => {
-    if (!selectedDay) { setError("Please select a date."); return; }
-    if (!selectedTime) { setError("Please select a time slot."); return; }
+    if (!selectedDay) {
+      setError("Please select a date.");
+      toast.error("Please select a date to continue.");
+      return;
+    }
+    if (!selectedTime) {
+      setError("Please select a time slot.");
+      toast.error("Please select a time slot to continue.");
+      return;
+    }
     const isoDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
     setDate(isoDate);
     setTime(selectedTime);
@@ -227,7 +236,12 @@ export default function BookingStep2Content() {
           </div>
         )}
 
-        {error && <p className="text-error text-body-md font-semibold">{error}</p>}
+        {error && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-error/10 border border-error/30">
+            <span className="material-symbols-outlined text-error">error</span>
+            <p className="text-error text-body-md font-semibold">{error}</p>
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between items-center">

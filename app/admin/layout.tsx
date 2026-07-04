@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../(public)/globals.css";
 import Sidebar from "@/components/admin/Sidebar";
 import TopBar from "@/components/admin/TopBar";
@@ -40,6 +42,7 @@ export default function AdminLayout({
             </div>
           </main>
         </div>
+        <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>
     </html>
   );

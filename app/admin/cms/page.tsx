@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { doctor } from "@/lib/data";
 
 export const metadata = { title: "Website CMS | MedClinical" };
 
@@ -9,8 +10,8 @@ const services = [
 ];
 
 const testimonials = [
-  { quote: "The level of care and technical expertise provided by Dr. Specialist is unmatched. The clinic environment is serene and modern, making every visit a positive experience.", author: "Sarah J. Jenkins", sub: "Patient since 2021" },
-  { quote: "Dr. Specialist explained my procedure in detail and made me feel completely at ease. I've never had a clinical experience feel so personalized.", author: "Robert M.", sub: "Verified Review" },
+  { quote: `The level of care and technical expertise provided by ${doctor.name} is unmatched. The clinic environment is serene and modern, making every visit a positive experience.`, author: "Sarah J. Jenkins", sub: "Patient since 2021" },
+  { quote: `${doctor.name} explained my procedure in detail and made me feel completely at ease. I've never had a clinical experience feel so personalized.`, author: "Robert M.", sub: "Verified Review" },
 ];
 
 export default function WebsiteCMSPage() {
@@ -57,7 +58,7 @@ export default function WebsiteCMSPage() {
                 <div className="col-span-2 space-y-md">
                   <div>
                     <label className="block text-label-md text-on-surface-variant mb-xs">Display Name</label>
-                    <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" defaultValue="Dr. Alexander Specialist, MD, PhD" />
+                    <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" defaultValue={doctor.name} />
                   </div>
                   <div>
                     <label className="block text-label-md text-on-surface-variant mb-xs">Short Bio</label>
@@ -87,11 +88,11 @@ export default function WebsiteCMSPage() {
               <div className="space-y-md flex-1">
                 <div>
                   <label className="block text-label-md text-on-surface-variant mb-xs">Page Title</label>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all" defaultValue="Dr. Specialist | Advanced Clinical Care" />
+                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all" defaultValue={`${doctor.name} | Advanced Clinical Care`} />
                 </div>
                 <div>
                   <label className="block text-label-md text-on-surface-variant mb-xs">Meta Description</label>
-                  <textarea className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all resize-none text-sm" rows={3} defaultValue="Experience world-class specialist medical care with Dr. Specialist. Book your consultation today." />
+                  <textarea className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all resize-none text-sm" rows={3} defaultValue={`Experience world-class specialist medical care with ${doctor.name}. Book your consultation today.`} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>

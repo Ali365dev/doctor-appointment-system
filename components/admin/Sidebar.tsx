@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { doctor } from "@/lib/data";
 
 const navItems = [
   { label: "Dashboard", icon: "dashboard", href: "/admin/dashboard" },
@@ -21,7 +22,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex flex-col h-screen w-64 bg-surface border-r border-outline-variant/30 py-md px-sm fixed left-0 top-0 z-40">
       {/* Brand */}
       <div className="flex items-center px-xs mb-lg">
-        <img src="/dr_zaid_gul_logo.svg" alt="Dr. Zaid Gul" className="h-14 w-auto" />
+        <img src="/dr_zaid_gul_logo_navbar.svg" alt="Dr. Zaid Gul" className="h-12 w-auto" />
       </div>
 
       {/* Doctor profile */}
@@ -29,7 +30,7 @@ export default function Sidebar() {
         <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest shrink-0">
           <Image
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVFroceKentGX_zGpM9-kSeItLNGte67uw7a_iy8AVgJDxpncKJUShPW32MHwO_26oqWMbaNOmY8nH8hoWCZ5Fs334tjg1igym1in0KeISACyl951Fp6OZIwn92MQHIraVdZxDVy-MCoT2x3oNF0r7hc7AVu-u4A8cDDIqy2B2QZBA47CbRv9sRwGCLpVvJNyDUbf4Q7vJE7RDOpDOoZ7c6YN0Z_5w_m1CRS94Lhj2Mpd3nu-sQTE0yCzUsrIyXW13fiWdxe5MI-4"
-            alt="Dr. Specialist"
+            alt={doctor.name}
             width={40}
             height={40}
             className="w-full h-full object-cover"
@@ -37,7 +38,7 @@ export default function Sidebar() {
           />
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-label-md font-semibold text-on-surface truncate">Dr. Specialist</span>
+          <span className="text-label-md font-semibold text-on-surface truncate">{doctor.name}</span>
           <span className="text-caption text-on-surface-variant opacity-70">Clinical Director</span>
         </div>
       </div>
