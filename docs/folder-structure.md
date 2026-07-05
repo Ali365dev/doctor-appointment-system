@@ -231,8 +231,23 @@
 │   ├── firebase
 │   │   ├── auth.ts
 │   │   └── config.ts
-│   └── supabase
-│       └── client.ts
+│   └── mongodb
+│       ├── connection.ts
+│       ├── index.ts
+│       ├── models
+│       │   ├── User.ts
+│       │   ├── Patient.ts
+│       │   ├── Doctor.ts
+│       │   ├── Appointment.ts
+│       │   ├── Payment.ts
+│       │   ├── MedicalRecord.ts
+│       │   ├── Chat.ts
+│       │   ├── Review.ts
+│       │   ├── Clinic.ts
+│       │   ├── Cms.ts
+│       │   └── Notification.ts
+│       ├── repositories
+│       └── types.ts
 ├── store
 │   ├── authStore.ts
 │   ├── bookingStore.ts

@@ -1,19 +1,17 @@
-Supabase only.
+MongoDB only.
 
 Never use Prisma.
 
- use Firebase for phone verification only. 
+Use Firebase for phone verification only.
 
-Use RLS.
+Use Mongoose schemas for validation.
 
-Never expose service role.
+Never expose service role credentials.
 
-Create migrations.
+Never modify a schema unless requested.
 
-Never modify schema unless requested.
+Use generated/inferred TypeScript types from schemas.
 
-Use generated types.
+Images stored in Firebase Storage.
 
-Images stored in Storage.
-
-Only URL stored in database.
+Only URL stored in the database.
