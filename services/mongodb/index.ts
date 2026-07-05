@@ -1,9 +1,11 @@
 export { connectDB, default } from "./connection";
 
+export { default as User } from "./models/User";
+export type { UserDoc } from "./models/User";
+
 // ==================================================
 // Models (to be implemented in a future phase)
 // ==================================================
-// export { default as User } from "./models/User";
 // export { default as Patient } from "./models/Patient";
 // export { default as Doctor } from "./models/Doctor";
 // export { default as Appointment } from "./models/Appointment";

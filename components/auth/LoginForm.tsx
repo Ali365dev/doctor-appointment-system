@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import RoleToggle from "./RoleToggle";
-import PatientForm from "./PatientForm";
-import DoctorForm from "./DoctorForm";
+import PhoneLoginForm from "./PhoneLoginForm";
+import PasswordLoginForm from "./PasswordLoginForm";
+import ForgotPasswordForm from "./ForgotPasswordForm";
+import GoogleLoginButton from "./GoogleLoginButton";
 import { doctor } from "@/lib/data";
 
-type Role = "patient" | "doctor";
+type Mode = "otp" | "password" | "forgot";
 
 export default function LoginForm() {
-  const [activeRole, setActiveRole] = useState<Role>("patient");
+  const [mode, setMode] = useState<Mode>("otp");
+  const [phoneHandoff, setPhoneHandoff] = useState("");
 
   return (
     <section className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-surface">
@@ -34,25 +36,55 @@ export default function LoginForm() {
           </p>
         </div>
 
-        <RoleToggle activeRole={activeRole} onRoleChange={setActiveRole} />
+        <GoogleLoginButton />
 
-        {/* Form panes */}
-        <div className="relative overflow-hidden min-h-80">
-          <div className={`login-transition w-full ${activeRole === "patient" ? "active-pane" : "hidden-pane"}`}>
-            <PatientForm />
-          </div>
-          <div className={`login-transition w-full ${activeRole === "doctor" ? "active-pane" : "hidden-pane"}`}>
-            <DoctorForm />
-          </div>
+        <div className="flex items-center gap-4">
+          <div className="h-px flex-1 bg-outline-variant/30" />
+          <span className="text-label-md text-outline">or</span>
+          <div className="h-px flex-1 bg-outline-variant/30" />
         </div>
+
+        {mode === "otp" && (
+          <PhoneLoginForm
+            onRegistered={(phone) => {
+              setPhoneHandoff(phone);
+              setMode("password");
+            }}
+          />
+        )}
+
+        {mode === "password" && (
+          <PasswordLoginForm
+            initialPhone={phoneHandoff}
+            onForgotPassword={(phone) => {
+              setPhoneHandoff(phone);
+              setMode("forgot");
+            }}
+            onUseOtpInstead={() => setMode("otp")}
+          />
+        )}
+
+        {mode === "forgot" && (
+          <ForgotPasswordForm initialPhone={phoneHandoff} onBack={() => setMode("password")} />
+        )}
+
+        {mode === "otp" && (
+          <p className="text-center text-label-md text-text-secondary">
+            Already have a password?{" "}
+            <button
+              type="button"
+              onClick={() => setMode("password")}
+              className="text-primary font-bold hover:underline"
+            >
+              Login with password
+            </button>
+          </p>
+        )}
 
         {/* Footer */}
         <div className="pt-10 border-t border-outline-variant/30 text-center space-y-4">
           <p className="text-body-md text-text-secondary">
-            Don&apos;t have an account?{" "}
-            <Link href="#" className="text-primary font-bold hover:underline">
-              Register Now
-            </Link>
+            First time here? Verifying your phone number above automatically creates your account.
           </p>
           <div className="flex justify-center gap-4 text-label-md text-outline">
             <Link href="#" className="hover:text-text transition-colors">

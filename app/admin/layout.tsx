@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "../(public)/globals.css";
 import Sidebar from "@/components/admin/Sidebar";
 import TopBar from "@/components/admin/TopBar";
+import { requireRole } from "@/lib/auth/requireRole";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,11 +18,13 @@ export const metadata: Metadata = {
   description: "Doctor administration and appointment management portal.",
 };
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await requireRole("doctor");
+
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <head>

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "../(public)/globals.css";
 import PatientSidebar from "@/components/patient/PatientSidebar";
 import PatientTopBar from "@/components/patient/PatientTopBar";
+import { requireRole } from "@/lib/auth/requireRole";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
   description: "Manage your appointments and health records.",
 };
 
-export default function PatientLayout({ children }: { children: React.ReactNode }) {
+export default async function PatientLayout({ children }: { children: React.ReactNode }) {
+  await requireRole("patient");
+
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <head>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 const navItems = [
   { label: "Dashboard", icon: "dashboard", href: "/patient/dashboard" },
@@ -47,13 +48,7 @@ export default function PatientSidebar() {
           <span className="material-symbols-outlined">help</span>
           <span className="text-label-md">Help &amp; Support</span>
         </Link>
-        <Link
-          href="/login"
-          className="flex items-center gap-sm px-md py-sm rounded-lg text-error hover:bg-error-container/20 transition-colors group"
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span className="text-label-md">Logout</span>
-        </Link>
+        <LogoutButton className="w-full flex items-center gap-sm px-md py-sm rounded-lg text-error hover:bg-error-container/20 transition-colors group" />
       </div>
     </aside>
   );
