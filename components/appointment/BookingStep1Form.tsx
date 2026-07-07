@@ -3,9 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-toastify";
 import { doctor } from "@/lib/data";
 import { useBookingStore } from "@/store/bookingStore";
 import BookingSidebar from "./BookingSidebar";
+
+interface ApiClinic {
+  _id: string;
+  name: string;
+  address?: string;
+  feePkr: number;
+  timings: Record<string, string>;
+  mapLink?: string;
+}
 
 const visitTypes = [
   {
@@ -34,19 +44,47 @@ export default function BookingStep1Form() {
   const setVisitType = useBookingStore((s) => s.setVisitType);
   const setReason_ = useBookingStore((s) => s.setReason);
   const storedClinic = useBookingStore((s) => s.selectedClinic);
+  const clearAppointment = useBookingStore((s) => s.clearAppointment);
 
-  const locations = doctor.practice_locations;
+  const [locations, setLocations] = useState<ApiClinic[]>([]);
+  const [clinicsLoading, setClinicsLoading] = useState(true);
+  const [clinicsError, setClinicsError] = useState("");
 
-  const [selectedClinicIndex, setSelectedClinicIndex] = useState<number>(() => {
-    if (storedClinic) {
-      // Match by loc-N id or by name
-      const fromId = parseInt(storedClinic.id.replace("loc-", ""), 10);
-      if (!isNaN(fromId) && fromId >= 0 && fromId < locations.length) return fromId;
-      const byName = locations.findIndex((l) => l.name === storedClinic.name);
-      if (byName >= 0) return byName;
-    }
-    return 0;
-  });
+  const [selectedClinicIndex, setSelectedClinicIndex] = useState<number>(0);
+
+  // Landing on Step 1 always means a (re)start of the booking flow — never let a
+  // leftover appointmentId from a previous booking make Step 4 skip creating a new one.
+  useEffect(() => {
+    clearAppointment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/clinics");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Could not load clinics");
+        const clinics: ApiClinic[] = data.clinics ?? [];
+        if (cancelled) return;
+        setLocations(clinics);
+        // Restore the previously-selected clinic (by real clinicId) if any.
+        const byId = storedClinic ? clinics.findIndex((l) => l._id === storedClinic.id) : -1;
+        setSelectedClinicIndex(byId >= 0 ? byId : 0);
+      } catch {
+        if (!cancelled) setClinicsError("Could not load clinics. Please refresh the page.");
+      } finally {
+        if (!cancelled) setClinicsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Runs once on mount — storedClinic is only consulted for the initial restore.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const searchParams = useSearchParams();
   const [selectedVisitType, setSelectedVisitType] = useState<"clinic" | "online">(() =>
     searchParams.get("visitType") === "online" ? "online" : "clinic"
@@ -57,21 +95,24 @@ export default function BookingStep1Form() {
   const visitTypeLabel = visitTypes.find((v) => v.value === selectedVisitType)?.label ?? null;
 
   useEffect(() => {
-    if (locations.length > 0) {
-      const loc = locations[selectedClinicIndex];
+    const loc = locations[selectedClinicIndex];
+    if (loc) {
       setClinic({
-        id: `loc-${selectedClinicIndex}`,
+        id: loc._id,
         name: loc.name,
-        address: loc.address,
-        fee_pkr: loc.fee_pkr,
-        timings: loc.timings as Record<string, string>,
-        booking_link: (loc as { booking_link?: string }).booking_link,
-        map_link: (loc as { map_link?: string }).map_link,
+        address: loc.address ?? null,
+        fee_pkr: loc.feePkr,
+        timings: loc.timings,
+        map_link: loc.mapLink,
       });
     }
   }, [selectedClinicIndex, locations, setClinic]);
 
   const handleNext = () => {
+    if (!locations[selectedClinicIndex]) {
+      toast.error("Please select a clinic to continue.");
+      return;
+    }
     setVisitType(selectedVisitType);
     setReason_(reason);
     router.push("/book-appointment/step-2");
@@ -125,7 +166,7 @@ export default function BookingStep1Form() {
                   Consultation Fee
                 </span>
                 <span className="text-[24px] font-bold text-primary">
-                  Rs. {locations[selectedClinicIndex]?.fee_pkr.toLocaleString() ?? "—"}
+                  Rs. {locations[selectedClinicIndex]?.feePkr.toLocaleString() ?? "—"}
                 </span>
               </div>
             </div>
@@ -165,121 +206,133 @@ export default function BookingStep1Form() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {locations.map((loc, i) => {
-                const timings = loc.timings as Record<string, string>;
-                const days = formatTimings(timings);
-                const hours = Object.values(timings)[0] ?? "";
-                const isSelected = selectedClinicIndex === i;
-                const LABELS = ["Primary Center", "Satellite Clinic", "Evening Clinic"];
+            {clinicsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-80 rounded-xl bg-surface-container-low animate-pulse" />
+                ))}
+              </div>
+            ) : clinicsError ? (
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-error/10 border border-error/30">
+                <span className="material-symbols-outlined text-error">error</span>
+                <p className="text-error text-body-md font-semibold">{clinicsError}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {locations.map((loc, i) => {
+                  const days = formatTimings(loc.timings);
+                  const hours = Object.values(loc.timings)[0] ?? "";
+                  const isSelected = selectedClinicIndex === i;
+                  const LABELS = ["Primary Center", "Satellite Clinic", "Evening Clinic"];
 
-                return (
-                  <div
-                    key={i}
-                    onClick={() => setSelectedClinicIndex(i)}
-                    className={`p-6 rounded-xl flex flex-col justify-between min-h-80 cursor-pointer transition-all duration-200 ${
-                      isSelected
-                        ? "bg-primary shadow-xl shadow-primary/30 scale-[1.02]"
-                        : "bg-surface border border-outline-variant/30 hover:border-primary/40 hover:shadow-md"
-                    }`}
-                  >
-                    <div>
-                      {/* Card type label */}
-                      <span
-                        className={`text-[10px] uppercase tracking-widest font-bold ${
-                          isSelected ? "text-white/70" : "text-outline"
-                        }`}
-                      >
-                        {LABELS[i] ?? "Clinic"}
-                      </span>
-
-                      {/* Clinic name */}
-                      <h3
-                        className={`text-xl font-bold mt-1 mb-4 leading-snug ${
-                          isSelected ? "text-white" : "text-on-surface"
-                        }`}
-                      >
-                        {loc.name}
-                      </h3>
-
-                      {/* Address */}
-                      {loc.address ? (
-                        <div
-                          className={`flex items-start gap-2 text-[12px] mb-6 ${
-                            isSelected ? "text-white/80" : "text-on-surface-variant"
-                          }`}
-                        >
-                          <span
-                            className={`material-symbols-outlined text-[16px] mt-0.5 shrink-0 ${
-                              isSelected ? "text-white/70" : "text-primary"
-                            }`}
-                          >
-                            location_on
-                          </span>
-                          <span>{loc.address}</span>
-                        </div>
-                      ) : (
-                        <div
-                          className={`mb-6 text-[12px] italic ${
-                            isSelected ? "text-white/60" : "text-on-surface-variant"
-                          }`}
-                        >
-                          Address not available
-                        </div>
-                      )}
-
-                      {/* Timings & fee */}
-                      <div
-                        className={`space-y-2 text-[12px] border-t pt-4 ${
-                          isSelected ? "border-white/20" : "border-outline-variant/20"
-                        }`}
-                      >
-                        {days && (
-                          <div className="flex justify-between gap-2">
-                            <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
-                              Days
-                            </span>
-                            <span className={`font-bold text-right ${isSelected ? "text-white" : "text-on-surface"}`}>
-                              {days}
-                            </span>
-                          </div>
-                        )}
-                        {hours && (
-                          <div className="flex justify-between gap-2">
-                            <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
-                              Hours
-                            </span>
-                            <span className={`font-bold text-right ${isSelected ? "text-white" : "text-on-surface"}`}>
-                              {hours}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between gap-2">
-                          <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
-                            Fee
-                          </span>
-                          <span className={`font-bold ${isSelected ? "text-white" : "text-primary"}`}>
-                            Rs. {loc.fee_pkr.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedClinicIndex(i); }}
-                      className={`mt-6 w-full py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${
+                  return (
+                    <div
+                      key={loc._id}
+                      onClick={() => setSelectedClinicIndex(i)}
+                      className={`p-6 rounded-xl flex flex-col justify-between min-h-80 cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? "bg-white/20 border border-white/60 text-white hover:bg-white/30"
-                          : "border border-primary/30 text-primary bg-transparent hover:bg-primary/5"
+                          ? "bg-primary shadow-xl shadow-primary/30 scale-[1.02]"
+                          : "bg-surface border border-outline-variant/30 hover:border-primary/40 hover:shadow-md"
                       }`}
                     >
-                      {isSelected ? "✓ Selected" : "Book This Clinic →"}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      <div>
+                        {/* Card type label */}
+                        <span
+                          className={`text-[10px] uppercase tracking-widest font-bold ${
+                            isSelected ? "text-white/70" : "text-outline"
+                          }`}
+                        >
+                          {LABELS[i] ?? "Clinic"}
+                        </span>
+
+                        {/* Clinic name */}
+                        <h3
+                          className={`text-xl font-bold mt-1 mb-4 leading-snug ${
+                            isSelected ? "text-white" : "text-on-surface"
+                          }`}
+                        >
+                          {loc.name}
+                        </h3>
+
+                        {/* Address */}
+                        {loc.address ? (
+                          <div
+                            className={`flex items-start gap-2 text-[12px] mb-6 ${
+                              isSelected ? "text-white/80" : "text-on-surface-variant"
+                            }`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[16px] mt-0.5 shrink-0 ${
+                                isSelected ? "text-white/70" : "text-primary"
+                              }`}
+                            >
+                              location_on
+                            </span>
+                            <span>{loc.address}</span>
+                          </div>
+                        ) : (
+                          <div
+                            className={`mb-6 text-[12px] italic ${
+                              isSelected ? "text-white/60" : "text-on-surface-variant"
+                            }`}
+                          >
+                            Address not available
+                          </div>
+                        )}
+
+                        {/* Timings & fee */}
+                        <div
+                          className={`space-y-2 text-[12px] border-t pt-4 ${
+                            isSelected ? "border-white/20" : "border-outline-variant/20"
+                          }`}
+                        >
+                          {days && (
+                            <div className="flex justify-between gap-2">
+                              <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
+                                Days
+                              </span>
+                              <span className={`font-bold text-right ${isSelected ? "text-white" : "text-on-surface"}`}>
+                                {days}
+                              </span>
+                            </div>
+                          )}
+                          {hours && (
+                            <div className="flex justify-between gap-2">
+                              <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
+                                Hours
+                              </span>
+                              <span className={`font-bold text-right ${isSelected ? "text-white" : "text-on-surface"}`}>
+                                {hours}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between gap-2">
+                            <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
+                              Fee
+                            </span>
+                            <span className={`font-bold ${isSelected ? "text-white" : "text-primary"}`}>
+                              Rs. {loc.feePkr.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedClinicIndex(i); }}
+                        className={`mt-6 w-full py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${
+                          isSelected
+                            ? "bg-white/20 border border-white/60 text-white hover:bg-white/30"
+                            : "border border-primary/30 text-primary bg-transparent hover:bg-primary/5"
+                        }`}
+                      >
+                        {isSelected ? "✓ Selected" : "Book This Clinic →"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="mt-10 border-t border-outline-variant/20 pt-10" />
           </div>
@@ -347,7 +400,8 @@ export default function BookingStep1Form() {
           <div className="flex justify-end pt-4">
             <button
               onClick={handleNext}
-              className="bg-primary text-on-primary px-10 py-4 rounded-full font-semibold tracking-wider text-[18px] active:scale-95 transition-all hover:shadow-lg hover:shadow-primary/20 flex items-center gap-2"
+              disabled={clinicsLoading || locations.length === 0}
+              className="bg-primary text-on-primary px-10 py-4 rounded-full font-semibold tracking-wider text-[18px] active:scale-95 transition-all hover:shadow-lg hover:shadow-primary/20 flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
             >
               Next: Date &amp; Time
               <span className="material-symbols-outlined">arrow_forward</span>

@@ -4,6 +4,7 @@ import "../(public)/globals.css";
 import PatientSidebar from "@/components/patient/PatientSidebar";
 import PatientTopBar from "@/components/patient/PatientTopBar";
 import { requireRole } from "@/lib/auth/requireRole";
+import { findUserById } from "@/services/mongodb/repositories/user.repository";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PatientLayout({ children }: { children: React.ReactNode }) {
-  await requireRole("patient");
+  const session = await requireRole("patient");
+  const user = await findUserById(session.userId);
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
@@ -33,7 +35,13 @@ export default async function PatientLayout({ children }: { children: React.Reac
         <div className="flex min-h-screen">
           <PatientSidebar />
           <main className="flex-1 md:ml-64 min-w-0 flex flex-col">
-            <PatientTopBar />
+            <PatientTopBar
+              user={
+                user
+                  ? { name: user.name, phone: user.phone ?? undefined, avatar: user.avatar ?? undefined }
+                  : { name: "Patient", phone: session.phone }
+              }
+            />
             <div className="flex-1 pb-16 md:pb-0">
               {children}
             </div>

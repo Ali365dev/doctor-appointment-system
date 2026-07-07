@@ -1,24 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
+import type { AppointmentStatus } from "@/types/appointment";
+import type { PaymentStatus } from "@/types/payment";
 
 type PaymentMethod = "stripe" | "jazzcash" | "easypaisa" | "reception" | "receipt";
 
-const STATUS_CONFIG: Record<PaymentMethod, {
+const HERO_CONFIG: Record<PaymentMethod, {
   heroClass: string;
   iconGlowClass: string;
   iconBgClass: string;
   icon: string;
   title: string;
   description: (doctorName: string) => string;
-  appointmentStatus: { label: string; icon: string; className: string };
-  paymentStatus: { label: string; icon: string; className: string };
-  amountBadge: string;
 }> = {
   stripe: {
     heroClass: "bg-green-50 border-green-200",
@@ -27,9 +26,6 @@ const STATUS_CONFIG: Record<PaymentMethod, {
     icon: "verified",
     title: "Payment Confirmed!",
     description: (name) => `Your card payment was processed instantly by Stripe. Your appointment with ${name} is confirmed.`,
-    appointmentStatus: { label: "Confirmed", icon: "check_circle", className: "bg-green-100 text-green-700" },
-    paymentStatus: { label: "Paid via Stripe", icon: "verified", className: "bg-green-100 text-green-700" },
-    amountBadge: "PRE-PAID",
   },
   jazzcash: {
     heroClass: "bg-surface-container-low border-outline-variant/30",
@@ -38,9 +34,6 @@ const STATUS_CONFIG: Record<PaymentMethod, {
     icon: "check",
     title: "Payment Submitted Successfully",
     description: (name) => `Your JazzCash payment receipt has been received. ${name}'s team will verify and confirm your appointment shortly.`,
-    appointmentStatus: { label: "Pending Verification", icon: "pending", className: "bg-tertiary-fixed text-on-tertiary-fixed-variant" },
-    paymentStatus: { label: "Receipt Submitted", icon: "receipt_long", className: "bg-secondary-fixed text-on-secondary-fixed-variant" },
-    amountBadge: "PRE-PAID",
   },
   easypaisa: {
     heroClass: "bg-surface-container-low border-outline-variant/30",
@@ -49,9 +42,6 @@ const STATUS_CONFIG: Record<PaymentMethod, {
     icon: "check",
     title: "Payment Submitted Successfully",
     description: (name) => `Your Easypaisa payment receipt has been received. ${name}'s team will verify and confirm your appointment shortly.`,
-    appointmentStatus: { label: "Pending Verification", icon: "pending", className: "bg-tertiary-fixed text-on-tertiary-fixed-variant" },
-    paymentStatus: { label: "Receipt Submitted", icon: "receipt_long", className: "bg-secondary-fixed text-on-secondary-fixed-variant" },
-    amountBadge: "PRE-PAID",
   },
   reception: {
     heroClass: "bg-amber-50 border-amber-200",
@@ -60,9 +50,6 @@ const STATUS_CONFIG: Record<PaymentMethod, {
     icon: "storefront",
     title: "Booking Confirmed!",
     description: (name) => `Your slot with ${name} is reserved. Please pay at the clinic reception on your visit day — no receipt needed.`,
-    appointmentStatus: { label: "Confirmed", icon: "check_circle", className: "bg-green-100 text-green-700" },
-    paymentStatus: { label: "Pay at Reception", icon: "storefront", className: "bg-amber-100 text-amber-700" },
-    amountBadge: "PAY AT CLINIC",
   },
   receipt: {
     heroClass: "bg-surface-container-low border-outline-variant/30",
@@ -71,46 +58,115 @@ const STATUS_CONFIG: Record<PaymentMethod, {
     icon: "check",
     title: "Payment Submitted Successfully",
     description: (name) => `Your payment receipt has been received. ${name}'s team will verify and confirm your appointment shortly.`,
-    appointmentStatus: { label: "Pending Verification", icon: "pending", className: "bg-tertiary-fixed text-on-tertiary-fixed-variant" },
-    paymentStatus: { label: "Receipt Submitted", icon: "receipt_long", className: "bg-secondary-fixed text-on-secondary-fixed-variant" },
-    amountBadge: "PRE-PAID",
   },
 };
 
+const APPOINTMENT_STATUS_CONFIG: Record<AppointmentStatus, { label: string; icon: string; className: string }> = {
+  pending_payment: { label: "Pending Payment", icon: "hourglass_empty", className: "bg-amber-100 text-amber-700" },
+  payment_submitted: { label: "Payment Submitted", icon: "receipt_long", className: "bg-tertiary-fixed text-on-tertiary-fixed-variant" },
+  payment_verification: { label: "Pending Verification", icon: "pending", className: "bg-tertiary-fixed text-on-tertiary-fixed-variant" },
+  confirmed: { label: "Confirmed", icon: "check_circle", className: "bg-green-100 text-green-700" },
+  completed: { label: "Completed", icon: "task_alt", className: "bg-surface-container-highest text-on-surface-variant" },
+  cancelled: { label: "Cancelled", icon: "cancel", className: "bg-error/10 text-error" },
+  rejected: { label: "Rejected", icon: "block", className: "bg-error/10 text-error" },
+  rescheduled: { label: "Rescheduled", icon: "event_repeat", className: "bg-primary/10 text-primary" },
+  no_show: { label: "No Show", icon: "person_off", className: "bg-error/10 text-error" },
+};
+
+const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; icon: string; className: string }> = {
+  pending: { label: "Pending", icon: "schedule", className: "bg-amber-100 text-amber-700" },
+  submitted: { label: "Receipt Submitted", icon: "receipt_long", className: "bg-secondary-fixed text-on-secondary-fixed-variant" },
+  verified: { label: "Verified", icon: "verified", className: "bg-green-100 text-green-700" },
+  rejected: { label: "Rejected", icon: "block", className: "bg-error/10 text-error" },
+  failed: { label: "Failed", icon: "error", className: "bg-error/10 text-error" },
+  refunded: { label: "Refunded", icon: "undo", className: "bg-surface-container-highest text-on-surface-variant" },
+};
+
+interface Confirmation {
+  appointmentNumber: string;
+  status: AppointmentStatus;
+  clinicName: string;
+  date: string;
+  time: string;
+  patientName: string;
+  feeSnapshotPkr: number;
+  paymentMethod?: string;
+  paymentStatus?: PaymentStatus;
+}
+
 export default function SuccessContent() {
-  const { selectedClinic, selectedDate, selectedTime, patientInfo, reset } = useBookingStore();
+  const { patientInfo, reset } = useBookingStore();
   const searchParams = useSearchParams();
-  // Stripe/wallet/reception routes always append their own `payment` param — trust it directly
   const paymentParam = searchParams.get("payment");
+  const appointmentId = searchParams.get("appointmentId");
+  const sessionId = searchParams.get("session_id");
+
   const method: PaymentMethod =
     paymentParam === "stripe" || paymentParam === "jazzcash" || paymentParam === "easypaisa" || paymentParam === "reception"
       ? paymentParam
       : "receipt";
-  const isStripe = method === "stripe";
-  const isReception = method === "reception";
-  const config = STATUS_CONFIG[method];
+  const hero = HERO_CONFIG[method];
 
-  const fee = selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const formattedDate = selectedDate
-    ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Stripe redirects here before our server has confirmed the session —
+        // this call is what actually flips payment/appointment to verified/confirmed.
+        if (method === "stripe" && sessionId) {
+          await fetch(`/api/verify-stripe-session?session_id=${encodeURIComponent(sessionId)}`);
+        }
+
+        if (appointmentId) {
+          const res = await fetch(`/api/appointments/${appointmentId}/confirmation`);
+          const data = await res.json();
+          if (!cancelled && res.ok) {
+            setConfirmation(data.confirmation);
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [method, sessionId, appointmentId]);
+
+  const fee = confirmation?.feeSnapshotPkr ?? doctor.fee_summary.min_fee_pkr;
+  const clinicName = confirmation?.clinicName ?? "—";
+  const patientName = confirmation?.patientName ?? patientInfo.fullName ?? "—";
+  const refNumber = confirmation?.appointmentNumber ?? "—";
+
+  const formattedDate = confirmation?.date
+    ? new Date(confirmation.date + "T00:00:00").toLocaleDateString("en-US", {
         weekday: "long", month: "long", day: "numeric", year: "numeric",
       })
     : "—";
 
-  const [refNumber] = useState(() => `#APT-${Date.now().toString().slice(-6)}`);
+  const appointmentStatusBadge = confirmation
+    ? APPOINTMENT_STATUS_CONFIG[confirmation.status]
+    : { label: "Processing…", icon: "hourglass_empty", className: "bg-surface-container-highest text-on-surface-variant" };
+  const paymentStatusBadge = confirmation?.paymentStatus
+    ? PAYMENT_STATUS_CONFIG[confirmation.paymentStatus]
+    : { label: method === "reception" ? "Pay at Reception" : "Processing…", icon: "schedule", className: "bg-surface-container-highest text-on-surface-variant" };
+
+  const isStripe = method === "stripe";
+  const isReception = method === "reception";
 
   const handleDownload = () => {
     const content = [
       "APPOINTMENT CONFIRMATION",
       "========================",
       `Reference: ${refNumber}`,
-      `Patient: ${patientInfo.fullName || "—"}`,
-      `Phone: ${patientInfo.phone || "—"}`,
+      `Patient: ${patientName}`,
       `Doctor: ${doctor.name}`,
-      `Clinic: ${selectedClinic?.name ?? "—"}`,
+      `Clinic: ${clinicName}`,
       `Date: ${formattedDate}`,
-      `Time: ${selectedTime ?? "—"}`,
+      `Time: ${confirmation?.time ?? "—"}`,
       `Fee: Rs. ${fee.toLocaleString()}`,
       "",
       "Present this at the clinic for check-in.",
@@ -130,21 +186,21 @@ export default function SuccessContent() {
         {/* Left */}
         <div className="lg:col-span-8 space-y-10">
           {/* Success hero */}
-          <div className={`flex flex-col md:flex-row items-center gap-10 p-10 rounded-xl border ${config.heroClass}`}>
+          <div className={`flex flex-col md:flex-row items-center gap-10 p-10 rounded-xl border ${hero.heroClass}`}>
             <div className="relative w-24 h-24 shrink-0">
-              <div className={`absolute inset-0 rounded-full animate-pulse ${config.iconGlowClass}`} />
-              <div className={`relative w-full h-full flex items-center justify-center rounded-full text-white ${config.iconBgClass}`}>
+              <div className={`absolute inset-0 rounded-full animate-pulse ${hero.iconGlowClass}`} />
+              <div className={`relative w-full h-full flex items-center justify-center rounded-full text-white ${hero.iconBgClass}`}>
                 <span className="material-symbols-outlined text-display" style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>
-                  {config.icon}
+                  {hero.icon}
                 </span>
               </div>
             </div>
             <div>
               <h1 className={`text-headline-lg font-bold mb-2 ${isStripe ? "text-green-700" : isReception ? "text-amber-700" : "text-primary"}`}>
-                {config.title}
+                {hero.title}
               </h1>
               <p className="text-body-lg text-on-surface-variant max-w-2xl">
-                {config.description(doctor.name)}
+                {hero.description(doctor.name)}
               </p>
             </div>
           </div>
@@ -155,25 +211,27 @@ export default function SuccessContent() {
               <h2 className="text-headline-md font-semibold text-on-surface">
                 {isStripe ? "Payment Details" : isReception ? "Booking Details" : "Verification Progress"}
               </h2>
-              <span className="text-[14px] font-semibold text-outline">Ref: {refNumber}</span>
+              <span className="text-[14px] font-semibold text-outline">
+                {loading ? "Loading…" : `Ref: ${refNumber}`}
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               <div className="bg-surface-container-low p-6 rounded-lg flex items-center justify-between">
                 <span className="text-[14px] font-semibold text-on-surface-variant">Appointment Status</span>
-                <span className={`${config.appointmentStatus.className} px-4 py-1 rounded-full text-[14px] font-semibold flex items-center gap-2`}>
+                <span className={`${appointmentStatusBadge.className} px-4 py-1 rounded-full text-[14px] font-semibold flex items-center gap-2`}>
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    {config.appointmentStatus.icon}
+                    {appointmentStatusBadge.icon}
                   </span>
-                  {config.appointmentStatus.label}
+                  {appointmentStatusBadge.label}
                 </span>
               </div>
               <div className="bg-surface-container-low p-6 rounded-lg flex items-center justify-between">
                 <span className="text-[14px] font-semibold text-on-surface-variant">Payment Status</span>
-                <span className={`${config.paymentStatus.className} px-4 py-1 rounded-full text-[14px] font-semibold flex items-center gap-2`}>
+                <span className={`${paymentStatusBadge.className} px-4 py-1 rounded-full text-[14px] font-semibold flex items-center gap-2`}>
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    {config.paymentStatus.icon}
+                    {paymentStatusBadge.icon}
                   </span>
-                  {config.paymentStatus.label}
+                  {paymentStatusBadge.label}
                 </span>
               </div>
             </div>
@@ -235,7 +293,7 @@ export default function SuccessContent() {
             </button>
 
             <div className="flex flex-col sm:flex-row gap-6 pt-6 w-full">
-              <Link href="patient/dashboard"
+              <Link href="/patient/appointments"
                 className="flex-1 bg-surface-container-high text-primary border border-outline-variant text-[14px] font-semibold py-4 rounded-xl hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2">
                 View Appointment Status
                 <span className="material-symbols-outlined">arrow_forward</span>
@@ -270,10 +328,10 @@ export default function SuccessContent() {
 
               <div className="border-t border-outline-variant/30 pt-4 space-y-2">
                 {[
-                  { label: "Patient", value: patientInfo.fullName || "—" },
-                  { label: "Clinic", value: selectedClinic?.name ?? "—" },
+                  { label: "Patient", value: patientName },
+                  { label: "Clinic", value: clinicName },
                   { label: "Date", value: formattedDate },
-                  { label: "Time", value: selectedTime ?? "—" },
+                  { label: "Time", value: confirmation?.time ?? "—" },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between">
                     <span className="text-body-md text-on-surface-variant">{label}</span>
@@ -288,7 +346,7 @@ export default function SuccessContent() {
                   <p className="text-headline-md font-bold text-primary">Rs. {fee.toLocaleString()}</p>
                 </div>
                 <span className="bg-primary/10 text-primary px-2 py-1 rounded text-[10px] font-bold">
-                  {config.amountBadge}
+                  {isReception ? "PAY AT CLINIC" : "PRE-PAID"}
                 </span>
               </div>
             </div>

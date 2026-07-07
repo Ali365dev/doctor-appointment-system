@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import UploadReceiptContent from "@/components/appointment/UploadReceiptContent";
 import { doctor } from "@/lib/data";
 
@@ -28,7 +29,9 @@ export default function UploadReceiptPage() {
         </div>
       </div>
 
-      <UploadReceiptContent />
+      <Suspense>
+        <UploadReceiptContent />
+      </Suspense>
     </main>
   );
 }

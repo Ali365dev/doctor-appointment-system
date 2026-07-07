@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:doctor": "node --env-file=.env.local scripts/seed-doctor.mjs"
+    "seed:doctor": "node --env-file=.env.local scripts/seed-doctor.mjs",
+    "seed:clinics": "node --env-file=.env.local scripts/seed-clinics.mjs",
+    "seed:dummy-admin": "node --env-file=.env.local scripts/seed-dummy-admin.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -16,6 +18,7 @@
     "@tanstack/react-query": "^5.101.1",
     "@tanstack/react-query-devtools": "^5.101.1",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.15.0",

@@ -4,7 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-export default function PatientTopBar() {
+interface PatientTopBarProps {
+  user: {
+    name: string;
+    phone?: string;
+    avatar?: string;
+  };
+}
+
+export default function PatientTopBar({ user }: PatientTopBarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -24,19 +32,23 @@ export default function PatientTopBar() {
 
         <div className="flex items-center gap-md">
           <div className="hidden sm:flex flex-col text-right">
-            <span className="text-label-md font-bold text-on-surface">James Patterson</span>
-            <span className="text-caption text-on-surface-variant">Patient ID: #SP-8821</span>
+            <span className="text-label-md font-bold text-on-surface">{user.name}</span>
+            {user.phone && <span className="text-caption text-on-surface-variant">{user.phone}</span>}
           </div>
           <Link href="/patient/profile">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 cursor-pointer">
-              <Image
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYCJysrc3XroQtiaWH68dl0l0m1kqyd-lpNHcCi-6nj-BeBK2z5ULlDaoCU4g72NIAB2B-AkzxCaqKFKzVz4FY5DS1q11_wxCKqq06ahuL2Pw2vRkkMSfFpcXWx9An7gQCV1nwlMQCd5NpcYCUYQNOwuSAmTNNgDYCKmHYJqPte0PTVa3KVcxd7yPWIgD07DWhfQpAuSHYC0q9pUZJsevvIlUl5TtIeU5hb1lBWZmU9gEqaE_LZec_ddfHe5VVex5gEjuwx8hchHc"
-                alt="Patient Avatar"
-                width={40}
-                height={40}
-                className="w-full h-full object-cover"
-                unoptimized
-              />
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 cursor-pointer bg-surface-container-high flex items-center justify-center">
+              {user.avatar ? (
+                <Image
+                  src={user.avatar}
+                  alt={user.name}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span className="material-symbols-outlined text-on-surface-variant text-[22px]">person</span>
+              )}
             </div>
           </Link>
         </div>

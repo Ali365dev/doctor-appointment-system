@@ -1,47 +1,53 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { toast } from "react-toastify";
 
-type PatientStatus = "Active" | "Follow-up" | "Critical" | "New";
+type PatientStatus = "Active" | "Follow-up" | "New";
 
 interface Patient {
   id: string;
   name: string;
   phone: string;
-  age: number;
-  gender: "Male" | "Female";
+  email?: string;
+  age?: number;
+  gender?: string;
   lastVisit: string;
   totalVisits: number;
   status: PatientStatus;
-  condition: string;
+  lastReason: string;
 }
-
-const SEED: Patient[] = [
-  { id: "#MC-9021", name: "Ahmed Khan", phone: "+92 300 1234567", age: 34, gender: "Male", lastVisit: "2026-06-28", totalVisits: 5, status: "Active", condition: "GERD" },
-  { id: "#MC-7712", name: "Sara Malik", phone: "+92 321 9876543", age: 28, gender: "Female", lastVisit: "2026-06-25", totalVisits: 3, status: "Follow-up", condition: "Hepatitis C" },
-  { id: "#MC-1104", name: "Zainab Bibi", phone: "+92 333 4567890", age: 52, gender: "Female", lastVisit: "2026-06-20", totalVisits: 12, status: "Critical", condition: "Liver Cirrhosis" },
-  { id: "#MC-4409", name: "Umar Farooq", phone: "+92 345 0001112", age: 41, gender: "Male", lastVisit: "2026-06-30", totalVisits: 8, status: "Active", condition: "Colonoscopy Follow-up" },
-  { id: "#MC-1288", name: "Hina Asif", phone: "+92 322 1112233", age: 23, gender: "Female", lastVisit: "—", totalVisits: 1, status: "New", condition: "Abdominal Pain" },
-  { id: "#MC-3341", name: "Bilal Ahmed", phone: "+92 331 9988776", age: 45, gender: "Male", lastVisit: "2026-06-15", totalVisits: 6, status: "Active", condition: "Dyspepsia" },
-  { id: "#MC-5502", name: "Fatima Akhtar", phone: "+92 311 2345678", age: 38, gender: "Female", lastVisit: "2026-06-18", totalVisits: 4, status: "Follow-up", condition: "Hepatitis B" },
-];
 
 const STATUS_COLORS: Record<PatientStatus, string> = {
   Active: "bg-secondary/10 text-secondary",
-  "Follow-up": "bg-surface-container-highest text-on-surface-variant",
-  Critical: "bg-error/10 text-error",
-  New: "bg-primary/10 text-primary",
+  "Follow-up": "bg-primary/10 text-primary",
+  New: "bg-surface-container-highest text-on-surface-variant",
 };
 
 const PAGE_SIZE = 5;
 
 export default function PatientsContent() {
-  const [patients, setPatients] = useState<Patient[]>(SEED);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewId, setViewId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/patients");
+        const data = await res.json();
+        if (res.ok) setPatients(data.patients ?? []);
+        else toast.error(data.error ?? "Could not load patients");
+      } catch {
+        toast.error("Network error loading patients");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -49,9 +55,8 @@ export default function PatientsContent() {
         const matchSearch =
           !search ||
           p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.id.toLowerCase().includes(search.toLowerCase()) ||
           p.phone.includes(search) ||
-          p.condition.toLowerCase().includes(search.toLowerCase());
+          p.lastReason.toLowerCase().includes(search.toLowerCase());
         const matchStatus = statusFilter === "All" || p.status === statusFilter;
         return matchSearch && matchStatus;
       }),
@@ -64,19 +69,13 @@ export default function PatientsContent() {
   const counts = {
     Active: patients.filter((p) => p.status === "Active").length,
     "Follow-up": patients.filter((p) => p.status === "Follow-up").length,
-    Critical: patients.filter((p) => p.status === "Critical").length,
     New: patients.filter((p) => p.status === "New").length,
-  };
-
-  const deletePatient = (id: string) => {
-    setPatients((prev) => prev.filter((p) => p.id !== id));
-    setDeleteId(null);
   };
 
   const exportCSV = () => {
     const rows = [
-      ["ID", "Name", "Phone", "Age", "Gender", "Last Visit", "Total Visits", "Status", "Condition"],
-      ...filtered.map((p) => [p.id, p.name, p.phone, p.age, p.gender, p.lastVisit, p.totalVisits, p.status, p.condition]),
+      ["Name", "Phone", "Email", "Age", "Gender", "Last Visit", "Total Visits", "Status", "Last Reason for Visit"],
+      ...filtered.map((p) => [p.name, p.phone, p.email ?? "", p.age ?? "", p.gender ?? "", p.lastVisit, p.totalVisits, p.status, p.lastReason]),
     ];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -97,7 +96,7 @@ export default function PatientsContent() {
         <div>
           <h1 className="text-headline-lg font-bold text-on-surface">Patient Directory</h1>
           <p className="text-body-md text-on-surface-variant mt-xs">
-            {patients.length} registered patients · {counts.Critical} critical · {counts.New} new
+            {patients.length} registered patients · {counts["Follow-up"]} follow-up · {counts.New} new
           </p>
         </div>
         <div className="flex gap-sm">
@@ -111,7 +110,7 @@ export default function PatientsContent() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-md mb-xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-md mb-xl">
         {(Object.entries(counts) as [PatientStatus, number][]).map(([label, value]) => (
           <div key={label} className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex items-center gap-md">
             <div className={`w-10 h-10 rounded-xl ${STATUS_COLORS[label]} flex items-center justify-center`}>
@@ -128,7 +127,7 @@ export default function PatientsContent() {
       {/* Filters */}
       <div className="bg-surface-container-lowest rounded-2xl p-md mb-xl shadow-sm border border-outline-variant/30 flex flex-wrap items-center gap-md justify-between">
         <div className="flex bg-surface-container-low p-xs rounded-xl">
-          {["All", "Active", "Follow-up", "Critical", "New"].map((s) => (
+          {["All", "Active", "Follow-up", "New"].map((s) => (
             <button
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
@@ -148,7 +147,7 @@ export default function PatientsContent() {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search name, ID, condition…"
+            placeholder="Search name, phone, reason…"
             className="pl-10 pr-sm py-xs bg-surface-container-low border border-outline-variant/50 rounded-lg text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all w-64"
           />
         </div>
@@ -159,7 +158,7 @@ export default function PatientsContent() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-surface-container-low/50 border-b border-outline-variant">
-              {["Patient", "ID", "Age / Gender", "Condition", "Last Visit", "Visits", "Status", "Actions"].map((h, i) => (
+              {["Patient", "Phone", "Age / Gender", "Last Reason for Visit", "Last Visit", "Visits", "Status", "Actions"].map((h, i) => (
                 <th key={h} className={`px-md py-md font-semibold text-label-md text-on-surface-variant ${i === 7 ? "text-right" : ""}`}>
                   {h}
                 </th>
@@ -167,7 +166,13 @@ export default function PatientsContent() {
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/50">
-            {pageItems.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="px-md py-xl text-center text-on-surface-variant">
+                  Loading patients…
+                </td>
+              </tr>
+            ) : pageItems.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-md py-xl text-center text-on-surface-variant">
                   No patients match your search.
@@ -184,9 +189,9 @@ export default function PatientsContent() {
                       <span className="font-semibold text-body-md">{p.name}</span>
                     </div>
                   </td>
-                  <td className="px-md py-md text-body-md text-on-surface-variant">{p.id}</td>
-                  <td className="px-md py-md text-body-md">{p.age}y · {p.gender}</td>
-                  <td className="px-md py-md text-body-md text-on-surface-variant">{p.condition}</td>
+                  <td className="px-md py-md text-body-md text-on-surface-variant">{p.phone}</td>
+                  <td className="px-md py-md text-body-md">{p.age ? `${p.age}y` : "—"} · {p.gender ?? "—"}</td>
+                  <td className="px-md py-md text-body-md text-on-surface-variant max-w-[220px] truncate">{p.lastReason}</td>
                   <td className="px-md py-md text-body-md">{p.lastVisit}</td>
                   <td className="px-md py-md text-body-md">{p.totalVisits}</td>
                   <td className="px-md py-md">
@@ -202,13 +207,6 @@ export default function PatientsContent() {
                         title="View Profile"
                       >
                         <span className="material-symbols-outlined text-[18px]">person</span>
-                      </button>
-                      <button
-                        onClick={() => setDeleteId(p.id)}
-                        className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
-                        title="Delete"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
                     </div>
                   </td>
@@ -242,28 +240,6 @@ export default function PatientsContent() {
         </div>
       </div>
 
-      {/* Delete modal */}
-      {deleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-sm w-full mx-md">
-            <h3 className="text-headline-md font-bold text-on-surface mb-sm">Remove Patient?</h3>
-            <p className="text-body-md text-on-surface-variant mb-lg">
-              This will remove patient {deleteId} from the directory.
-            </p>
-            <div className="flex gap-sm justify-end">
-              <button onClick={() => setDeleteId(null)}
-                className="px-md py-xs rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high">
-                Cancel
-              </button>
-              <button onClick={() => deletePatient(deleteId)}
-                className="px-md py-xs rounded-xl bg-error text-on-error font-semibold hover:opacity-90">
-                Remove
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* View Profile modal */}
       {viewPatient && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -277,19 +253,19 @@ export default function PatientsContent() {
             </div>
             <div className="space-y-sm">
               {[
-                ["ID", viewPatient.id],
                 ["Name", viewPatient.name],
                 ["Phone", viewPatient.phone],
-                ["Age", `${viewPatient.age} years`],
-                ["Gender", viewPatient.gender],
-                ["Condition", viewPatient.condition],
+                ["Email", viewPatient.email ?? "—"],
+                ["Age", viewPatient.age ? `${viewPatient.age} years` : "—"],
+                ["Gender", viewPatient.gender ?? "—"],
                 ["Status", viewPatient.status],
                 ["Last Visit", viewPatient.lastVisit],
                 ["Total Visits", String(viewPatient.totalVisits)],
+                ["Last Reason for Visit", viewPatient.lastReason],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
                   <span className="text-caption text-on-surface-variant uppercase tracking-wider">{label}</span>
-                  <span className="text-body-md font-semibold text-on-surface">{value}</span>
+                  <span className="text-body-md font-semibold text-on-surface text-right max-w-[60%] truncate">{value}</span>
                 </div>
               ))}
             </div>

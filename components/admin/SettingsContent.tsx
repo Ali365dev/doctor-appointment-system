@@ -80,18 +80,25 @@ export default function SettingsContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
                 <div>
                   <label className="block text-label-md text-on-surface-variant mb-xs">Default Slot Duration</label>
-                  <select className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface">
+                  <select
+                    defaultValue="5 minutes"
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                  >
+                    <option>5 minutes</option>
                     <option>15 minutes</option>
-                    <option selected>30 minutes</option>
+                    <option>30 minutes</option>
                     <option>45 minutes</option>
                     <option>60 minutes</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-label-md text-on-surface-variant mb-xs">Buffer Time Between Slots</label>
-                  <select className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface">
+                  <select
+                    defaultValue="5 minutes"
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                  >
                     <option>None</option>
-                    <option selected>5 minutes</option>
+                    <option>5 minutes</option>
                     <option>10 minutes</option>
                     <option>15 minutes</option>
                   </select>

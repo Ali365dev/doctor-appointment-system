@@ -3,7 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 
-export default function TopBar() {
+interface TopBarProps {
+  user: { name: string; avatar?: string };
+}
+
+export default function TopBar({ user }: TopBarProps) {
   const [search, setSearch] = useState("");
 
   return (
@@ -38,22 +42,16 @@ export default function TopBar() {
         {/* Divider */}
         <div className="h-6 w-px bg-outline-variant/50" />
 
-        {/* Doctor profile */}
-        <div className="flex items-center gap-xs cursor-pointer group">
-          <div className="flex flex-col items-end">
-            <span className="text-label-md font-semibold text-on-surface leading-none">Dr. Sarah Specialist</span>
-            <span className="text-caption text-on-surface-variant">Clinical Director</span>
+        {/* Identity */}
+        <div className="flex items-center gap-xs">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest shrink-0 flex items-center justify-center">
+            {user.avatar ? (
+              <Image src={user.avatar} alt={user.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
+            ) : (
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">person</span>
+            )}
           </div>
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-surface-container-highest border-2 border-primary/20 group-hover:border-primary/50 transition-colors shrink-0">
-            <Image
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVFroceKentGX_zGpM9-kSeItLNGte67uw7a_iy8AVgJDxpncKJUShPW32MHwO_26oqWMbaNOmY8nH8hoWCZ5Fs334tjg1igym1in0KeISACyl951Fp6OZIwn92MQHIraVdZxDVy-MCoT2x3oNF0r7hc7AVu-u4A8cDDIqy2B2QZBA47CbRv9sRwGCLpVvJNyDUbf4Q7vJE7RDOpDOoZ7c6YN0Z_5w_m1CRS94Lhj2Mpd3nu-sQTE0yCzUsrIyXW13fiWdxe5MI-4"
-              alt="Dr. Sarah Specialist"
-              width={36}
-              height={36}
-              className="w-full h-full object-cover"
-              unoptimized
-            />
-          </div>
+          <span className="hidden sm:block text-label-md font-semibold text-on-surface">{user.name}</span>
         </div>
       </div>
     </header>

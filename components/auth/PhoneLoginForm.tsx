@@ -13,9 +13,11 @@ type Step = "phone" | "otp" | "registered";
 interface PhoneLoginFormProps {
   /** Called after a brand-new account is created, so the parent can switch to password-login mode. */
   onRegistered?: (phone: string) => void;
+  /** Where to send the user after a successful login (e.g. back to /book-appointment/step-1). */
+  redirectTo?: string;
 }
 
-export default function PhoneLoginForm({ onRegistered }: PhoneLoginFormProps) {
+export default function PhoneLoginForm({ onRegistered, redirectTo }: PhoneLoginFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
   const [fullName, setFullName] = useState("");
@@ -86,7 +88,7 @@ export default function PhoneLoginForm({ onRegistered }: PhoneLoginFormProps) {
       }
 
       toast.success(`Welcome back, ${data.user.name}!`);
-      router.push(data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard");
+      router.push(redirectTo ?? (data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard"));
       router.refresh();
     } catch {
       toast.error("Invalid or expired OTP. Please try again.");

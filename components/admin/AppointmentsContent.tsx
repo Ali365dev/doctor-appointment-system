@@ -1,99 +1,335 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "react-toastify";
+import { APPOINTMENT_STATUSES, type AppointmentStatus, type VisitType } from "@/types/appointment";
+import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from "@/types/payment";
+import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
 import { doctor } from "@/lib/data";
 
-type Status = "Confirmed" | "Pending" | "Completed" | "Cancelled";
-type VisitType = "Consultation" | "Follow-up" | "Procedure";
-
-interface Appointment {
-  id: string;
-  initials: string;
-  name: string;
-  phone: string;
-  date: string;
-  time: string;
-  clinic: string;
-  type: VisitType;
-  status: Status;
-  fee: number;
+interface ApiPayment {
+  _id: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amountPkr: number;
+  transactionRef?: string;
+  receiptUrl?: string;
+  receiptUploadedAt?: string;
 }
 
-const SEED: Appointment[] = [
-  { id: "#APT-9042", initials: "AK", name: "Ahmed Khan", phone: "+92 300 1234567", date: "2026-07-01", time: "07:00 PM", clinic: doctor.practice_locations[1]?.name ?? "Faisal Hospital", type: "Consultation", status: "Confirmed", fee: 2000 },
-  { id: "#APT-9041", initials: "SM", name: "Sara Malik", phone: "+92 321 9876543", date: "2026-07-01", time: "07:30 PM", clinic: doctor.practice_locations[1]?.name ?? "Faisal Hospital", type: "Follow-up", status: "Pending", fee: 2000 },
-  { id: "#APT-9040", initials: "ZB", name: "Zainab Bibi", phone: "+92 333 4567890", date: "2026-07-02", time: "05:00 PM", clinic: doctor.practice_locations[0]?.name ?? "Chughtai", type: "Consultation", status: "Confirmed", fee: 2000 },
-  { id: "#APT-9039", initials: "UF", name: "Umar Farooq", phone: "+92 345 0001112", date: "2026-07-02", time: "09:00 PM", clinic: doctor.practice_locations[2]?.name ?? "United Hospital", type: "Procedure", status: "Pending", fee: 1200 },
-  { id: "#APT-9038", initials: "FA", name: "Fatima Akhtar", phone: "+92 311 2345678", date: "2026-06-30", time: "06:00 PM", clinic: doctor.practice_locations[0]?.name ?? "Chughtai", type: "Follow-up", status: "Completed", fee: 2000 },
-  { id: "#APT-9037", initials: "MR", name: "Muhammad Raza", phone: "+92 303 8765432", date: "2026-06-30", time: "08:00 PM", clinic: doctor.practice_locations[1]?.name ?? "Faisal Hospital", type: "Consultation", status: "Completed", fee: 2000 },
-  { id: "#APT-9036", initials: "HA", name: "Hina Asif", phone: "+92 322 1112233", date: "2026-06-29", time: "07:00 PM", clinic: doctor.practice_locations[1]?.name ?? "Faisal Hospital", type: "Consultation", status: "Cancelled", fee: 2000 },
-  { id: "#APT-9035", initials: "BA", name: "Bilal Ahmed", phone: "+92 331 9988776", date: "2026-07-03", time: "05:30 PM", clinic: doctor.practice_locations[0]?.name ?? "Chughtai", type: "Follow-up", status: "Confirmed", fee: 2000 },
+interface ApiAppointment {
+  _id: string;
+  appointmentNumber: string;
+  clinicId: { _id: string; name: string } | string;
+  visitType: VisitType;
+  date: string;
+  time: string;
+  reason?: string;
+  patientSnapshot: { fullName: string; phone: string; email?: string; notes?: string };
+  feeSnapshotPkr: number;
+  paymentId?: ApiPayment | string;
+  status: AppointmentStatus;
+}
+
+// Labels/colors per the admin spec: Pending=Orange, Confirmed=Green, Rejected=Red, Refunded=Purple.
+// "submitted"/"failed" aren't in the spec's 4-item dropdown but are real states the
+// system can be in (receipt awaiting review / Stripe failure) — kept visible, not hidden.
+const PAYMENT_STATUS_META: Record<PaymentStatus, { label: string; badgeClass: string }> = {
+  pending: { label: "Pending", badgeClass: "bg-orange-100 text-orange-700" },
+  submitted: { label: "Submitted", badgeClass: "bg-amber-100 text-amber-700" },
+  verified: { label: "Confirmed", badgeClass: "bg-green-100 text-green-700" },
+  rejected: { label: "Rejected", badgeClass: "bg-error/10 text-error" },
+  failed: { label: "Failed", badgeClass: "bg-error/10 text-error" },
+  refunded: { label: "Refunded", badgeClass: "bg-purple-100 text-purple-700" },
+};
+
+// The spec's 4-item Payment Status dropdown (Pending/Confirmed/Rejected/Refunded).
+const PAYMENT_STATUS_DROPDOWN_OPTIONS: PaymentStatus[] = ["pending", "verified", "rejected", "refunded"];
+
+function getPayment(apt: ApiAppointment): ApiPayment | null {
+  return apt.paymentId && typeof apt.paymentId === "object" ? apt.paymentId : null;
+}
+
+// Colors per the admin spec: Pending=Yellow, Confirmed=Green, Completed=Blue, Cancelled=Red, No Show=Gray.
+const STATUS_META: Record<AppointmentStatus, { label: string; badgeClass: string; dotClass: string }> = {
+  pending_payment: { label: "Pending Payment", badgeClass: "bg-amber-100 text-amber-700", dotClass: "bg-amber-400" },
+  payment_submitted: { label: "Payment Submitted", badgeClass: "bg-amber-100 text-amber-700", dotClass: "bg-amber-400" },
+  payment_verification: { label: "Payment Verification", badgeClass: "bg-amber-100 text-amber-700", dotClass: "bg-amber-400" },
+  confirmed: { label: "Confirmed", badgeClass: "bg-green-100 text-green-700", dotClass: "bg-emerald-500" },
+  completed: { label: "Completed", badgeClass: "bg-blue-100 text-blue-700", dotClass: "bg-blue-500" },
+  cancelled: { label: "Cancelled", badgeClass: "bg-error/10 text-error", dotClass: "bg-error" },
+  rejected: { label: "Rejected", badgeClass: "bg-error/10 text-error", dotClass: "bg-error" },
+  rescheduled: { label: "Rescheduled", badgeClass: "bg-primary/10 text-primary", dotClass: "bg-primary" },
+  no_show: { label: "No Show", badgeClass: "bg-gray-100 text-gray-700", dotClass: "bg-gray-400" },
+};
+
+// The spec's 5-item Appointment Status dropdown (Pending/Confirmed/Completed/Cancelled/No Show).
+const APPOINTMENT_STATUS_DROPDOWN_OPTIONS: AppointmentStatus[] = [
+  "pending_payment",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "no_show",
 ];
 
-const STATUS_COLORS: Record<Status, string> = {
-  Confirmed: "bg-secondary/10 text-secondary",
-  Pending: "bg-amber-100 text-amber-700",
-  Completed: "bg-surface-container-highest text-on-surface-variant",
-  Cancelled: "bg-error/10 text-error",
-};
+function isImageUrl(url: string): boolean {
+  return !/\.pdf($|\?)/i.test(url);
+}
 
-const DOT_COLORS: Record<Status, string> = {
-  Confirmed: "bg-emerald-500",
-  Pending: "bg-amber-400",
-  Completed: "bg-outline",
-  Cancelled: "bg-error",
-};
+const FILTER_TABS: (AppointmentStatus | "All")[] = [
+  "All",
+  "pending_payment",
+  "payment_verification",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "rejected",
+];
 
 const PAGE_SIZE = 5;
 
+function clinicName(clinicId: ApiAppointment["clinicId"]): string {
+  return typeof clinicId === "string" ? clinicId : clinicId?.name ?? "—";
+}
+
 export default function AppointmentsContent() {
-  const [appointments, setAppointments] = useState<Appointment[]>(SEED);
-  const [tab, setTab] = useState<"All" | Status>("All");
+  const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
+  const [clinics, setClinics] = useState<{ _id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<AppointmentStatus | "All">("All");
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All");
+  const [visitTypeFilter, setVisitTypeFilter] = useState("All");
+  const [clinicFilter, setClinicFilter] = useState("All");
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState("All");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [cancelId, setCancelId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editStatus, setEditStatus] = useState<Status>("Confirmed");
+  const [editStatus, setEditStatus] = useState<AppointmentStatus>("confirmed");
+  const [editPaymentStatus, setEditPaymentStatus] = useState<PaymentStatus | null>(null);
+  const [confirmingPaymentChange, setConfirmingPaymentChange] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const loadAppointments = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch("/api/appointments");
+      const data = await res.json();
+      if (res.ok) setAppointments(data.appointments ?? []);
+      else if (!silent) toast.error(data.error ?? "Could not load appointments");
+    } catch {
+      if (!silent) toast.error("Network error loading appointments");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      await loadAppointments();
+      try {
+        const res = await fetch("/api/clinics");
+        const data = await res.json();
+        if (res.ok) setClinics(data.clinics ?? []);
+      } catch {
+        // Clinic filter just won't populate — not fatal.
+      }
+    })();
+    // Polls so appointments created/paid elsewhere show up without a manual refresh.
+    const interval = setInterval(() => loadAppointments(true), 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filtered = useMemo(() => {
     return appointments.filter((a) => {
       const matchTab = tab === "All" || a.status === tab;
       const matchSearch =
         !search ||
-        a.name.toLowerCase().includes(search.toLowerCase()) ||
-        a.id.toLowerCase().includes(search.toLowerCase()) ||
-        a.phone.includes(search);
-      const matchType = typeFilter === "All" || a.type === typeFilter;
-      return matchTab && matchSearch && matchType;
+        a.patientSnapshot.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        a.appointmentNumber.toLowerCase().includes(search.toLowerCase()) ||
+        a.patientSnapshot.phone.includes(search);
+      const matchType = visitTypeFilter === "All" || a.visitType === visitTypeFilter;
+      const aClinicId = typeof a.clinicId === "string" ? a.clinicId : a.clinicId?._id;
+      const matchClinic = clinicFilter === "All" || aClinicId === clinicFilter;
+      const matchDateFrom = !dateFrom || a.date >= dateFrom;
+      const matchDateTo = !dateTo || a.date <= dateTo;
+      const payment = getPayment(a);
+      const matchPaymentType = paymentTypeFilter === "All" || payment?.method === paymentTypeFilter;
+      const matchPaymentStatus = paymentStatusFilter === "All" || payment?.status === paymentStatusFilter;
+      return (
+        matchTab && matchSearch && matchType && matchClinic && matchDateFrom && matchDateTo &&
+        matchPaymentType && matchPaymentStatus
+      );
     });
-  }, [appointments, tab, search, typeFilter]);
+  }, [appointments, tab, search, visitTypeFilter, clinicFilter, dateFrom, dateTo, paymentTypeFilter, paymentStatusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const counts = useMemo(() => ({
-    All: appointments.length,
-    Confirmed: appointments.filter((a) => a.status === "Confirmed").length,
-    Pending: appointments.filter((a) => a.status === "Pending").length,
-    Completed: appointments.filter((a) => a.status === "Completed").length,
-    Cancelled: appointments.filter((a) => a.status === "Cancelled").length,
-  }), [appointments]);
+  const counts = useMemo(() => {
+    const base: Record<string, number> = { All: appointments.length };
+    for (const s of FILTER_TABS) {
+      if (s === "All") continue;
+      base[s] = appointments.filter((a) => a.status === s).length;
+    }
+    return base;
+  }, [appointments]);
 
-  const changeStatus = (id: string, status: Status) => {
-    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-  };
+  async function changeStatus(id: string, status: AppointmentStatus, opts?: { silent?: boolean }): Promise<boolean> {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update appointment");
+        return false;
+      }
+      setAppointments((prev) => prev.map((a) => (a._id === id ? { ...a, status } : a)));
+      if (!opts?.silent) toast.success("Appointment updated");
+      return true;
+    } catch {
+      toast.error("Network error");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
 
-  const deleteAppt = (id: string) => {
-    setAppointments((prev) => prev.filter((a) => a.id !== id));
-    setDeleteId(null);
-  };
+  // Routes a Payment Status change through the endpoint that matches the
+  // business rule for that method: manual receipts (JazzCash/Easypaisa)
+  // approve/reject via /verify (which also cascades the appointment status);
+  // Stripe refunds always go through /refund; everything else (including a
+  // manual admin override on a Stripe payment, or resetting to "pending") is
+  // a plain status set via /status, which never touches the appointment.
+  async function savePaymentStatus(payment: ApiPayment, newStatus: PaymentStatus, opts?: { silent?: boolean }): Promise<boolean> {
+    try {
+      let res: Response;
+      if (newStatus === "refunded") {
+        res = await fetch(`/api/payments/${payment._id}/refund`, { method: "POST" });
+      } else if (payment.method !== "stripe" && newStatus === "verified") {
+        res = await fetch(`/api/payments/${payment._id}/verify`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ approve: true }),
+        });
+      } else if (payment.method !== "stripe" && newStatus === "rejected") {
+        res = await fetch(`/api/payments/${payment._id}/verify`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ approve: false }),
+        });
+      } else {
+        res = await fetch(`/api/payments/${payment._id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update payment status");
+        return false;
+      }
+      if (!opts?.silent) toast.success("Payment status updated");
+      return true;
+    } catch {
+      toast.error("Network error");
+      return false;
+    }
+  }
+
+  function openDetails(apt: ApiAppointment) {
+    setEditId(apt._id);
+    setEditStatus(apt.status);
+    setEditPaymentStatus(getPayment(apt)?.status ?? null);
+    setConfirmingPaymentChange(false);
+  }
+
+  async function handleSaveDetails() {
+    if (!editId) return;
+    const apt = appointments.find((a) => a._id === editId);
+    if (!apt) return;
+    const payment = getPayment(apt);
+
+    const paymentChanged = !!payment && editPaymentStatus !== null && editPaymentStatus !== payment.status;
+    const appointmentChanged = editStatus !== apt.status;
+
+    if (!paymentChanged && !appointmentChanged) {
+      setEditId(null);
+      return;
+    }
+
+    // Payment status changes require an explicit confirmation step first.
+    if (paymentChanged && !confirmingPaymentChange) {
+      setConfirmingPaymentChange(true);
+      return;
+    }
+
+    setBusy(true);
+    try {
+      let ok = true;
+      if (paymentChanged && payment) {
+        ok = await savePaymentStatus(payment, editPaymentStatus!, { silent: true });
+      }
+      if (ok && appointmentChanged) {
+        ok = await changeStatus(editId, editStatus, { silent: true });
+      }
+      if (ok) {
+        toast.success("Changes saved successfully");
+        setEditId(null);
+        setConfirmingPaymentChange(false);
+        await loadAppointments(true);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelAppointment(id: string) {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/appointments/${id}/cancel`, { method: "PATCH" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not cancel appointment");
+        return;
+      }
+      setAppointments((prev) => prev.map((a) => (a._id === id ? { ...a, status: "cancelled" } : a)));
+      setCancelId(null);
+      toast.success("Appointment cancelled");
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const exportCSV = () => {
     const rows = [
-      ["ID", "Patient", "Phone", "Date", "Time", "Clinic", "Type", "Status", "Fee (Rs.)"],
-      ...filtered.map((a) => [a.id, a.name, a.phone, a.date, a.time, a.clinic, a.type, a.status, a.fee]),
+      ["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"],
+      ...filtered.map((a) => {
+        const payment = getPayment(a);
+        return [
+          a.appointmentNumber,
+          a.patientSnapshot.fullName,
+          a.patientSnapshot.phone,
+          a.date,
+          a.time,
+          clinicName(a.clinicId),
+          a.visitType,
+          payment ? PAYMENT_METHOD_LABEL[payment.method] : "",
+          payment ? PAYMENT_STATUS_META[payment.status].label : "",
+          STATUS_META[a.status].label,
+          a.feeSnapshotPkr,
+        ];
+      }),
     ];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -107,7 +343,7 @@ export default function AppointmentsContent() {
 
   const handleTabChange = (t: typeof tab) => { setTab(t); setPage(1); };
   const handleSearch = (v: string) => { setSearch(v); setPage(1); };
-  const handleTypeFilter = (v: string) => { setTypeFilter(v); setPage(1); };
+  const handleTypeFilter = (v: string) => { setVisitTypeFilter(v); setPage(1); };
 
   return (
     <div className="px-gutter py-lg max-w-[1280px] mx-auto">
@@ -116,7 +352,7 @@ export default function AppointmentsContent() {
         <div>
           <h1 className="text-headline-lg font-bold text-on-surface">Appointments Management</h1>
           <p className="text-body-md text-on-surface-variant mt-xs">
-            {counts.All} total · {counts.Pending} pending · {counts.Confirmed} confirmed
+            {counts.All} total · {counts.payment_verification ?? 0} awaiting verification · {counts.confirmed ?? 0} confirmed
           </p>
         </div>
         <div className="flex gap-sm">
@@ -137,37 +373,9 @@ export default function AppointmentsContent() {
 
       {/* Filters bar */}
       <div className="bg-surface-container-lowest rounded-2xl p-md mb-xl shadow-sm border border-outline-variant/30 flex flex-wrap items-center justify-between gap-md">
+      
         <div className="flex items-center gap-md flex-wrap">
-          {/* Tab pills */}
-          <div className="flex bg-surface-container-low p-xs rounded-xl">
-            {(["All", "Confirmed", "Pending", "Completed", "Cancelled"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => handleTabChange(t)}
-                className={`px-md py-xs rounded-lg text-label-md font-bold transition-all ${
-                  tab === t
-                    ? "bg-surface-container-lowest shadow-sm text-primary"
-                    : "text-on-surface-variant hover:text-on-surface"
-                }`}
-              >
-                {t} {counts[t] > 0 && <span className="ml-xs text-caption opacity-70">({counts[t]})</span>}
-              </button>
-            ))}
-          </div>
-
-          {/* Type select */}
-          <select
-            value={typeFilter}
-            onChange={(e) => handleTypeFilter(e.target.value)}
-            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
-          >
-            {["All", "Consultation", "Follow-up", "Procedure"].map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Search */}
+           {/* Search */}
         <div className="relative">
           <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">
             search
@@ -188,6 +396,75 @@ export default function AppointmentsContent() {
             </button>
           )}
         </div>
+
+   {/* Date range */}
+          <div className="flex items-center gap-xs">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              className="px-sm py-xs bg-surface-container-low border-none rounded-xl text-label-md font-medium focus:ring-primary/20"
+            />
+            <span className="text-on-surface-variant text-label-md">–</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              className="px-sm py-xs bg-surface-container-low border-none rounded-xl text-label-md font-medium focus:ring-primary/20"
+            />
+          </div>
+
+          {/* Visit type select */}
+          <select
+            value={visitTypeFilter}
+            onChange={(e) => handleTypeFilter(e.target.value)}
+            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
+          >
+            {["All", "clinic", "online"].map((o) => (
+              <option key={o} value={o}>{o === "All" ? "All Visit Types" : o === "clinic" ? "In-Clinic" : "Online"}</option>
+            ))}
+          </select>
+
+          {/* Payment type select */}
+          <select
+            value={paymentTypeFilter}
+            onChange={(e) => { setPaymentTypeFilter(e.target.value); setPage(1); }}
+            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="All">All Payment Types</option>
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>
+            ))}
+          </select>
+
+          {/* Payment status select */}
+          <select
+            value={paymentStatusFilter}
+            onChange={(e) => { setPaymentStatusFilter(e.target.value); setPage(1); }}
+            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="All">All Payment Statuses</option>
+            {PAYMENT_STATUSES.map((s) => (
+              <option key={s} value={s}>{PAYMENT_STATUS_META[s].label}</option>
+            ))}
+          </select>
+
+          {/* Clinic select */}
+          <select
+            value={clinicFilter}
+            onChange={(e) => { setClinicFilter(e.target.value); setPage(1); }}
+            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="All">All Clinics</option>
+            {clinics.map((c) => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+
+       
+        </div>
+
+      
       </div>
 
       {/* Table */}
@@ -196,104 +473,148 @@ export default function AppointmentsContent() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
-                {["Patient", "Date & Time", "Clinic", "Visit Type", "Status", "Fee", "Actions"].map((h, i) => (
-                  <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === 6 ? "text-right" : ""}`}>
+                {["Patient", "Date & Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
+                  <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20">
-              {pageItems.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={9} className="px-md py-xl text-center text-on-surface-variant">
+                    Loading appointments…
+                  </td>
+                </tr>
+              ) : pageItems.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-md py-xl text-center text-on-surface-variant">
                     No appointments match your filters.
                   </td>
                 </tr>
               ) : (
-                pageItems.map((apt) => (
-                  <tr key={apt.id} className="hover:bg-surface-container-low transition-colors group">
-                    <td className="px-md py-md">
-                      <div className="flex items-center gap-sm">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                          {apt.initials}
+                pageItems.map((apt) => {
+                  const meta = STATUS_META[apt.status];
+                  const payment = getPayment(apt);
+                  const initials = apt.patientSnapshot.fullName
+                    .split(" ")
+                    .map((p) => p[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase();
+                  const canCancel = apt.status !== "cancelled" && apt.status !== "completed" && apt.status !== "rejected";
+
+                  return (
+                    <tr key={apt._id} className="hover:bg-surface-container-low transition-colors group">
+                      <td className="px-md py-md">
+                        <div className="flex items-center gap-sm">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            {initials}
+                          </div>
+                          <div>
+                            <p className="text-body-md font-semibold">{apt.patientSnapshot.fullName}</p>
+                            <p className="text-caption text-on-surface-variant">{apt.appointmentNumber} · {apt.patientSnapshot.phone}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-body-md font-semibold">{apt.name}</p>
-                          <p className="text-caption text-on-surface-variant">{apt.id} · {apt.phone}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-md py-md">
-                      <p className="text-body-md font-medium">{apt.date}</p>
-                      <p className="text-caption text-on-surface-variant">{apt.time}</p>
-                    </td>
-                    <td className="px-md py-md">
-                      <p className="text-body-md text-on-surface-variant max-w-[180px] truncate">{apt.clinic}</p>
-                    </td>
-                    <td className="px-md py-md">
-                      <span className="px-sm py-xs rounded-full bg-surface-container text-caption font-bold border border-outline-variant/30">
-                        {apt.type}
-                      </span>
-                    </td>
-                    <td className="px-md py-md">
-                      <div className="flex items-center gap-xs">
-                        <div className={`w-2 h-2 rounded-full ${DOT_COLORS[apt.status]}`} />
-                        <span className={`px-sm py-[2px] rounded-full ${STATUS_COLORS[apt.status]} text-caption font-bold`}>
-                          {apt.status}
+                      </td>
+                      <td className="px-md py-md">
+                        <p className="text-body-md font-medium">{apt.date}</p>
+                        <p className="text-caption text-on-surface-variant">{apt.time}</p>
+                      </td>
+                      <td className="px-md py-md">
+                        <p className="text-body-md text-on-surface-variant max-w-[180px] truncate">{clinicName(apt.clinicId)}</p>
+                      </td>
+                      <td className="px-md py-md">
+                        <span className="px-sm py-xs rounded-full bg-surface-container text-caption font-bold border border-outline-variant/30 capitalize">
+                          {apt.visitType}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-md py-md text-body-md font-semibold text-primary">
-                      Rs. {apt.fee.toLocaleString()}
-                    </td>
-                    <td className="px-md py-md text-right">
-                      <div className="flex items-center justify-end gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                        {apt.status === "Pending" && (
-                          <>
+                      </td>
+                      <td className="px-md py-md text-body-md text-on-surface-variant whitespace-nowrap">
+                        {payment ? PAYMENT_METHOD_LABEL[payment.method] : "—"}
+                      </td>
+                      <td className="px-md py-md">
+                        {payment ? (
+                          <span className={`px-sm py-[2px] rounded-full ${PAYMENT_STATUS_META[payment.status].badgeClass} text-caption font-bold`}>
+                            {PAYMENT_STATUS_META[payment.status].label}
+                          </span>
+                        ) : (
+                          <span className="text-caption text-on-surface-variant">—</span>
+                        )}
+                      </td>
+                      <td className="px-md py-md">
+                        <div className="flex items-center gap-xs">
+                          <div className={`w-2 h-2 rounded-full ${meta.dotClass}`} />
+                          <span className={`px-sm py-[2px] rounded-full ${meta.badgeClass} text-caption font-bold`}>
+                            {meta.label}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-md py-md text-body-md font-semibold text-primary">
+                        Rs. {apt.feeSnapshotPkr.toLocaleString()}
+                      </td>
+                      <td className="px-md py-md text-right">
+                        <div className="flex items-center justify-end gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                          {(apt.status === "pending_payment" || apt.status === "payment_verification") && (
+                            <>
+                              <button
+                                disabled={busy}
+                                onClick={() => changeStatus(apt._id, "confirmed")}
+                                className="p-xs rounded-lg bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors"
+                                title="Confirm"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                              </button>
+                              <button
+                                disabled={busy}
+                                onClick={() => changeStatus(apt._id, "rejected")}
+                                className="p-xs rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors"
+                                title="Reject"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">cancel</span>
+                              </button>
+                            </>
+                          )}
+                          {apt.status === "confirmed" && (
                             <button
-                              onClick={() => changeStatus(apt.id, "Confirmed")}
-                              className="p-xs rounded-lg bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors"
-                              title="Confirm"
+                              disabled={busy}
+                              onClick={() => changeStatus(apt._id, "completed")}
+                              className="p-xs rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                              title="Mark Completed"
                             >
-                              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                              <span className="material-symbols-outlined text-[18px]">task_alt</span>
                             </button>
+                          )}
+                          {payment?.receiptUrl && (
                             <button
-                              onClick={() => changeStatus(apt.id, "Cancelled")}
-                              className="p-xs rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors"
+                              onClick={() => openDetails(apt)}
+                              className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
+                              title="View Receipt"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => openDetails(apt)}
+                            className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
+                            title="Manage Appointment"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          {canCancel && (
+                            <button
+                              onClick={() => setCancelId(apt._id)}
+                              className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
                               title="Cancel"
                             >
-                              <span className="material-symbols-outlined text-[18px]">cancel</span>
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
                             </button>
-                          </>
-                        )}
-                        {apt.status === "Confirmed" && (
-                          <button
-                            onClick={() => changeStatus(apt.id, "Completed")}
-                            className="p-xs rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                            title="Mark Completed"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">task_alt</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { setEditId(apt.id); setEditStatus(apt.status); }}
-                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                          title="Edit"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button
-                          onClick={() => setDeleteId(apt.id)}
-                          className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
-                          title="Delete"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -302,7 +623,7 @@ export default function AppointmentsContent() {
         {/* Pagination */}
         <div className="px-md py-sm border-t border-outline-variant/20 flex items-center justify-between">
           <p className="text-caption text-on-surface-variant">
-            Showing {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–
+            Showing {filtered.length === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–
             {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
           </p>
           <div className="flex gap-xs">
@@ -335,69 +656,227 @@ export default function AppointmentsContent() {
         </div>
       </div>
 
-      {/* Delete confirm modal */}
-      {deleteId && (
+      {/* Cancel confirm modal */}
+      {cancelId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-sm w-full mx-md">
-            <h3 className="text-headline-md font-bold text-on-surface mb-sm">Delete Appointment?</h3>
+            <h3 className="text-headline-md font-bold text-on-surface mb-sm">Cancel Appointment?</h3>
             <p className="text-body-md text-on-surface-variant mb-lg">
-              This will permanently remove appointment {deleteId}. This action cannot be undone.
+              This will cancel appointment {appointments.find((a) => a._id === cancelId)?.appointmentNumber}. This action cannot be undone.
             </p>
             <div className="flex gap-sm justify-end">
               <button
-                onClick={() => setDeleteId(null)}
+                onClick={() => setCancelId(null)}
                 className="px-md py-xs rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high"
               >
-                Cancel
+                Keep Appointment
               </button>
               <button
-                onClick={() => deleteAppt(deleteId)}
+                disabled={busy}
+                onClick={() => cancelAppointment(cancelId)}
                 className="px-md py-xs rounded-xl bg-error text-on-error font-semibold hover:opacity-90"
               >
-                Delete
+                Cancel Appointment
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit status modal */}
-      {editId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-sm w-full mx-md">
-            <h3 className="text-headline-md font-bold text-on-surface mb-sm">Update Status</h3>
-            <p className="text-caption text-on-surface-variant mb-md">{editId}</p>
-            <div className="space-y-sm mb-lg">
-              {(["Confirmed", "Pending", "Completed", "Cancelled"] as const).map((s) => (
-                <label key={s} className="flex items-center gap-sm cursor-pointer">
-                  <input
-                    type="radio"
-                    name="edit-status"
-                    checked={editStatus === s}
-                    onChange={() => setEditStatus(s)}
-                    className="w-4 h-4 text-primary"
-                  />
-                  <span className={`px-sm py-xs rounded-full ${STATUS_COLORS[s]} text-caption font-bold`}>{s}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex gap-sm justify-end">
-              <button
-                onClick={() => setEditId(null)}
-                className="px-md py-xs rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { changeStatus(editId, editStatus); setEditId(null); }}
-                className="px-md py-xs rounded-xl bg-primary text-on-primary font-semibold hover:opacity-90"
-              >
-                Save
-              </button>
+      {/* Appointment Details modal */}
+      {editId && (() => {
+        const detailApt = appointments.find((a) => a._id === editId);
+        if (!detailApt) return null;
+        const detailPayment = getPayment(detailApt);
+
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
+            <div className="bg-surface rounded-2xl shadow-2xl max-w-2xl w-full mx-md max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant/30 sticky top-0 bg-surface z-10">
+                <div>
+                  <h3 className="text-headline-md font-bold text-on-surface">Appointment Details</h3>
+                  <p className="text-caption text-on-surface-variant">{detailApt.appointmentNumber}</p>
+                </div>
+                <button
+                  onClick={() => setEditId(null)}
+                  className="p-xs rounded-lg hover:bg-surface-container-high transition-colors"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className="p-lg space-y-lg">
+                {/* Patient Information */}
+                <section>
+                  <h4 className="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-sm">Patient Information</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
+                    {[
+                      ["Full Name", detailApt.patientSnapshot.fullName],
+                      ["Phone Number", detailApt.patientSnapshot.phone],
+                      ["Email", detailApt.patientSnapshot.email || "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="p-sm bg-surface-container-low rounded-lg">
+                        <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">{label}</p>
+                        <p className="font-bold text-on-surface text-body-md break-words">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Appointment Information */}
+                <section>
+                  <h4 className="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-sm">Appointment Information</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
+                    {[
+                      ["Appointment ID", detailApt.appointmentNumber],
+                      ["Doctor", doctor.name],
+                      ["Clinic", clinicName(detailApt.clinicId)],
+                      ["Date", detailApt.date],
+                      ["Time", detailApt.time],
+                      ["Reason for Visit", detailApt.reason || "—"],
+                      ...(detailApt.patientSnapshot.notes ? [["Notes", detailApt.patientSnapshot.notes]] : []),
+                    ].map(([label, value]) => (
+                      <div key={label} className="p-sm bg-surface-container-low rounded-lg">
+                        <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">{label}</p>
+                        <p className="font-bold text-on-surface text-body-md break-words">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Payment Information + Receipt Viewer */}
+                <section>
+                  <h4 className="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-sm">Payment Information</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm mb-md">
+                    <div className="p-sm bg-surface-container-low rounded-lg">
+                      <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">Payment Type</p>
+                      <p className="font-bold text-on-surface text-body-md">{detailPayment ? PAYMENT_METHOD_LABEL[detailPayment.method] : "—"}</p>
+                    </div>
+                    <div className="p-sm bg-surface-container-low rounded-lg">
+                      <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">Payment Status</p>
+                      <p className="font-bold text-on-surface text-body-md">{detailPayment ? PAYMENT_STATUS_META[detailPayment.status].label : "—"}</p>
+                    </div>
+                    <div className="p-sm bg-surface-container-low rounded-lg">
+                      <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">Amount</p>
+                      <p className="font-bold text-primary text-body-md">Rs. {detailApt.feeSnapshotPkr.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {/* Receipt */}
+                  {detailPayment?.receiptUrl ? (
+                    <div className="space-y-sm">
+                      {isImageUrl(detailPayment.receiptUrl) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={detailPayment.receiptUrl}
+                          alt="Payment receipt"
+                          className="w-full max-h-80 object-contain bg-surface-container rounded-xl border border-outline-variant"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-40 bg-surface-container rounded-xl border border-outline-variant">
+                          <span className="material-symbols-outlined text-primary text-[40px]">picture_as_pdf</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-caption text-on-surface-variant">
+                        <span>
+                          Uploaded {detailPayment.receiptUploadedAt ? new Date(detailPayment.receiptUploadedAt).toLocaleString() : "—"}
+                        </span>
+                        <a
+                          href={detailPayment.receiptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary font-semibold hover:underline flex items-center gap-xs"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">zoom_in</span>
+                          Open Full Size
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-24 bg-surface-container-low rounded-xl border border-dashed border-outline-variant text-on-surface-variant text-body-md">
+                      No Receipt Uploaded
+                    </div>
+                  )}
+                </section>
+
+                {/* Admin Actions */}
+                <section>
+                  <h4 className="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-sm">Admin Actions</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                    <div>
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Payment Status</label>
+                      <select
+                        value={editPaymentStatus ?? ""}
+                        disabled={!detailPayment}
+                        onChange={(e) => setEditPaymentStatus(e.target.value as PaymentStatus)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-sm px-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md disabled:opacity-60"
+                      >
+                        {!detailPayment && <option value="">No payment yet</option>}
+                        {PAYMENT_STATUS_DROPDOWN_OPTIONS.map((s) => (
+                          <option key={s} value={s}>{PAYMENT_STATUS_META[s].label}</option>
+                        ))}
+                        {/* Keep the current value selectable even if it's outside the 4 primary options (e.g. "submitted"/"failed"). */}
+                        {detailPayment && !PAYMENT_STATUS_DROPDOWN_OPTIONS.includes(detailPayment.status) && (
+                          <option value={detailPayment.status}>{PAYMENT_STATUS_META[detailPayment.status].label}</option>
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Appointment Status</label>
+                      <select
+                        value={editStatus}
+                        onChange={(e) => setEditStatus(e.target.value as AppointmentStatus)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-sm px-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md"
+                      >
+                        {APPOINTMENT_STATUS_DROPDOWN_OPTIONS.map((s) => (
+                          <option key={s} value={s}>{STATUS_META[s].label}</option>
+                        ))}
+                        {!APPOINTMENT_STATUS_DROPDOWN_OPTIONS.includes(detailApt.status) && (
+                          <option value={detailApt.status}>{STATUS_META[detailApt.status].label}</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Confirmation step for payment status change */}
+                {confirmingPaymentChange && detailPayment && (
+                  <div className="p-md bg-warning/10 border border-warning/30 rounded-xl space-y-sm">
+                    <p className="text-body-md text-on-surface font-semibold">
+                      Change payment status to &ldquo;{PAYMENT_STATUS_META[editPaymentStatus ?? detailPayment.status].label}&rdquo;?
+                    </p>
+                    <p className="text-caption text-on-surface-variant">This may also update the appointment status depending on the payment method.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer actions */}
+              <div className="px-lg py-md border-t border-outline-variant/20 flex gap-sm sticky bottom-0 bg-surface">
+                <button
+                  onClick={() => { setEditId(null); setConfirmingPaymentChange(false); }}
+                  className="flex-1 px-md py-sm rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={handleSaveDetails}
+                  className="flex-1 px-md py-sm rounded-xl bg-primary text-on-primary font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-xs"
+                >
+                  {busy ? (
+                    <><span className="material-symbols-outlined animate-spin text-[18px]">refresh</span> Saving…</>
+                  ) : confirmingPaymentChange ? (
+                    "Confirm & Save"
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -1,39 +1,53 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { doctor } from "@/lib/data";
+import type { AppointmentStatus, VisitType } from "@/types/appointment";
+import type { PaymentStatus } from "@/types/payment";
 
-type ScheduleStatus = "Confirmed" | "In-Progress" | "Upcoming" | "Pending";
-
-interface ScheduleItem {
+interface ApiAppointment {
+  _id: string;
+  appointmentNumber: string;
+  clinicId: { _id: string; name: string } | string;
+  visitType: VisitType;
+  date: string;
   time: string;
-  period: string;
-  name: string;
-  detail: string;
-  status: ScheduleStatus;
-  clinic: string;
+  patientId?: string;
+  patientSnapshot: { fullName: string };
+  feeSnapshotPkr: number;
+  status: AppointmentStatus;
 }
 
-const STATUS_CLS: Record<ScheduleStatus, string> = {
-  Confirmed: "bg-secondary/10 text-secondary",
-  "In-Progress": "bg-tertiary/10 text-tertiary",
-  Upcoming: "bg-surface-container-highest text-on-surface-variant",
-  Pending: "bg-amber-100 text-amber-700",
+interface ApiPayment {
+  _id: string;
+  status: PaymentStatus;
+  amountPkr: number;
+  createdAt: string;
+}
+
+interface DashboardContentProps {
+  appointments: ApiAppointment[];
+  payments: ApiPayment[];
+}
+
+const STATUS_META: Record<AppointmentStatus, { label: string; cls: string }> = {
+  pending_payment: { label: "Pending Payment", cls: "bg-amber-100 text-amber-700" },
+  payment_submitted: { label: "Payment Submitted", cls: "bg-amber-100 text-amber-700" },
+  payment_verification: { label: "Payment Verification", cls: "bg-amber-100 text-amber-700" },
+  confirmed: { label: "Confirmed", cls: "bg-secondary/10 text-secondary" },
+  completed: { label: "Completed", cls: "bg-surface-container-highest text-on-surface-variant" },
+  cancelled: { label: "Cancelled", cls: "bg-error/10 text-error" },
+  rejected: { label: "Rejected", cls: "bg-error/10 text-error" },
+  rescheduled: { label: "Rescheduled", cls: "bg-primary/10 text-primary" },
+  no_show: { label: "No Show", cls: "bg-error/10 text-error" },
 };
 
-const today = new Date();
-const todayStr = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+function clinicName(clinicId: ApiAppointment["clinicId"]): string {
+  return typeof clinicId === "string" ? clinicId : clinicId?.name ?? "—";
+}
 
-const SCHEDULE: ScheduleItem[] = [
-  { time: "05:00", period: "PM", name: "Ahmed Khan", detail: `New Consultation · ${doctor.practice_locations[0]?.name ?? "Clinic"}`, status: "Confirmed", clinic: doctor.practice_locations[0]?.name ?? "" },
-  { time: "07:00", period: "PM", name: "Sara Malik", detail: `Follow-up · ${doctor.practice_locations[1]?.name ?? "Clinic"}`, status: "In-Progress", clinic: doctor.practice_locations[1]?.name ?? "" },
-  { time: "07:30", period: "PM", name: "Zainab Bibi", detail: `Endoscopy Review · ${doctor.practice_locations[1]?.name ?? "Clinic"}`, status: "Upcoming", clinic: doctor.practice_locations[1]?.name ?? "" },
-  { time: "09:00", period: "PM", name: "Umar Farooq", detail: `New Consultation · ${doctor.practice_locations[2]?.name ?? "Clinic"}`, status: "Pending", clinic: doctor.practice_locations[2]?.name ?? "" },
-];
-
-const DAYS = ["S","M","T","W","T","F","S"];
+const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 function getCalendarCells(year: number, month: number) {
   const firstDay = new Date(year, month, 1).getDay();
@@ -41,11 +55,13 @@ function getCalendarCells(year: number, month: number) {
   return [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 }
 
-export default function DashboardContent() {
+const today = new Date();
+const todayStr = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+const todayIso = today.toISOString().slice(0, 10);
+
+export default function DashboardContent({ appointments, payments }: DashboardContentProps) {
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [calYear, setCalYear] = useState(today.getFullYear());
-  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>(SCHEDULE);
-  const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set());
 
   const cells = getCalendarCells(calYear, calMonth);
   const monthLabel = new Date(calYear, calMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -59,27 +75,47 @@ export default function DashboardContent() {
     else setCalMonth((m) => m + 1);
   };
 
-  const toggleCheckin = (name: string) => {
-    setCheckedIn((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name); else next.add(name);
-      return next;
-    });
-    setScheduleItems((prev) =>
-      prev.map((s) =>
-        s.name === name
-          ? { ...s, status: checkedIn.has(name) ? "Confirmed" : "In-Progress" }
-          : s
-      )
-    );
-  };
+  const daysWithAppointments = useMemo(() => {
+    const set = new Set<number>();
+    for (const a of appointments) {
+      const d = new Date(a.date + "T00:00:00");
+      if (d.getFullYear() === calYear && d.getMonth() === calMonth) set.add(d.getDate());
+    }
+    return set;
+  }, [appointments, calYear, calMonth]);
 
-  const kpis = [
-    { label: "Today's Appointments", value: scheduleItems.length, sub: `${scheduleItems.filter(s => s.status === "Confirmed" || s.status === "In-Progress").length} active`, icon: "event", color: "bg-primary/10 text-primary" },
-    { label: "Pending Payments", value: 6, sub: "3 urgent", icon: "pending_actions", color: "bg-tertiary/10 text-tertiary" },
-    { label: "Monthly Revenue", value: `Rs. ${(doctor.fee_summary.max_fee_pkr * 48).toLocaleString()}`, sub: "+12% vs last month", icon: "trending_up", color: "bg-secondary/10 text-secondary" },
-    { label: "Total Patients", value: 284, sub: "+8 this week", icon: "person_add", color: "bg-surface-container-high text-on-surface" },
-  ];
+  const todaysSchedule = useMemo(
+    () =>
+      appointments
+        .filter((a) => a.date === todayIso && a.status !== "cancelled" && a.status !== "rejected")
+        .sort((a, b) => (a.time > b.time ? 1 : -1)),
+    [appointments]
+  );
+
+  const kpis = useMemo(() => {
+    const activeToday = todaysSchedule.filter((a) => a.status === "confirmed" || a.status === "completed").length;
+
+    const pendingPayments = payments.filter((p) => p.status === "pending" || p.status === "submitted");
+    const urgentPayments = payments.filter((p) => p.status === "submitted").length;
+
+    const now = new Date();
+    const monthlyRevenue = payments
+      .filter((p) => {
+        if (p.status !== "verified") return false;
+        const d = new Date(p.createdAt);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      })
+      .reduce((sum, p) => sum + p.amountPkr, 0);
+
+    const totalPatients = new Set(appointments.map((a) => a.patientId).filter(Boolean)).size;
+
+    return [
+      { label: "Today's Appointments", value: todaysSchedule.length, sub: `${activeToday} confirmed`, icon: "event", color: "bg-primary/10 text-primary" },
+      { label: "Pending Payments", value: pendingPayments.length, sub: `${urgentPayments} awaiting verification`, icon: "pending_actions", color: "bg-tertiary/10 text-tertiary" },
+      { label: "Revenue This Month", value: `Rs. ${monthlyRevenue.toLocaleString()}`, sub: "From verified payments", icon: "trending_up", color: "bg-secondary/10 text-secondary" },
+      { label: "Total Patients", value: totalPatients, sub: "Registered bookings", icon: "person_add", color: "bg-surface-container-high text-on-surface" },
+    ];
+  }, [todaysSchedule, payments, appointments]);
 
   return (
     <div className="px-gutter py-lg max-w-[1280px] mx-auto">
@@ -88,9 +124,9 @@ export default function DashboardContent() {
           <h1 className="text-headline-md font-bold text-primary">Overview</h1>
           <p className="text-caption text-on-surface-variant">{todayStr}</p>
         </div>
-        <Link href="/book-appointment/step-1"
+        <Link href="/admin/appointments"
           className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-xl text-label-md font-semibold hover:shadow-lg transition-all">
-          <span className="material-symbols-outlined">add</span> New Appointment
+          <span className="material-symbols-outlined">event</span> View Appointments
         </Link>
       </div>
 
@@ -144,39 +180,36 @@ export default function DashboardContent() {
               </Link>
             </div>
             <div className="divide-y divide-outline-variant/20">
-              {scheduleItems.map((item) => (
-                <div key={item.name} className="px-md py-sm flex items-center justify-between hover:bg-surface-container/50 transition-colors group">
-                  <div className="flex items-center gap-md">
-                    <div className="text-center min-w-[60px]">
-                      <div className="text-label-md text-on-surface">{item.time}</div>
-                      <div className="text-caption text-on-surface-variant">{item.period}</div>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
-                      {item.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-label-md text-on-surface">{item.name}</span>
-                      <span className="text-caption text-on-surface-variant">{item.detail}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-sm">
-                    <span className={`px-xs py-[2px] ${STATUS_CLS[item.status]} text-[10px] rounded-full font-bold uppercase tracking-wider`}>
-                      {item.status}
-                    </span>
-                    <button
-                      onClick={() => toggleCheckin(item.name)}
-                      className={`opacity-0 group-hover:opacity-100 p-xs rounded-lg transition-all text-caption ${
-                        checkedIn.has(item.name) ? "bg-secondary/10 text-secondary" : "border border-outline-variant hover:bg-surface-container-high"
-                      }`}
-                      title={checkedIn.has(item.name) ? "Undo check-in" : "Mark checked in"}
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        {checkedIn.has(item.name) ? "check_circle" : "login"}
+              {todaysSchedule.length === 0 ? (
+                <p className="px-md py-lg text-center text-on-surface-variant text-body-md">
+                  No appointments scheduled for today.
+                </p>
+              ) : (
+                todaysSchedule.map((item) => {
+                  const meta = STATUS_META[item.status];
+                  return (
+                    <div key={item._id} className="px-md py-sm flex items-center justify-between hover:bg-surface-container/50 transition-colors">
+                      <div className="flex items-center gap-md">
+                        <div className="text-center min-w-[60px]">
+                          <div className="text-label-md text-on-surface">{item.time}</div>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                          {item.patientSnapshot.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-label-md text-on-surface">{item.patientSnapshot.fullName}</span>
+                          <span className="text-caption text-on-surface-variant">
+                            {item.appointmentNumber} · {clinicName(item.clinicId)} · {item.visitType === "online" ? "Online" : "In-Clinic"}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`px-xs py-[2px] ${meta.cls} text-[10px] rounded-full font-bold uppercase tracking-wider`}>
+                        {meta.label}
                       </span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -235,10 +268,11 @@ export default function DashboardContent() {
                   day === today.getDate() &&
                   calMonth === today.getMonth() &&
                   calYear === today.getFullYear();
+                const hasAppointments = day !== null && daysWithAppointments.has(day);
                 return (
                   <div
                     key={i}
-                    className={`text-caption py-xs rounded-md ${
+                    className={`relative text-caption py-xs rounded-md ${
                       day === null
                         ? "opacity-0 pointer-events-none"
                         : isToday
@@ -247,6 +281,9 @@ export default function DashboardContent() {
                     }`}
                   >
                     {day}
+                    {hasAppointments && !isToday && (
+                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                    )}
                   </div>
                 );
               })}

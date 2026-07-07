@@ -1,18 +1,113 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import type { AppointmentStatus, VisitType } from "@/types/appointment";
+
+interface StatusHistoryEntry {
+  status: AppointmentStatus;
+  changedAt: string;
+  changedBy: string;
+  note?: string;
+}
+
+interface ApiAppointment {
+  _id: string;
+  appointmentNumber: string;
+  clinicId: { _id: string; name: string } | string;
+  visitType: VisitType;
+  date: string;
+  time: string;
+  reason?: string;
+  patientSnapshot: { fullName: string; phone: string };
+  feeSnapshotPkr: number;
+  paymentMethod?: string;
+  status: AppointmentStatus;
+  statusHistory: StatusHistoryEntry[];
+}
+
+const STATUS_LABEL: Record<AppointmentStatus, string> = {
+  pending_payment: "Pending Payment",
+  payment_submitted: "Payment Submitted",
+  payment_verification: "Payment Verification",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  rejected: "Rejected",
+  rescheduled: "Rescheduled",
+  no_show: "No Show",
+};
+
+function clinicName(clinicId: ApiAppointment["clinicId"]): string {
+  return typeof clinicId === "string" ? clinicId : clinicId?.name ?? "—";
+}
 
 export default function AppointmentVerificationContent() {
-  const [scanning, setScanning] = useState(false);
-  const [verified, setVerified] = useState(false);
+  const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [phone, setPhone] = useState("");
+  const [result, setResult] = useState<ApiAppointment | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  function handleScan() {
-    setScanning(true);
-    setTimeout(() => {
-      setScanning(false);
-      setVerified(true);
-    }, 1500);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/appointments");
+        const data = await res.json();
+        if (res.ok) setAppointments(data.appointments ?? []);
+      } catch {
+        // Search will simply return no results if this fails.
+      }
+    })();
+  }, []);
+
+  function handleSearch() {
+    const term = searchTerm.trim().toLowerCase();
+    const phoneTerm = phone.trim();
+    if (!term && !phoneTerm) {
+      toast.error("Enter an appointment ID, patient name, or phone number.");
+      return;
+    }
+    const match = appointments.find((a) => {
+      const matchesTerm =
+        !term ||
+        a.appointmentNumber.toLowerCase().includes(term) ||
+        a.patientSnapshot.fullName.toLowerCase().includes(term);
+      const matchesPhone = !phoneTerm || a.patientSnapshot.phone.includes(phoneTerm);
+      return matchesTerm && matchesPhone;
+    });
+    if (!match) {
+      setResult(null);
+      setNotFound(true);
+      return;
+    }
+    setNotFound(false);
+    setResult(match);
+  }
+
+  async function updateStatus(status: AppointmentStatus) {
+    if (!result) return;
+    setBusy(true);
+    try {
+      const endpoint = status === "cancelled" ? `/api/appointments/${result._id}/cancel` : `/api/appointments/${result._id}`;
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: status === "cancelled" ? undefined : JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update appointment");
+        return;
+      }
+      setResult(data.appointment);
+      toast.success("Appointment updated");
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -20,79 +115,54 @@ export default function AppointmentVerificationContent() {
       {/* Header */}
       <div className="mb-xl">
         <h2 className="text-headline-lg font-bold text-on-surface">Appointment Verification</h2>
-        <p className="text-body-lg text-on-surface-variant">Scan the patient&apos;s QR code or search by Appointment ID to verify check-in.</p>
+        <p className="text-body-lg text-on-surface-variant">Search by Appointment ID, patient name, or phone number to verify a booking.</p>
       </div>
 
-      {/* Scanner + Search */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter mb-xl">
-        {/* QR Scanner Card */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm relative group">
-          <div className="flex items-center justify-between mb-md">
-            <div className="flex items-center gap-xs">
-              <span className="material-symbols-outlined text-primary">qr_code_scanner</span>
-              <h3 className="text-headline-md font-semibold text-on-surface">Scan QR Code</h3>
-            </div>
-            <button className="p-xs rounded-full hover:bg-surface-container text-on-surface-variant transition-colors">
-              <span className="material-symbols-outlined">flashlight_on</span>
-            </button>
-          </div>
-          <div className="relative aspect-video bg-neutral-900 rounded-lg overflow-hidden flex items-center justify-center border border-neutral-800">
-            <div className="absolute inset-0 opacity-40 bg-gradient-to-br from-neutral-700 to-neutral-900" />
-            <div className="relative w-48 h-48 border-2 border-white/50 rounded-2xl flex items-center justify-center">
-              {scanning && (
-                <div className="absolute inset-x-0 h-1 bg-gradient-to-b from-transparent via-primary to-transparent animate-[scan_1.5s_linear_once]" />
-              )}
-              {["-top-1 -left-1 border-t-4 border-l-4","-top-1 -right-1 border-t-4 border-r-4","-bottom-1 -left-1 border-b-4 border-l-4","-bottom-1 -right-1 border-b-4 border-r-4"].map((cls,i) => (
-                <div key={i} className={`absolute w-6 h-6 border-primary ${cls}`} />
-              ))}
-            </div>
-          </div>
-          <div className="mt-md flex justify-center">
-            <button
-              onClick={handleScan}
-              disabled={scanning}
-              className="bg-primary text-on-primary text-label-md px-lg py-sm rounded-lg hover:brightness-110 transition-all flex items-center gap-xs disabled:opacity-70"
-            >
-              {scanning
-                ? <><span className="material-symbols-outlined animate-spin">sync</span> Processing...</>
-                : <><span className="material-symbols-outlined text-[20px]">videocam</span> Start Scanner</>
-              }
-            </button>
-          </div>
+      {/* Search Card */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm max-w-2xl mb-xl">
+        <div className="flex items-center gap-xs mb-md">
+          <span className="material-symbols-outlined text-primary">search_check</span>
+          <h3 className="text-headline-md font-semibold text-on-surface">Search Appointment</h3>
         </div>
-
-        {/* Search Card */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col">
-          <div className="flex items-center gap-xs mb-md">
-            <span className="material-symbols-outlined text-primary">search_check</span>
-            <h3 className="text-headline-md font-semibold text-on-surface">Search Appointment</h3>
+        <div className="space-y-md">
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-xs">Appointment # or Patient Name</label>
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-body-md"
+              placeholder="APT-260705-0001 or Ahmed Khan"
+              type="text"
+            />
           </div>
-          <div className="space-y-md flex-grow">
-            <div>
-              <label className="block text-label-md text-on-surface-variant mb-xs">Appointment ID or Patient Details</label>
-              <input className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-body-md" placeholder="APT-2023-8942 or John Doe" type="text" />
-            </div>
-            <div className="grid grid-cols-2 gap-sm">
-              <div>
-                <label className="block text-label-md text-on-surface-variant mb-xs">Phone Number</label>
-                <input className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="+1 (555) 000-0000" type="tel" />
-              </div>
-              <div>
-                <label className="block text-label-md text-on-surface-variant mb-xs">Patient DOB</label>
-                <input className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="date" />
-              </div>
-            </div>
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-xs">Phone Number</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              placeholder="+92 300 0000000"
+              type="tel"
+            />
           </div>
-          <div className="mt-xl">
-            <button onClick={() => setVerified(true)} className="w-full border border-primary text-primary text-label-md h-12 rounded-lg hover:bg-primary/5 transition-all">
-              Search Appointment
-            </button>
-          </div>
+          <button
+            onClick={handleSearch}
+            className="w-full border border-primary text-primary text-label-md h-12 rounded-lg hover:bg-primary/5 transition-all"
+          >
+            Search Appointment
+          </button>
         </div>
       </div>
+
+      {notFound && (
+        <div className="bg-error/10 border border-error/30 rounded-xl p-md flex items-center gap-md mb-gutter max-w-2xl">
+          <span className="material-symbols-outlined text-error">error</span>
+          <p className="text-body-md text-error">No appointment matched that search. Check the details and try again.</p>
+        </div>
+      )}
 
       {/* Verification Result */}
-      {verified && (
+      {result && (
         <>
           {/* Success Banner */}
           <div className="bg-green-50 border border-green-200 rounded-xl p-md flex items-center gap-md mb-gutter">
@@ -100,8 +170,8 @@ export default function AppointmentVerificationContent() {
               <span className="material-symbols-outlined text-white text-[28px]">check</span>
             </div>
             <div>
-              <h4 className="text-headline-md text-green-900">Appointment Successfully Verified</h4>
-              <p className="text-body-md text-green-700">Patient identity and payment status have been validated.</p>
+              <h4 className="text-headline-md text-green-900">Appointment Found</h4>
+              <p className="text-body-md text-green-700">Reviewing details for {result.patientSnapshot.fullName}.</p>
             </div>
           </div>
 
@@ -111,20 +181,23 @@ export default function AppointmentVerificationContent() {
               {/* Patient Identity */}
               <div className="lg:col-span-1 border-r border-outline-variant/50 pr-lg">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden mb-md border-4 border-surface-container shadow-sm">
-                    <Image
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQgKUu2Yj5BaDaNIcmAWuGok4Ot7yyYffZTTJaMiJah-4Dxgc2ypIYMkBqhohpybQTg3yljVvzrwo7jPJtvKt9FN120SHj0xfzrLDhyZt1gpnnLQTRH3lXuFI24bbqfSkOoXzhbmRqhj5OAdTDei2k14McZ4CQJGCz-6j29_t6Lk8bra1Uw8vqOC1PHWVgcPFbWmPN95BQjJODH0JT3Yjil8u4H00OzTjisKbVi6l3qZ2r0n_UpFs--WfrWNaiP0ClGc1-jxKRvyI"
-                      alt="Alexander Mitchell" width={128} height={128}
-                      className="w-full h-full object-cover" unoptimized
-                    />
+                  <div className="w-24 h-24 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-md border-4 border-surface-container shadow-sm text-headline-lg font-bold">
+                    {result.patientSnapshot.fullName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
                   </div>
-                  <h3 className="text-headline-md text-on-surface">Alexander Mitchell</h3>
-                  <p className="text-body-md text-primary font-medium">APT-2023-8942</p>
+                  <h3 className="text-headline-md text-on-surface">{result.patientSnapshot.fullName}</h3>
+                  <p className="text-body-md text-primary font-medium">{result.appointmentNumber}</p>
                   <div className="mt-md space-y-sm w-full">
-                    {[["Date","Oct 24, 2023"],["Time","10:30 AM - 11:15 AM"],["Type","Initial Consultation"],["Payment","Verified ✓"]].map(([label,val]) => (
+                    {[
+                      ["Date", result.date],
+                      ["Time", result.time],
+                      ["Clinic", clinicName(result.clinicId)],
+                      ["Type", result.visitType === "online" ? "Online Consultation" : "In-Clinic Visit"],
+                      ["Status", STATUS_LABEL[result.status]],
+                      ["Fee", `Rs. ${result.feeSnapshotPkr.toLocaleString()}`],
+                    ].map(([label, val]) => (
                       <div key={label} className="flex justify-between items-center text-caption py-xs border-b border-outline-variant/30 last:border-0">
                         <span className="text-on-surface-variant uppercase tracking-wider">{label}</span>
-                        <span className={`text-on-surface font-semibold ${label==="Payment"?"text-green-600":""}`}>{val}</span>
+                        <span className="text-on-surface font-semibold">{val}</span>
                       </div>
                     ))}
                   </div>
@@ -133,58 +206,55 @@ export default function AppointmentVerificationContent() {
 
               {/* Journey */}
               <div className="lg:col-span-2">
-                {/* Timeline */}
-                <h4 className="text-label-md text-on-surface-variant uppercase tracking-widest mb-md">Appointment Timeline</h4>
-                <div className="relative flex justify-between items-center mb-xl">
-                  <div className="absolute h-1 bg-surface-container left-0 right-0 top-1/2 -translate-y-1/2 z-0" />
-                  <div className="absolute h-1 bg-primary left-0 w-3/4 top-1/2 -translate-y-1/2 z-0" />
-                  {[["done","Booked"],["done","Paid"],["done","Confirmed"]].map(([icon, label]) => (
-                    <div key={label} className="relative z-10 flex flex-col items-center gap-xs">
-                      <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[16px]">{icon}</span>
+                <h4 className="text-label-md text-on-surface-variant uppercase tracking-widest mb-md">Status History</h4>
+                <div className="space-y-sm mb-xl">
+                  {result.statusHistory.length === 0 ? (
+                    <p className="text-body-md text-on-surface-variant">No history recorded yet.</p>
+                  ) : (
+                    result.statusHistory.map((entry, i) => (
+                      <div key={i} className="flex items-center gap-sm p-sm bg-surface-container-low rounded-lg">
+                        <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[16px]">check</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-body-md font-semibold text-on-surface">{STATUS_LABEL[entry.status]}</p>
+                          <p className="text-caption text-on-surface-variant">
+                            {new Date(entry.changedAt).toLocaleString()} · {entry.changedBy}
+                            {entry.note ? ` · ${entry.note}` : ""}
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-caption font-bold text-on-surface">{label}</span>
-                    </div>
-                  ))}
-                  <div className="relative z-10 flex flex-col items-center gap-xs">
-                    <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center ring-4 ring-primary-container/20">
-                      <span className="material-symbols-outlined">how_to_reg</span>
-                    </div>
-                    <span className="text-caption font-bold text-primary">Checked In</span>
-                  </div>
-                  <div className="relative z-10 flex flex-col items-center gap-xs">
-                    <div className="w-8 h-8 rounded-full bg-surface-container text-outline flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[16px]">hourglass_empty</span>
-                    </div>
-                    <span className="text-caption font-bold text-on-surface-variant">Completed</span>
-                  </div>
+                    ))
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-md mt-xl">
-                  <div className="p-md bg-surface-container-low rounded-lg border border-outline-variant/30">
-                    <h5 className="text-label-md text-on-surface-variant mb-xs">Medical Reason</h5>
-                    <p className="text-body-md text-on-surface font-medium">Acute recurring chest tightness and shortness of breath during physical exertion.</p>
+                {result.reason && (
+                  <div className="p-md bg-surface-container-low rounded-lg border border-outline-variant/30 mb-xl">
+                    <h5 className="text-label-md text-on-surface-variant mb-xs">Reason for Visit</h5>
+                    <p className="text-body-md text-on-surface font-medium">{result.reason}</p>
                   </div>
-                  <div className="p-md bg-surface-container-low rounded-lg border border-outline-variant/30">
-                    <h5 className="text-label-md text-on-surface-variant mb-xs">Insurance Provider</h5>
-                    <p className="text-body-md text-on-surface font-medium">BlueCross Elite Platinum • ID: 9812-7364-00</p>
-                  </div>
-                </div>
+                )}
 
                 {/* Actions */}
-                <div className="mt-xl flex flex-wrap gap-sm">
-                  <button className="bg-primary text-on-primary text-label-md h-12 px-lg rounded-lg shadow-sm hover:brightness-110 flex items-center gap-xs transition-all">
-                    <span className="material-symbols-outlined">check_circle</span> Check-In Patient
-                  </button>
-                  <button className="border border-outline-variant text-on-surface text-label-md h-12 px-md rounded-lg hover:bg-surface-container transition-all flex items-center gap-xs">
-                    <span className="material-symbols-outlined">stethoscope</span> Start Consultation
-                  </button>
-                  <button className="border border-outline-variant text-on-surface text-label-md h-12 px-md rounded-lg hover:bg-surface-container transition-all flex items-center gap-xs">
-                    <span className="material-symbols-outlined">chat_bubble</span> Open Patient Chat
-                  </button>
-                  <button className="ml-auto text-error text-label-md h-12 px-md rounded-lg hover:bg-error/5 transition-all flex items-center gap-xs">
-                    <span className="material-symbols-outlined">flag</span> Mark Discrepancy
-                  </button>
+                <div className="flex flex-wrap gap-sm">
+                  {result.status === "confirmed" && (
+                    <button
+                      disabled={busy}
+                      onClick={() => updateStatus("completed")}
+                      className="bg-primary text-on-primary text-label-md h-12 px-lg rounded-lg shadow-sm hover:brightness-110 flex items-center gap-xs transition-all disabled:opacity-60"
+                    >
+                      <span className="material-symbols-outlined">task_alt</span> Mark Completed
+                    </button>
+                  )}
+                  {result.status !== "cancelled" && result.status !== "completed" && result.status !== "rejected" && (
+                    <button
+                      disabled={busy}
+                      onClick={() => updateStatus("cancelled")}
+                      className="border border-error text-error text-label-md h-12 px-md rounded-lg hover:bg-error/5 transition-all flex items-center gap-xs disabled:opacity-60"
+                    >
+                      <span className="material-symbols-outlined">cancel</span> Cancel Appointment
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

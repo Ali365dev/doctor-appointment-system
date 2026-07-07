@@ -11,7 +11,13 @@ const MIN_PASSWORD_LENGTH = 8;
 
 type Step = "phone" | "otp" | "newPassword";
 
-export default function ForgotPasswordForm({ initialPhone, onBack }: { initialPhone?: string; onBack: () => void }) {
+interface ForgotPasswordFormProps {
+  initialPhone?: string;
+  redirectTo?: string;
+  onBack: () => void;
+}
+
+export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }: ForgotPasswordFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState(initialPhone ?? "");
@@ -104,7 +110,7 @@ export default function ForgotPasswordForm({ initialPhone, onBack }: { initialPh
       }
 
       toast.success("Password updated. You're logged in!");
-      router.push(data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard");
+      router.push(redirectTo ?? (data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard"));
       router.refresh();
     } catch {
       toast.error("Network error. Please try again.");

@@ -6,11 +6,12 @@ import { toast } from "react-toastify";
 
 interface PasswordLoginFormProps {
   initialPhone?: string;
+  redirectTo?: string;
   onForgotPassword: (phone: string) => void;
   onUseOtpInstead: () => void;
 }
 
-export default function PasswordLoginForm({ initialPhone, onForgotPassword, onUseOtpInstead }: PasswordLoginFormProps) {
+export default function PasswordLoginForm({ initialPhone, redirectTo, onForgotPassword, onUseOtpInstead }: PasswordLoginFormProps) {
   const router = useRouter();
   const [phone, setPhone] = useState(initialPhone ?? "");
   const [password, setPassword] = useState("");
@@ -40,12 +41,14 @@ export default function PasswordLoginForm({ initialPhone, onForgotPassword, onUs
 
       if (data.mustChangePassword) {
         toast.info("Please set a new password to continue.");
-        router.push("/change-password?firstLogin=1");
+        const params = new URLSearchParams({ firstLogin: "1" });
+        if (redirectTo) params.set("redirectTo", redirectTo);
+        router.push(`/change-password?${params.toString()}`);
         return;
       }
 
       toast.success(`Welcome back, ${data.user.name}!`);
-      router.push(data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard");
+      router.push(redirectTo ?? (data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard"));
       router.refresh();
     } catch {
       toast.error("Network error. Please try again.");

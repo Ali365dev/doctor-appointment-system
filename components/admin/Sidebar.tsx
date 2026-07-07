@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { doctor } from "@/lib/data";
 import LogoutButton from "@/components/auth/LogoutButton";
 
 const navItems = [
@@ -16,7 +15,11 @@ const navItems = [
   { label: "Settings", icon: "settings", href: "/admin/settings" },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  user: { name: string; avatar?: string };
+}
+
+export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -28,18 +31,22 @@ export default function Sidebar() {
 
       {/* Doctor profile */}
       <div className="flex items-center gap-xs px-xs mb-md pb-md border-b border-outline-variant/30">
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest shrink-0">
-          <Image
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVFroceKentGX_zGpM9-kSeItLNGte67uw7a_iy8AVgJDxpncKJUShPW32MHwO_26oqWMbaNOmY8nH8hoWCZ5Fs334tjg1igym1in0KeISACyl951Fp6OZIwn92MQHIraVdZxDVy-MCoT2x3oNF0r7hc7AVu-u4A8cDDIqy2B2QZBA47CbRv9sRwGCLpVvJNyDUbf4Q7vJE7RDOpDOoZ7c6YN0Z_5w_m1CRS94Lhj2Mpd3nu-sQTE0yCzUsrIyXW13fiWdxe5MI-4"
-            alt={doctor.name}
-            width={40}
-            height={40}
-            className="w-full h-full object-cover"
-            unoptimized
-          />
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest shrink-0 flex items-center justify-center">
+          {user.avatar ? (
+            <Image
+              src={user.avatar}
+              alt={user.name}
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <span className="material-symbols-outlined text-on-surface-variant text-[22px]">person</span>
+          )}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-label-md font-semibold text-on-surface truncate">{doctor.name}</span>
+          <span className="text-label-md font-semibold text-on-surface truncate">{user.name}</span>
           <span className="text-caption text-on-surface-variant opacity-70">Clinical Director</span>
         </div>
       </div>

@@ -30,6 +30,11 @@ export async function findUserById(userId: string): Promise<UserDoc | null> {
   return User.findById(userId).lean<UserDoc>();
 }
 
+export async function findAllPatientUsers(): Promise<UserDoc[]> {
+  await connectDB();
+  return User.find({ role: "patient" }).sort({ createdAt: -1 }).lean<UserDoc[]>();
+}
+
 /**
  * Creates a new patient with a temporary password (phone+OTP registration flow).
  * isVerified is true because Firebase already confirmed the phone via OTP.
@@ -79,4 +84,39 @@ export async function updatePasswordAndClearMustChange(userId: string, passwordH
 export async function touchLastLogin(userId: string): Promise<void> {
   await connectDB();
   await User.updateOne({ _id: userId }, { $set: { lastLoginAt: new Date() } });
+}
+
+export interface UpdateProfileInput {
+  name?: string;
+  email?: string;
+  gender?: "Male" | "Female" | "Other";
+  dob?: string;
+  bloodType?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  allergies?: string;
+  medications?: string;
+}
+
+export async function updateUserProfile(userId: string, input: UpdateProfileInput): Promise<UserDoc | null> {
+  await connectDB();
+  const { dob, ...rest } = input;
+  return User.findByIdAndUpdate(
+    userId,
+    { $set: { ...rest, ...(dob ? { dob: new Date(dob) } : {}) } },
+    { new: true, runValidators: true }
+  ).lean<UserDoc>();
+}
+
+export async function updateUserAvatar(userId: string, avatar: string, avatarPublicId?: string): Promise<void> {
+  await connectDB();
+  await User.updateOne(
+    { _id: userId },
+    avatarPublicId
+      ? { $set: { avatar, avatarPublicId } }
+      : { $set: { avatar }, $unset: { avatarPublicId: "" } }
+  );
 }

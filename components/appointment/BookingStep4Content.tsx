@@ -3,13 +3,75 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
 
 export default function BookingStep4Content() {
   const [confirmed, setConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo } = useBookingStore();
+  const {
+    selectedClinic,
+    selectedDate,
+    selectedTime,
+    visitType,
+    reason,
+    patientInfo,
+    appointmentId,
+    setAppointment,
+  } = useBookingStore();
+
+  const handleProceedToPayment = async () => {
+    // Already created (e.g. patient navigated back and forth) — don't double-book.
+    if (appointmentId) {
+      router.push("/book-appointment/step-5");
+      return;
+    }
+
+    if (!selectedClinic || !selectedDate || !selectedTime) {
+      toast.error("Missing booking details — please restart from Step 1.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId: selectedClinic.id,
+          visitType,
+          date: selectedDate,
+          time: selectedTime,
+          reason,
+          patient: {
+            fullName: patientInfo.fullName,
+            phone: patientInfo.phone,
+            gender: patientInfo.gender,
+            age: Number(patientInfo.age),
+            cnic: patientInfo.cnic || undefined,
+            email: patientInfo.email || undefined,
+            city: patientInfo.city,
+            isExisting: patientInfo.isExisting,
+            condition: patientInfo.condition || undefined,
+            notes: patientInfo.notes || undefined,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not create appointment. Please try again.");
+        return;
+      }
+      setAppointment(data.appointment._id, data.appointment.appointmentNumber);
+      router.push("/book-appointment/step-5");
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const formattedDate = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -156,13 +218,13 @@ export default function BookingStep4Content() {
             </div>
             <div className="pt-6">
               <button
-                onClick={() => router.push("/book-appointment/step-5")}
-                disabled={!confirmed}
+                onClick={handleProceedToPayment}
+                disabled={!confirmed || submitting}
                 className={`w-full bg-primary text-white py-4 rounded-xl font-bold text-body-lg transition-all active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${
-                  !confirmed ? "opacity-50 pointer-events-none" : "hover:opacity-90"
+                  !confirmed || submitting ? "opacity-50 pointer-events-none" : "hover:opacity-90"
                 }`}
               >
-                Proceed to Payment
+                {submitting ? "Booking…" : "Proceed to Payment"}
                 <span className="material-symbols-outlined">arrow_forward</span>
               </button>
               <p className="text-caption text-outline text-center mt-4">Secure encrypted transaction</p>

@@ -1,8 +1,13 @@
 import ProfileForm from "@/components/patient/ProfileForm";
+import { getSession } from "@/lib/auth/getSession";
+import { findUserById } from "@/services/mongodb/repositories/user.repository";
 
 export const metadata = { title: "Profile | CarePlus Patient Portal" };
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const session = await getSession();
+  const user = session ? await findUserById(session.userId) : null;
+
   return (
     <div className="max-w-[1280px] mx-auto px-gutter py-xl">
       <div className="mb-lg">
@@ -11,7 +16,24 @@ export default function ProfilePage() {
           Update your personal information and medical details.
         </p>
       </div>
-      <ProfileForm />
+      <ProfileForm
+        initialUser={{
+          name: user?.name ?? "",
+          email: user?.email ?? "",
+          phone: user?.phone ?? "",
+          gender: user?.gender ?? "Male",
+          dob: user?.dob ? new Date(user.dob).toISOString().slice(0, 10) : "",
+          avatar: user?.avatar ?? "",
+          bloodType: user?.bloodType ?? "",
+          address: user?.address ?? "",
+          city: user?.city ?? "",
+          country: user?.country ?? "",
+          emergencyContactName: user?.emergencyContactName ?? "",
+          emergencyContactPhone: user?.emergencyContactPhone ?? "",
+          allergies: user?.allergies ?? "",
+          medications: user?.medications ?? "",
+        }}
+      />
     </div>
   );
 }

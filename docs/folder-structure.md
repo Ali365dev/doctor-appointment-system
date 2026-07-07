@@ -231,6 +231,11 @@
 │   ├── firebase
 │   │   ├── auth.ts
 │   │   └── config.ts
+│   ├── cloudinary
+│   │   ├── config.ts
+│   │   ├── upload.ts
+│   │   ├── delete.ts
+│   │   └── index.ts
 │   └── mongodb
 │       ├── connection.ts
 │       ├── index.ts

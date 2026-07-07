@@ -6,6 +6,7 @@ import "../(public)/globals.css";
 import Sidebar from "@/components/admin/Sidebar";
 import TopBar from "@/components/admin/TopBar";
 import { requireRole } from "@/lib/auth/requireRole";
+import { findUserById } from "@/services/mongodb/repositories/user.repository";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,7 +24,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireRole("doctor");
+  const session = await requireRole("doctor");
+  const doctorUser = await findUserById(session.userId);
+  const user = doctorUser
+    ? { name: doctorUser.name, avatar: doctorUser.avatar ?? undefined }
+    : { name: "Doctor", avatar: undefined };
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
@@ -37,9 +42,9 @@ export default async function AdminLayout({
       </head>
       <body className="min-h-full bg-surface text-on-surface overflow-x-hidden">
         <div className="flex min-h-screen overflow-hidden">
-          <Sidebar />
+          <Sidebar user={user} />
           <main className="flex-1 md:ml-64 min-w-0 flex flex-col">
-            <TopBar />
+            <TopBar user={user} />
             <div className="pt-[72px] flex-1">
               {children}
             </div>

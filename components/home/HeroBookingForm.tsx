@@ -63,7 +63,7 @@ export default function HeroBookingForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    // if (!validate()) return;
     setSubmitting(true);
     setPatientInfo({
       fullName: form.fullName,

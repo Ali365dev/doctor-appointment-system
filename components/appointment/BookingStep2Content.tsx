@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -19,10 +18,8 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-function getAvailableDaysForClinic(clinicIndex: number): Set<number> {
-  const loc = doctor.practice_locations[clinicIndex];
-  if (!loc) return new Set([1, 2, 3, 4, 5]);
-  const timings = loc.timings as Record<string, string>;
+function getAvailableDaysForClinic(timings: Record<string, string> | undefined): Set<number> {
+  if (!timings) return new Set([1, 2, 3, 4, 5]);
   const dayMap: Record<string, number> = {
     Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
     Thursday: 4, Friday: 5, Saturday: 6,
@@ -30,10 +27,10 @@ function getAvailableDaysForClinic(clinicIndex: number): Set<number> {
   return new Set(Object.keys(timings).map((d) => dayMap[d]).filter((d) => d !== undefined));
 }
 
-function buildTimeSlots(clinicIndex: number): { time: string; available: boolean }[] {
-  const loc = doctor.practice_locations[clinicIndex];
-  if (!loc) return [];
-  const timings = loc.timings as Record<string, string>;
+const DEFAULT_SLOT_DURATION_MINUTES = 5;
+
+function buildTimeSlots(timings: Record<string, string> | undefined): string[] {
+  if (!timings) return [];
   const firstTiming = Object.values(timings)[0];
   if (!firstTiming) return [];
 
@@ -48,17 +45,14 @@ function buildTimeSlots(clinicIndex: number): { time: string; available: boolean
 
   const startMin = toMinutes(startStr);
   const endMin = toMinutes(endStr);
-  const slots: { time: string; available: boolean }[] = [];
+  const slots: string[] = [];
 
-  for (let min = startMin; min < endMin; min += 5) {
+  for (let min = startMin; min < endMin; min += DEFAULT_SLOT_DURATION_MINUTES) {
     const h24 = Math.floor(min / 60);
     const m = min % 60;
     const period = h24 >= 12 ? "PM" : "AM";
     const h12 = h24 % 12 || 12;
-    slots.push({
-      time: `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`,
-      available: true,
-    });
+    slots.push(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`);
   }
   return slots;
 }
@@ -73,14 +67,46 @@ export default function BookingStep2Content() {
   const router = useRouter();
 
   const { selectedClinic, setDate, setTime } = useBookingStore();
-  const clinicIndex = doctor.practice_locations.findIndex(
-    (l) => l.name === selectedClinic?.name
-  );
-  const availableDayNums = getAvailableDaysForClinic(clinicIndex >= 0 ? clinicIndex : 0);
-  const timeSlots = buildTimeSlots(clinicIndex >= 0 ? clinicIndex : 0);
+  const availableDayNums = getAvailableDaysForClinic(selectedClinic?.timings);
+  const timeSlots = buildTimeSlots(selectedClinic?.timings);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
+
+  const isoDate = selectedDay
+    ? `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`
+    : null;
+
+  const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!selectedClinic || !isoDate) {
+        setBookedTimes(new Set());
+        return;
+      }
+      setSlotsLoading(true);
+      try {
+        const res = await fetch(
+          `/api/appointments/availability?clinicId=${selectedClinic.id}&date=${isoDate}`
+        );
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          setBookedTimes(new Set<string>(data.bookedTimes ?? []));
+        }
+      } catch {
+        // Non-fatal — the server re-validates at booking time regardless.
+      } finally {
+        if (!cancelled) setSlotsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClinic?.id, isoDate]);
 
   const goToPrevMonth = () => {
     const now = new Date();
@@ -119,7 +145,7 @@ export default function BookingStep2Content() {
   ];
 
   const handleContinue = () => {
-    if (!selectedDay) {
+    if (!selectedDay || !isoDate) {
       setError("Please select a date.");
       toast.error("Please select a date to continue.");
       return;
@@ -129,7 +155,11 @@ export default function BookingStep2Content() {
       toast.error("Please select a time slot to continue.");
       return;
     }
-    const isoDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    if (bookedTimes.has(selectedTime)) {
+      setError("That time slot was just booked by someone else. Please choose another.");
+      toast.error("That time slot is no longer available.");
+      return;
+    }
     setDate(isoDate);
     setTime(selectedTime);
     router.push("/book-appointment/step-3");
@@ -194,7 +224,7 @@ export default function BookingStep2Content() {
               return (
                 <div key={day} className="py-2 flex items-center justify-center">
                   <button
-                    onClick={() => { setSelectedDay(day); setError(""); }}
+                    onClick={() => { setSelectedDay(day); setSelectedTime(null); setError(""); }}
                     className={`w-12 h-12 flex items-center justify-center rounded-xl font-bold transition-all ${
                       selected || todayHighlight
                         ? "bg-primary text-on-primary shadow-md ring-4 ring-primary/10"
@@ -216,22 +246,29 @@ export default function BookingStep2Content() {
             {selectedClinic && (
               <p className="text-caption text-on-surface-variant mb-6">
                 {Object.entries(selectedClinic.timings ?? {}).map(([d, t]) => `${d}: ${t}`).join(" · ")}
+                {slotsLoading && " · Checking availability…"}
               </p>
             )}
             <div className="flex flex-wrap gap-3">
-              {timeSlots.map((slot) => (
-                <button
-                  key={slot.time}
-                  onClick={() => { setSelectedTime(slot.time); setError(""); }}
-                  className={`px-6 py-2.5 rounded-full border text-[14px] font-semibold transition-all active:scale-95 ${
-                    selectedTime === slot.time
-                      ? "bg-primary text-on-primary border-primary shadow-sm"
-                      : "border-outline-variant hover:border-primary hover:text-primary"
-                  }`}
-                >
-                  {slot.time}
-                </button>
-              ))}
+              {timeSlots.map((time) => {
+                const isBooked = bookedTimes.has(time);
+                return (
+                  <button
+                    key={time}
+                    disabled={isBooked}
+                    onClick={() => { setSelectedTime(time); setError(""); }}
+                    className={`px-6 py-2.5 rounded-full border text-[14px] font-semibold transition-all active:scale-95 ${
+                      isBooked
+                        ? "border-outline-variant/30 text-outline/40 bg-surface-container line-through cursor-not-allowed"
+                        : selectedTime === time
+                        ? "bg-primary text-on-primary border-primary shadow-sm"
+                        : "border-outline-variant hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    {time}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

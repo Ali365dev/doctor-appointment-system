@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import PhoneLoginForm from "./PhoneLoginForm";
 import PasswordLoginForm from "./PasswordLoginForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
@@ -13,6 +14,8 @@ type Mode = "otp" | "password" | "forgot";
 export default function LoginForm() {
   const [mode, setMode] = useState<Mode>("otp");
   const [phoneHandoff, setPhoneHandoff] = useState("");
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? undefined;
 
   return (
     <section className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-surface">
@@ -36,7 +39,7 @@ export default function LoginForm() {
           </p>
         </div>
 
-        <GoogleLoginButton />
+        <GoogleLoginButton redirectTo={redirectTo} />
 
         <div className="flex items-center gap-4">
           <div className="h-px flex-1 bg-outline-variant/30" />
@@ -46,6 +49,7 @@ export default function LoginForm() {
 
         {mode === "otp" && (
           <PhoneLoginForm
+            redirectTo={redirectTo}
             onRegistered={(phone) => {
               setPhoneHandoff(phone);
               setMode("password");
@@ -56,6 +60,7 @@ export default function LoginForm() {
         {mode === "password" && (
           <PasswordLoginForm
             initialPhone={phoneHandoff}
+            redirectTo={redirectTo}
             onForgotPassword={(phone) => {
               setPhoneHandoff(phone);
               setMode("forgot");
@@ -65,7 +70,7 @@ export default function LoginForm() {
         )}
 
         {mode === "forgot" && (
-          <ForgotPasswordForm initialPhone={phoneHandoff} onBack={() => setMode("password")} />
+          <ForgotPasswordForm initialPhone={phoneHandoff} redirectTo={redirectTo} onBack={() => setMode("password")} />
         )}
 
         {mode === "otp" && (

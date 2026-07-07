@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, DragEvent } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-toastify";
 import QRCode from "react-qr-code";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
@@ -11,134 +12,24 @@ const JAZZCASH_NUMBER = "03001234567";
 const EASYPAISA_NUMBER = "03457654321";
 
 type Tab = "stripe" | "jazzcash" | "easypaisa" | "reception" | "whatsapp";
-type UploadState = "idle" | "uploading" | "done";
-
-// ── Inline receipt upload ─────────────────────────────────────────────────────
-function ReceiptUpload({
-  onUploaded,
-}: {
-  onUploaded: (done: boolean) => void;
-}) {
-  const [state, setState] = useState<UploadState>("idle");
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const processFile = (file: File) => {
-    setFileName(file.name);
-    setState("uploading");
-    setTimeout(() => {
-      setState("done");
-      onUploaded(true);
-    }, 1500);
-  };
-
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-  };
-
-  const reset = () => {
-    setState("idle");
-    setFileName(null);
-    onUploaded(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  return (
-    <div>
-      <p className="text-caption font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
-        Step 2 — Upload Payment Receipt
-      </p>
-      <div
-        onClick={() => state === "idle" && fileInputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={onDrop}
-        className={`rounded-xl border-2 border-dashed px-6 py-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-          isDragging
-            ? "border-primary bg-primary/5 scale-[1.01]"
-            : state === "idle"
-            ? "border-outline-variant hover:border-primary/50 hover:bg-surface-container-low"
-            : "border-outline-variant/30 cursor-default"
-        }`}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".jpg,.jpeg,.png,.pdf"
-          className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f); }}
-        />
-
-        {state === "idle" && (
-          <>
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-              <span className="material-symbols-outlined text-primary">cloud_upload</span>
-            </div>
-            <p className="text-body-md font-semibold text-on-surface mb-1">
-              Drag &amp; drop or click to upload
-            </p>
-            <p className="text-caption text-on-surface-variant mb-3">
-              JPG, PNG or PDF · Max 5 MB
-            </p>
-            <p className="text-caption text-outline">
-              Include the Transaction Ref, Amount, and Date in your screenshot
-            </p>
-          </>
-        )}
-
-        {state === "uploading" && (
-          <div className="flex flex-col items-center py-2">
-            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-3" />
-            <p className="text-body-md font-semibold text-on-surface">Uploading {fileName}…</p>
-          </div>
-        )}
-
-        {state === "done" && (
-          <div className="flex flex-col items-center py-2">
-            <span
-              className="material-symbols-outlined text-green-600 text-[40px] mb-2"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              check_circle
-            </span>
-            <p className="text-body-md font-semibold text-on-surface mb-1">{fileName}</p>
-            <p className="text-caption text-green-700 mb-3">Receipt uploaded successfully</p>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); reset(); }}
-              className="text-caption text-primary hover:underline"
-            >
-              Remove &amp; re-upload
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ── Wallet tab (JazzCash / Easypaisa) ─────────────────────────────────────────
 function WalletTab({
   label,
-  methodParam,
+  method,
   number,
   accentBorder,
   fee,
 }: {
   label: string;
-  methodParam: string;
+  method: "jazzcash" | "easypaisa";
   number: string;
   accentBorder: string;
   fee: number;
 }) {
   const [copied, setCopied] = useState(false);
-  const [receiptDone, setReceiptDone] = useState(false);
   const router = useRouter();
-  const { setReceiptUploaded } = useBookingStore();
+  const setPaymentMethod = useBookingStore((s) => s.setPaymentMethod);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(number).catch(() => null);
@@ -146,9 +37,9 @@ function WalletTab({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleConfirm = () => {
-    setReceiptUploaded(true);
-    router.push(`/book-appointment/success?payment=${methodParam}`);
+  const handleContinueToReceipt = () => {
+    setPaymentMethod(method);
+    router.push("/book-appointment/upload-receipt");
   };
 
   const qrValue = `${label}:${number}?amount=${fee}`;
@@ -203,25 +94,23 @@ function WalletTab({
         </div>
       </div>
 
-      {/* Step 2 — upload receipt */}
-      <ReceiptUpload onUploaded={(done) => setReceiptDone(done)} />
+      {/* Step 2 — receipt upload happens on the shared upload-receipt page */}
+      <div className="p-5 rounded-xl border border-outline-variant/30 bg-surface-container-low flex items-start gap-3">
+        <span className="material-symbols-outlined text-primary shrink-0">cloud_upload</span>
+        <p className="text-caption text-on-surface-variant">
+          Step 2 — Once you&apos;ve sent the payment, upload your receipt on the next screen so our
+          team can verify it and confirm your appointment.
+        </p>
+      </div>
 
-      {/* Confirm */}
       <button
         type="button"
-        onClick={handleConfirm}
-        disabled={!receiptDone}
-        className="w-full py-4 rounded-xl bg-primary text-on-primary text-[14px] font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        onClick={handleContinueToReceipt}
+        className="w-full py-4 rounded-xl bg-primary text-on-primary text-[14px] font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
       >
-        <span className="material-symbols-outlined">check_circle</span>
-        Confirm Booking
+        <span className="material-symbols-outlined">receipt_long</span>
+        I&apos;ve Sent the Payment — Upload Receipt
       </button>
-
-      {!receiptDone && (
-        <p className="text-center text-caption text-outline">
-          Upload your receipt above to enable confirmation
-        </p>
-      )}
     </div>
   );
 }
@@ -229,11 +118,19 @@ function WalletTab({
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function BookingStep5Content() {
   const router = useRouter();
-  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo, setReceiptUploaded } =
+  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
     useBookingStore();
   const [activeTab, setActiveTab] = useState<Tab>("stripe");
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState("");
+  const [receptionLoading, setReceptionLoading] = useState(false);
+
+  // Payment requires an appointment to already exist (created at the end of Step 4).
+  useEffect(() => {
+    if (!appointmentId) {
+      router.replace("/book-appointment/step-4");
+    }
+  }, [appointmentId, router]);
 
   const fee = selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
 
@@ -247,6 +144,7 @@ export default function BookingStep5Content() {
 
   // ── Stripe Checkout redirect ──
   const handleStripeCheckout = async () => {
+    if (!appointmentId) return;
     setStripeLoading(true);
     setStripeError("");
     try {
@@ -256,6 +154,7 @@ export default function BookingStep5Content() {
         body: JSON.stringify({
           amount: fee,
           description: `Consultation – ${selectedClinic?.name ?? "Clinic"} · ${formattedDate}`,
+          appointmentId,
         }),
       });
       const data = await res.json();
@@ -272,9 +171,26 @@ export default function BookingStep5Content() {
   };
 
   // ── Pay at Reception ──
-  const handleReceptionConfirm = () => {
-    setReceiptUploaded(true);
-    router.push("/book-appointment/success?payment=reception");
+  const handleReceptionConfirm = async () => {
+    if (!appointmentId) return;
+    setReceptionLoading(true);
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointmentId, method: "reception" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not confirm booking. Please try again.");
+        return;
+      }
+      router.push(`/book-appointment/success?payment=reception&appointmentId=${appointmentId}`);
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setReceptionLoading(false);
+    }
   };
 
   // ── WhatsApp pre-filled message ──
@@ -287,7 +203,8 @@ export default function BookingStep5Content() {
       `🩺 Visit Type: ${visitType === "online" ? "Online Consultation" : "In-Clinic Visit"}\n` +
       `👤 Patient: ${patientInfo.fullName || "—"}\n` +
       `📞 Phone: ${patientInfo.phone || "—"}\n` +
-      `🔖 Condition: ${patientInfo.condition || "—"}\n\n` +
+      `🔖 Condition: ${patientInfo.condition || "—"}\n` +
+      `${appointmentNumber ? `🔢 Appointment #: ${appointmentNumber}\n` : ""}\n` +
       `Please confirm my appointment. Thank you.`
   );
 
@@ -319,6 +236,11 @@ export default function BookingStep5Content() {
           <p className="text-body-md text-on-surface-variant">
             Choose how you&apos;d like to pay for your appointment.
           </p>
+          {appointmentNumber && (
+            <p className="text-caption text-primary font-semibold mt-2">
+              Appointment #{appointmentNumber}
+            </p>
+          )}
         </div>
 
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-sm overflow-hidden">
@@ -420,7 +342,7 @@ export default function BookingStep5Content() {
             {activeTab === "jazzcash" && (
               <WalletTab
                 label="JazzCash"
-                methodParam="jazzcash"
+                method="jazzcash"
                 number={JAZZCASH_NUMBER}
                 accentBorder="border-red-100"
                 fee={fee}
@@ -431,7 +353,7 @@ export default function BookingStep5Content() {
             {activeTab === "easypaisa" && (
               <WalletTab
                 label="Easypaisa"
-                methodParam="easypaisa"
+                method="easypaisa"
                 number={EASYPAISA_NUMBER}
                 accentBorder="border-green-100"
                 fee={fee}
@@ -470,10 +392,11 @@ export default function BookingStep5Content() {
                 <button
                   type="button"
                   onClick={handleReceptionConfirm}
-                  className="w-full py-4 rounded-xl bg-primary text-on-primary text-[14px] font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  disabled={receptionLoading}
+                  className="w-full py-4 rounded-xl bg-primary text-on-primary text-[14px] font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  Confirm Booking · Pay at Reception
+                  {receptionLoading ? "Confirming…" : "Confirm Booking · Pay at Reception"}
                 </button>
               </div>
             )}

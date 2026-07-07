@@ -12,6 +12,6 @@ Never modify a schema unless requested.
 
 Use generated/inferred TypeScript types from schemas.
 
-Images stored in Firebase Storage.
+Images/files stored in Cloudinary.
 
-Only URL stored in the database.
+Only URL + public ID stored in the database.

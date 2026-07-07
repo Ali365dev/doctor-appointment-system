@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { signInWithGoogle } from "@/services/firebase/google-auth";
 
-export default function GoogleLoginButton() {
+interface GoogleLoginButtonProps {
+  /** Where to send the user after a successful login (e.g. back to /book-appointment/step-1). */
+  redirectTo?: string;
+}
+
+export default function GoogleLoginButton({ redirectTo }: GoogleLoginButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +32,7 @@ export default function GoogleLoginButton() {
       }
 
       toast.success(`Welcome${data.isNew ? "" : " back"}, ${data.user.name}!`);
-      router.push("/patient/dashboard");
+      router.push(redirectTo ?? "/patient/dashboard");
       router.refresh();
     } catch (err) {
       const code = typeof err === "object" && err !== null && "code" in err ? String(err.code) : undefined;

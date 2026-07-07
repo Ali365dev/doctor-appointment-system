@@ -10,6 +10,7 @@ export default function ChangePasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isFirstLogin = searchParams.get("firstLogin") === "1";
+  const redirectTo = searchParams.get("redirectTo") ?? undefined;
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -54,7 +55,7 @@ export default function ChangePasswordForm() {
       }
 
       toast.success("Password updated successfully!");
-      router.push("/patient/dashboard");
+      router.push(redirectTo ?? "/patient/dashboard");
       router.refresh();
     } catch {
       toast.error("Network error. Please try again.");

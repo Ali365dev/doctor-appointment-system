@@ -6,8 +6,9 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith("/admin");
   const isPatientRoute = pathname.startsWith("/patient");
+  const isBookingRoute = pathname.startsWith("/book-appointment");
 
-  if (!isAdminRoute && !isPatientRoute) {
+  if (!isAdminRoute && !isPatientRoute && !isBookingRoute) {
     return NextResponse.next();
   }
 
@@ -24,7 +25,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/patient/dashboard", request.url));
   }
 
-  if (isPatientRoute && session.role !== "patient") {
+  // Booking and the patient portal are both patient-only — a doctor account
+  // has no reason to book an appointment with themself.
+  if ((isPatientRoute || isBookingRoute) && session.role !== "patient") {
     return NextResponse.redirect(new URL("/admin/dashboard", request.url));
   }
 
@@ -32,5 +35,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/patient/:path*"],
+  matcher: ["/admin/:path*", "/patient/:path*", "/book-appointment/:path*"],
 };
