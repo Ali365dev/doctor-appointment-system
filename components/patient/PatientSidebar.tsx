@@ -7,6 +7,7 @@ import LogoutButton from "@/components/auth/LogoutButton";
 const navItems = [
   { label: "Dashboard", icon: "dashboard", href: "/patient/dashboard" },
   { label: "Appointments", icon: "calendar_today", href: "/patient/appointments" },
+  { label: "Medical Records", icon: "folder_shared", href: "/patient/medical-records" },
   { label: "Profile", icon: "person", href: "/patient/profile" },
   { label: "Settings", icon: "settings", href: "/patient/settings" },
 ];

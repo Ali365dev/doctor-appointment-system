@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../(public)/globals.css";
 import PatientSidebar from "@/components/patient/PatientSidebar";
 import PatientTopBar from "@/components/patient/PatientTopBar";
@@ -82,6 +84,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
             <span className="text-caption">Settings</span>
           </a>
         </nav>
+
+        <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>
     </html>
   );

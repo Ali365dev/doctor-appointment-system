@@ -1,11 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import AppointmentTable from "@/components/patient/AppointmentTable";
+// <<<<<<< Updated upstream
 import { getSession } from "@/lib/auth/getSession";
 import { findUserById } from "@/services/mongodb/repositories/user.repository";
 import { getAppointmentsForPatient } from "@/services/api/appointment";
 import { toPatientPaymentStatus } from "@/lib/appointmentDisplay";
 import type { PaymentDoc } from "@/services/mongodb/models/Payment";
+// =======
+import RecentReportsWidget from "@/components/patient/reports/RecentReportsWidget";
+// >>>>>>> Stashed changes
 
 export const metadata = { title: "Dashboard | CarePlus Patient Portal" };
 
@@ -138,6 +142,9 @@ export default async function PatientDashboardPage() {
         </div>
         <AppointmentTable limit={2} />
       </section>
+
+      {/* Recent Medical Records 
+      <RecentReportsWidget />*/}
     </div>
   );
 }

@@ -209,7 +209,7 @@ export default function BookingStep5Content() {
   );
 
   const waNumber =
-    new URL(doctor.contact.whatsapp).searchParams.get("phone")?.replace("+", "") ?? "923326568897";
+    new URL(doctor.contact.whatsapp).searchParams.get("phone")?.replace(/\D/g, "") ?? "923326568897";
   const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
 
   const summaryRows = [
