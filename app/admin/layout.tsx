@@ -3,8 +3,7 @@ import { Inter } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../(public)/globals.css";
-import Sidebar from "@/components/admin/Sidebar";
-import TopBar from "@/components/admin/TopBar";
+import AdminShell from "@/components/admin/AdminShell";
 import { requireRole } from "@/lib/auth/requireRole";
 import { findUserById } from "@/services/mongodb/repositories/user.repository";
 
@@ -41,15 +40,7 @@ export default async function AdminLayout({
         />
       </head>
       <body className="min-h-full bg-surface text-on-surface overflow-x-hidden">
-        <div className="flex min-h-screen overflow-hidden">
-          <Sidebar user={user} />
-          <main className="flex-1 md:ml-64 min-w-0 flex flex-col">
-            <TopBar user={user} />
-            <div className="pt-[72px] flex-1">
-              {children}
-            </div>
-          </main>
-        </div>
+        <AdminShell user={user}>{children}</AdminShell>
         <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>
     </html>

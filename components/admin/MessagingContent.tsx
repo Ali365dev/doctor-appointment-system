@@ -42,7 +42,7 @@ export default function MessagingContent() {
   return (
     <div className="flex h-[calc(100vh-72px)] overflow-hidden">
       {/* Pane 1: Contact List */}
-      <section className="w-80 border-r border-outline-variant bg-surface flex flex-col shrink-0">
+      <section className="hidden md:flex w-80 border-r border-outline-variant bg-surface flex-col shrink-0">
         <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
           <h2 className="text-headline-md font-semibold text-on-surface">Chats</h2>
           <button className="p-xs hover:bg-surface-container-high rounded-full transition-colors">
@@ -172,7 +172,7 @@ export default function MessagingContent() {
       </section>
 
       {/* Pane 3: Patient Summary */}
-      <section className="w-72 border-l border-outline-variant bg-surface flex flex-col p-md overflow-y-auto shrink-0">
+      <section className="hidden lg:flex w-72 border-l border-outline-variant bg-surface flex-col p-md overflow-y-auto shrink-0">
         <div className="text-center mb-xl">
           <Image
             src={contacts[0].src} alt="Robert Peterson" width={96} height={96}

@@ -17,16 +17,34 @@ const navItems = [
 
 interface SidebarProps {
   user: { name: string; avatar?: string };
+  mobileOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex flex-col h-screen w-64 bg-surface border-r border-outline-variant/30 py-md px-sm fixed left-0 top-0 z-40">
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onClose} />
+      )}
+
+      <aside
+        className={`flex flex-col h-screen w-64 bg-surface border-r border-outline-variant/30 py-md px-sm fixed left-0 top-0 z-50 transform transition-transform duration-300 md:translate-x-0 md:z-40 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
       {/* Brand */}
-      <div className="flex items-center px-xs mb-lg">
+      <div className="flex items-center justify-between px-xs mb-lg">
         <img src="/dr_zaid_gul_logo_navbar.svg" alt="Dr. Zaid Gul" className="h-12 w-auto" />
+        <button
+          onClick={onClose}
+          className="md:hidden p-xs rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
       </div>
 
       {/* Doctor profile */}
@@ -59,6 +77,7 @@ export default function Sidebar({ user }: SidebarProps) {
             <Link
               key={href}
               href={href}
+              onClick={onClose}
               className={`flex items-center gap-sm px-sm py-xs rounded-lg transition-colors text-label-md font-semibold ${
                 isActive
                   ? "bg-primary/10 text-primary"
@@ -76,6 +95,7 @@ export default function Sidebar({ user }: SidebarProps) {
       <div className="mt-auto border-t border-outline-variant/30 pt-md px-xs space-y-1">
         <Link
           href="/book-appointment/step-1"
+          onClick={onClose}
           className="w-full bg-primary-container text-on-primary-container text-label-md font-semibold py-xs rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-xs"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
@@ -83,6 +103,7 @@ export default function Sidebar({ user }: SidebarProps) {
         </Link>
         <LogoutButton className="w-full flex items-center gap-sm px-sm py-xs rounded-lg text-error hover:bg-error-container/20 transition-colors" />
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

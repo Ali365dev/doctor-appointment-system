@@ -68,17 +68,15 @@ export default function UploadReportForm() {
     setUploadState("uploading");
     setProgress(0);
     const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setUploadState("success");
-          toast.success("Report uploaded successfully!");
-          setTimeout(() => router.push("/patient/medical-records"), 1200);
-          return 100;
-        }
-        return p + 20;
-      });
+      setProgress((p) => (p >= 100 ? 100 : p + 20));
     }, 250);
+    setTimeout(() => {
+      clearInterval(interval);
+      setProgress(100);
+      setUploadState("success");
+      toast.success("Report uploaded successfully!");
+      setTimeout(() => router.push("/patient/medical-records"), 1200);
+    }, 1250);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

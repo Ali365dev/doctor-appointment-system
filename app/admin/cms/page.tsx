@@ -174,7 +174,7 @@ export default function WebsiteCMSPage() {
                     <span className="material-symbols-outlined text-[12px]">pin_drop</span> LIVE MAP VIEW
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-md">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
                   {[["Mon - Fri Hours","08:00 AM - 06:00 PM"],["Sat Hours","10:00 AM - 02:00 PM"]].map(([label, val]) => (
                     <div key={label}>
                       <label className="block text-label-md text-on-surface-variant mb-xs">{label}</label>

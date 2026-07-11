@@ -478,7 +478,7 @@ export default function PaymentVerificationContent() {
               )}
 
               {/* Info grid */}
-              <div className="grid grid-cols-2 gap-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
                 <div className="p-sm bg-surface-container-low rounded-lg">
                   <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">Transaction Ref</p>
                   <p className="font-bold text-on-surface text-body-md">{verifyTarget.transactionRef || "—"}</p>

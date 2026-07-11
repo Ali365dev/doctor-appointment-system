@@ -106,6 +106,7 @@ export default function AppointmentsContent() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editStatus, setEditStatus] = useState<AppointmentStatus>("confirmed");
@@ -339,6 +340,37 @@ export default function AppointmentsContent() {
     a.download = "appointments.csv";
     a.click();
     URL.revokeObjectURL(url);
+    setExportMenuOpen(false);
+  };
+
+  const exportPDF = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.text("Appointments", 14, 14);
+    autoTable(doc, {
+      startY: 20,
+      head: [["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"]],
+      body: filtered.map((a) => {
+        const payment = getPayment(a);
+        return [
+          a.appointmentNumber,
+          a.patientSnapshot.fullName,
+          a.patientSnapshot.phone,
+          a.date,
+          a.time,
+          clinicName(a.clinicId),
+          a.visitType,
+          payment ? PAYMENT_METHOD_LABEL[payment.method] : "—",
+          payment ? PAYMENT_STATUS_META[payment.status].label : "—",
+          STATUS_META[a.status].label,
+          a.feeSnapshotPkr.toLocaleString(),
+        ];
+      }),
+      styles: { fontSize: 8 },
+    });
+    doc.save("appointments.pdf");
+    setExportMenuOpen(false);
   };
 
   const handleTabChange = (t: typeof tab) => { setTab(t); setPage(1); };
@@ -356,12 +388,33 @@ export default function AppointmentsContent() {
           </p>
         </div>
         <div className="flex gap-sm">
-          <button
-            onClick={exportCSV}
-            className="flex items-center gap-xs px-md py-xs rounded-xl border border-outline-variant text-on-surface-variant font-semibold hover:bg-surface-container-high transition-colors"
-          >
-            <span className="material-symbols-outlined">download</span> Export CSV
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setExportMenuOpen((v) => !v)}
+              className="flex items-center gap-xs px-md py-xs rounded-xl border border-outline-variant text-on-surface-variant font-semibold hover:bg-surface-container-high transition-colors"
+            >
+              <span className="material-symbols-outlined">download</span> Export
+            </button>
+            {exportMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
+                <div className="absolute right-0 mt-xs w-44 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-lg z-20 overflow-hidden">
+                  <button
+                    onClick={exportPDF}
+                    className="w-full flex items-center gap-xs px-md py-sm text-left text-body-md text-on-surface hover:bg-surface-container-high transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span> Download as PDF
+                  </button>
+                  <button
+                    onClick={exportCSV}
+                    className="w-full flex items-center gap-xs px-md py-sm text-left text-body-md text-on-surface hover:bg-surface-container-high transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">table_view</span> Download as CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <Link
             href="/admin/appointments/verify"
             className="flex items-center gap-xs px-md py-xs rounded-xl bg-primary text-on-primary font-semibold hover:shadow-lg transition-all"
@@ -473,7 +526,7 @@ export default function AppointmentsContent() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
-                {["Patient", "Date & Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
+                {["Patient", "Appointment ID", "Phone", "Date & Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
                   <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
                     {h}
                   </th>
@@ -483,13 +536,13 @@ export default function AppointmentsContent() {
             <tbody className="divide-y divide-outline-variant/20">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={11} className="px-md py-xl text-center text-on-surface-variant">
                     Loading appointments…
                   </td>
                 </tr>
               ) : pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={11} className="px-md py-xl text-center text-on-surface-variant">
                     No appointments match your filters.
                   </td>
                 </tr>
@@ -507,25 +560,30 @@ export default function AppointmentsContent() {
 
                   return (
                     <tr key={apt._id} className="hover:bg-surface-container-low transition-colors group">
-                      <td className="px-md py-md">
+                      <td className="px-md py-md whitespace-nowrap">
                         <div className="flex items-center gap-sm">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                          <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                             {initials}
                           </div>
-                          <div>
-                            <p className="text-body-md font-semibold">{apt.patientSnapshot.fullName}</p>
-                            <p className="text-caption text-on-surface-variant">{apt.appointmentNumber} · {apt.patientSnapshot.phone}</p>
+                          <div className="min-w-0">
+                            <p className="text-body-md font-semibold truncate max-w-40">{apt.patientSnapshot.fullName}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-md py-md">
+                      <td className="px-md py-md whitespace-nowrap text-body-md text-on-surface-variant">
+                        {apt.appointmentNumber}
+                      </td>
+                      <td className="px-md py-md whitespace-nowrap text-body-md text-on-surface-variant">
+                        {apt.patientSnapshot.phone}
+                      </td>
+                      <td className="px-md py-md whitespace-nowrap">
                         <p className="text-body-md font-medium">{apt.date}</p>
                         <p className="text-caption text-on-surface-variant">{apt.time}</p>
                       </td>
-                      <td className="px-md py-md">
+                      <td className="px-md py-md whitespace-nowrap">
                         <p className="text-body-md text-on-surface-variant max-w-[180px] truncate">{clinicName(apt.clinicId)}</p>
                       </td>
-                      <td className="px-md py-md">
+                      <td className="px-md py-md whitespace-nowrap">
                         <span className="px-sm py-xs rounded-full bg-surface-container text-caption font-bold border border-outline-variant/30 capitalize">
                           {apt.visitType}
                         </span>
@@ -533,7 +591,7 @@ export default function AppointmentsContent() {
                       <td className="px-md py-md text-body-md text-on-surface-variant whitespace-nowrap">
                         {payment ? PAYMENT_METHOD_LABEL[payment.method] : "—"}
                       </td>
-                      <td className="px-md py-md">
+                      <td className="px-md py-md whitespace-nowrap">
                         {payment ? (
                           <span className={`px-sm py-[2px] rounded-full ${PAYMENT_STATUS_META[payment.status].badgeClass} text-caption font-bold`}>
                             {PAYMENT_STATUS_META[payment.status].label}
@@ -542,7 +600,7 @@ export default function AppointmentsContent() {
                           <span className="text-caption text-on-surface-variant">—</span>
                         )}
                       </td>
-                      <td className="px-md py-md">
+                      <td className="px-md py-md whitespace-nowrap">
                         <div className="flex items-center gap-xs">
                           <div className={`w-2 h-2 rounded-full ${meta.dotClass}`} />
                           <span className={`px-sm py-[2px] rounded-full ${meta.badgeClass} text-caption font-bold`}>
@@ -550,30 +608,20 @@ export default function AppointmentsContent() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-md py-md text-body-md font-semibold text-primary">
+                      <td className="px-md py-md text-body-md font-semibold text-primary whitespace-nowrap">
                         Rs. {apt.feeSnapshotPkr.toLocaleString()}
                       </td>
-                      <td className="px-md py-md text-right">
-                        <div className="flex items-center justify-end gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                      <td className="px-md py-md text-right sticky right-0 bg-surface-container-lowest group-hover:bg-surface-container-low transition-colors">
+                        <div className="flex items-center justify-end gap-xs">
                           {(apt.status === "pending_payment" || apt.status === "payment_verification") && (
-                            <>
-                              <button
-                                disabled={busy}
-                                onClick={() => changeStatus(apt._id, "confirmed")}
-                                className="p-xs rounded-lg bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors"
-                                title="Confirm"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                              </button>
-                              <button
-                                disabled={busy}
-                                onClick={() => changeStatus(apt._id, "rejected")}
-                                className="p-xs rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors"
-                                title="Reject"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">cancel</span>
-                              </button>
-                            </>
+                            <button
+                              disabled={busy}
+                              onClick={() => changeStatus(apt._id, "confirmed")}
+                              className="p-xs rounded-lg bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors"
+                              title="Confirm"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                            </button>
                           )}
                           {apt.status === "confirmed" && (
                             <button
@@ -585,21 +633,12 @@ export default function AppointmentsContent() {
                               <span className="material-symbols-outlined text-[18px]">task_alt</span>
                             </button>
                           )}
-                          {payment?.receiptUrl && (
-                            <button
-                              onClick={() => openDetails(apt)}
-                              className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                              title="View Receipt"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-                            </button>
-                          )}
                           <button
                             onClick={() => openDetails(apt)}
                             className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                            title="Manage Appointment"
+                            title="View Receipt"
                           >
-                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                           </button>
                           {canCancel && (
                             <button
