@@ -1,12 +1,65 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { doctor } from "@/lib/data";
 import HeroBookingForm from "@/components/home/HeroBookingForm";
 import PracticeLocations from "@/components/home/PracticeLocations";
 import ReviewsCarousel from "@/components/common/ReviewsCarousel";
+import Reveal from "@/components/common/Reveal";
+import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
+import AnimatedCounter from "@/components/common/AnimatedCounter";
+import { motion } from "framer-motion";
+
+const MotionLink = motion.create(Link);
 
 const CTA_BG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuATKh7hiy8TZrlatl7coiegFfTo9HoAC_1jitGOsiq5J1XrA4zgq0Df73ZwzgcXbLWSPgM0tWxJeO3K9C6bbchiiQAwLcvyrseEcx5z8zk2tuQT3lGRUttFCqj04J2nYFojMNsGTKNvtGq0MDY84W8UvOJVGBsv1cjWhAdyp6BF0qaZ8XdI5eQgSZ9g5fDUur3abZI9gvJ_J7AjgWQSjKVdt3kUL97F-Dh5DuWf5Pif9UT5HkHhIaDaSJLiIpcnmELrjWu7W6bhHIc";
+
+const CLINIC_IMAGES = {
+  consultation: "https://images.unsplash.com/photo-1551190822-a9333d879b1f?q=80&w=1000&auto=format&fit=crop",
+  team: "https://images.unsplash.com/photo-1666214280391-8ff5bd3c0bf0?q=80&w=1000&auto=format&fit=crop",
+  facility: "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?q=80&w=1000&auto=format&fit=crop",
+};
+
+const WHY_CHOOSE_FEATURES = [
+  {
+    icon: "school",
+    title: "Expert Gastroenterologist",
+    desc: "UK-trained specialist with advanced fellowships and years of international clinical experience.",
+    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "biotech",
+    title: "Modern Diagnostics",
+    desc: "Utilizing high-definition endoscopy and state-of-the-art imaging for precise diagnostic accuracy.",
+    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "person",
+    title: "Personalized Treatment",
+    desc: "Bespoke treatment plans tailored to each patient's unique clinical profile and lifestyle.",
+    image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "verified",
+    title: "Evidence-Based",
+    desc: "Following international clinical guidelines (BSG, AGA, EASL) for the safest medical care.",
+    image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "favorite",
+    title: "Compassionate Care",
+    desc: "A patient-first approach centered on dignity, respect, and clear communication.",
+    image: "https://images.unsplash.com/photo-1516841273335-e39b37888115?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "support_agent",
+    title: "Follow-up Support",
+    desc: "Comprehensive post-procedure care and ongoing support throughout the recovery journey.",
+    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?q=80&w=800&auto=format&fit=crop",
+  },
+];
 
 const SERVICE_ICONS: Record<string, string> = {
   Biopsy: "biotech",
@@ -58,6 +111,8 @@ export default function HomePage() {
   const specializations = doctor.specialization.join(" & ");
   const whatsappLink = contact.whatsapp;
   const helpline = contact.helpline;
+  const featuredConditions = conditions_treated.slice(0, 14);
+  const moreConditionsCount = Math.max(0, conditions_treated.length - featuredConditions.length);
 
   return (
     <main className="pt-24 overflow-x-hidden">
@@ -68,9 +123,18 @@ export default function HomePage() {
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-xl items-center w-full">
           {/* Left: Profile */}
-          <div className="lg:col-span-7 space-y-md">
+          <motion.div
+            className="lg:col-span-7 space-y-md"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          >
             {/* Verification badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#dbe1ff] text-[#00174b] text-caption font-bold">
+            <motion.div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#dbe1ff] text-[#00174b] text-caption font-bold"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+            >
               <span
                 className="material-symbols-outlined text-caption"
                 style={{ fontVariationSettings: "'FILL' 1" }}
@@ -78,7 +142,7 @@ export default function HomePage() {
                 verified
               </span>
               {doctor.verification}
-            </div>
+            </motion.div>
 
             <h1 className="text-display font-bold leading-[1.1] tracking-[-0.02em] text-on-surface">
               {displayName}
@@ -93,17 +157,19 @@ export default function HomePage() {
             </p>
 
             {/* Stats */}
-            <div className="flex flex-wrap gap-md py-sm">
-              <div className="flex items-center gap-xs">
+            <RevealGroup className="flex flex-wrap gap-md py-sm">
+              <motion.div variants={revealItem} whileHover={{ y: -3 }} className="flex items-center gap-xs">
                 <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined">work_history</span>
                 </div>
                 <div>
-                  <p className="text-label-md font-semibold text-primary">{experience_years}+ Years</p>
+                  <p className="text-label-md font-semibold text-primary">
+                    <AnimatedCounter value={experience_years} suffix="+ Years" />
+                  </p>
                   <p className="text-caption text-on-surface-variant">Experience</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-xs">
+              </motion.div>
+              <motion.div variants={revealItem} whileHover={{ y: -3 }} className="flex items-center gap-xs">
                 <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
                   <span
                     className="material-symbols-outlined"
@@ -113,20 +179,24 @@ export default function HomePage() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-label-md font-semibold text-primary">{rating.score} Rating</p>
+                  <p className="text-label-md font-semibold text-primary">
+                    <AnimatedCounter value={rating.score} decimals={1} suffix=" Rating" />
+                  </p>
                   <p className="text-caption text-on-surface-variant">{rating.satisfaction_percent}% Satisfied</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-xs">
+              </motion.div>
+              <motion.div variants={revealItem} whileHover={{ y: -3 }} className="flex items-center gap-xs">
                 <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined">reviews</span>
                 </div>
                 <div>
-                  <p className="text-label-md font-semibold text-primary">{rating.reviews_count}+</p>
+                  <p className="text-label-md font-semibold text-primary">
+                    <AnimatedCounter value={rating.reviews_count} suffix="+" />
+                  </p>
                   <p className="text-caption text-on-surface-variant">Patient Reviews</p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </RevealGroup>
 
             {/* Thumb + bio */}
             <div className="flex items-center gap-4 pt-sm">
@@ -148,31 +218,41 @@ export default function HomePage() {
 
             {/* CTAs */}
             <div className="flex flex-wrap gap-sm pt-md">
-              <Link
+              <MotionLink
                 href="#booking"
-                className="bg-primary text-on-primary px-lg py-sm rounded-xl text-label-md font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                className="bg-primary text-on-primary px-lg py-sm rounded-xl text-label-md font-semibold flex items-center gap-2 shadow-lg"
               >
                 <span className="material-symbols-outlined text-label-md">calendar_month</span>
                 Book Appointment
-              </Link>
-              <a
+              </MotionLink>
+              <motion.a
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-surface-container-highest text-on-surface px-lg py-sm rounded-xl text-label-md font-semibold flex items-center gap-2 hover:bg-surface-dim transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                className="bg-surface-container-highest text-on-surface px-lg py-sm rounded-xl text-label-md font-semibold flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-label-md">chat</span>
                 WhatsApp
-              </a>
+              </motion.a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right: Booking Card */}
-          <div className="lg:col-span-5 relative" id="booking">
+          <motion.div
+            className="lg:col-span-5 relative"
+            id="booking"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          >
             <div className="absolute -z-10 -top-12 -right-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
             <div className="absolute -z-10 -bottom-12 -left-12 w-48 h-48 bg-secondary/10 rounded-full blur-3xl" />
             <HeroBookingForm />
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -180,8 +260,12 @@ export default function HomePage() {
       <section id="about" className="bg-surface-container-low py-xl px-gutter overflow-hidden">
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-xl items-center">
           {/* Portrait */}
-          <div className="relative order-2 lg:order-1">
-            <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl relative z-10">
+          <Reveal className="relative order-2 lg:order-1">
+            <motion.div
+              className="aspect-square rounded-3xl overflow-hidden shadow-2xl relative z-10"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.4 }}
+            >
               <Image
                 src={profile_image}
                 alt={`${displayName} Portrait`}
@@ -189,17 +273,25 @@ export default function HomePage() {
                 className="object-cover"
                 unoptimized
               />
-            </div>
-            <div className="absolute -top-6 -left-6 w-32 h-32 bg-primary/20 rounded-full z-0" />
-            <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-secondary/10 rounded-full z-0" />
+            </motion.div>
+            <motion.div
+              className="absolute -top-6 -left-6 w-32 h-32 bg-primary/20 rounded-full z-0"
+              animate={{ y: [0, -12, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute -bottom-6 -right-6 w-48 h-48 bg-secondary/10 rounded-full z-0"
+              animate={{ y: [0, 12, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            />
             <div className="absolute bottom-6 left-6 glass-card p-sm rounded-xl z-20 shadow-lg border border-white/30">
               <p className="text-headline-md font-semibold text-primary">{rating.reviews_count}+</p>
               <p className="text-caption text-on-surface-variant">Verified Reviews</p>
             </div>
-          </div>
+          </Reveal>
 
           {/* Text */}
-          <div className="order-1 lg:order-2 space-y-md">
+          <Reveal delay={300} className="order-1 lg:order-2 space-y-md">
             <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
               About {displayName}
             </h2>
@@ -243,9 +335,119 @@ export default function HomePage() {
                 </div>
               </div>
             )}
-          </div>
+          </Reveal>
         </div>
       </section>
+
+      {/* ── Why Choose Us ── */}
+      <section className="py-xl px-gutter max-w-[1280px] mx-auto">
+        <Reveal className="text-center mb-xl">
+          <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
+            Why Choose {displayName}?
+          </h2>
+          <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
+            Setting new benchmarks in gastrointestinal health through expertise and empathy.
+          </p>
+        </Reveal>
+
+        <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+          {WHY_CHOOSE_FEATURES.map((f) => (
+            <motion.div
+              key={f.title}
+              variants={revealItem}
+              whileHover={{ y: -6 }}
+              className="rounded-2xl bg-surface border border-outline-variant/30 shadow-sm overflow-hidden group"
+            >
+              <div className="relative h-36 overflow-hidden">
+                <motion.div className="absolute inset-0" whileHover={{ scale: 1.08 }} transition={{ duration: 0.4 }}>
+                  <Image src={f.image} alt={f.title} fill className="object-cover" unoptimized />
+                </motion.div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-3 left-3 w-11 h-11 rounded-xl bg-surface/90 backdrop-blur-sm text-primary flex items-center justify-center shadow-md">
+                  <span className="material-symbols-outlined">{f.icon}</span>
+                </div>
+              </div>
+              <div className="p-md">
+                <p className="text-label-md font-bold text-on-surface">{f.title}</p>
+                <p className="text-caption text-on-surface-variant mt-xs">{f.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </RevealGroup>
+      </section>
+
+      {/* ── Care & Facility Gallery ── */}
+      <section className="py-xl px-gutter max-w-[1280px] mx-auto">
+        <Reveal className="text-center mb-xl">
+          <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
+            Care You Can See
+          </h2>
+          <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
+            A calm, modern environment designed around patient comfort.
+          </p>
+        </Reveal>
+
+        <div className="grid grid-cols-2 gap-md h-105 md:h-120">
+          {[
+            { src: CLINIC_IMAGES.consultation, alt: "Consultation in progress", label: "Personalized Consultations", span: "col-span-1 row-span-2", delay: 0 },
+            { src: CLINIC_IMAGES.team, alt: "Care team", label: "Experienced Care Team", span: "", delay: 0.25 },
+            { src: CLINIC_IMAGES.facility, alt: "Clinic facility", label: "Modern Facilities", span: "", delay: 0.5 },
+          ].map((img) => (
+            <motion.div
+              key={img.alt}
+              className={`relative rounded-3xl overflow-hidden shadow-md group ${img.span}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.7, delay: img.delay }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <Image src={img.src} alt={img.alt} fill className="object-cover" unoptimized />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <motion.p
+                className="absolute bottom-4 left-4 text-white font-semibold text-label-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300"
+              >
+                {img.label}
+              </motion.p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Conditions Treated ── */}
+      {featuredConditions.length > 0 && (
+        <section className="py-xl px-gutter max-w-[1280px] mx-auto">
+          <Reveal className="text-center mb-xl">
+            <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
+              Conditions We Treat
+            </h2>
+            <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
+              From common digestive complaints to complex liver disorders.
+            </p>
+          </Reveal>
+
+          <RevealGroup className="flex flex-wrap justify-center gap-xs">
+            {featuredConditions.map((c) => (
+              <motion.span
+                key={c}
+                variants={revealItem}
+                whileHover={{ scale: 1.05 }}
+                className="px-md py-xs rounded-full bg-surface-container text-label-md font-medium text-on-surface border border-outline-variant/30"
+              >
+                {c}
+              </motion.span>
+            ))}
+            {moreConditionsCount > 0 && (
+              <motion.span
+                variants={revealItem}
+                className="px-md py-xs rounded-full bg-primary/10 text-label-md font-semibold text-primary"
+              >
+                +{moreConditionsCount} more
+              </motion.span>
+            )}
+          </RevealGroup>
+        </section>
+      )}
 
       {/* ── Services ── */}
       {services.length > 0 && (
@@ -261,17 +463,22 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-md">
-            {services.map((s) => (
-              <div
-                key={s}
-                className="p-md rounded-2xl bg-surface hover:shadow-xl hover:-translate-y-1 transition-all border border-outline-variant/30 group flex flex-col"
-              >
-                <div className="w-14 h-14 rounded-xl bg-primary/5 text-primary flex items-center justify-center mb-sm group-hover:bg-primary group-hover:text-on-primary transition-colors shrink-0">
-                  <span className="material-symbols-outlined text-3xl">{getServiceIcon(s)}</span>
-                </div>
-                <h3 className="text-label-md font-semibold text-on-surface">{s}</h3>
-                <p className="text-caption text-on-surface-variant mt-xs line-clamp-2 flex-1">{getServiceDesc(s)}</p>
-              </div>
+            {services.map((s, i) => (
+              <Reveal key={s} delay={(i % 4) * 150}>
+                <motion.div
+                  whileHover={{ y: -6 }}
+                  className="p-md rounded-2xl bg-surface hover:shadow-xl transition-shadow border border-outline-variant/30 group flex flex-col h-full"
+                >
+                  <motion.div
+                    whileHover={{ rotate: 8, scale: 1.1 }}
+                    className="w-14 h-14 rounded-xl bg-primary/5 text-primary flex items-center justify-center mb-sm group-hover:bg-primary group-hover:text-on-primary transition-colors shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-3xl">{getServiceIcon(s)}</span>
+                  </motion.div>
+                  <h3 className="text-label-md font-semibold text-on-surface">{s}</h3>
+                  <p className="text-caption text-on-surface-variant mt-xs line-clamp-2 flex-1">{getServiceDesc(s)}</p>
+                </motion.div>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -288,10 +495,14 @@ export default function HomePage() {
 
       {/* ── CTA ── */}
       <section className="py-xl px-gutter max-w-[1280px] mx-auto mb-xl">
-        <div className="bg-primary rounded-4xl p-lg text-on-primary flex flex-col md:flex-row items-center justify-between gap-lg relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <Reveal className="bg-primary rounded-4xl p-lg text-on-primary flex flex-col md:flex-row items-center justify-between gap-lg relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0 opacity-10 pointer-events-none"
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          >
             <Image src={CTA_BG} alt="" fill className="object-cover" />
-          </div>
+          </motion.div>
 
           <div className="relative z-10 max-w-lg">
             <h2 className="text-headline-lg font-bold leading-[1.2] mb-sm">
@@ -304,26 +515,32 @@ export default function HomePage() {
           </div>
 
           <div className="relative z-10 flex flex-col sm:flex-row gap-sm w-full md:w-auto">
-            <Link
+            <MotionLink
               href="#hero"
-              className="  bg-on-primary text-primary px-lg py-sm rounded-xl font-bold text-center hover:bg-on-primary/90 transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              className="bg-on-primary text-primary px-lg py-sm rounded-xl font-bold text-center"
             >
               Book Online
-            </Link>
-            <Link
+            </MotionLink>
+            <MotionLink
               href="/book-appointment/step-1?visitType=online"
-              className="bg-on-primary/10 border-2 border-on-primary/40 text-on-primary px-lg py-sm rounded-xl font-bold text-center flex items-center justify-center gap-2 hover:bg-on-primary/20 transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              className="bg-on-primary/10 border-2 border-on-primary/40 text-on-primary px-lg py-sm rounded-xl font-bold text-center flex items-center justify-center gap-2"
             >
               Video Consultation
-            </Link>
-            <a
+            </MotionLink>
+            <motion.a
               href={`tel:${helpline}`}
-              className="border-2 border-on-primary/30 text-on-primary px-lg py-sm rounded-xl font-bold text-center hover:bg-on-primary/10 transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              className="border-2 border-on-primary/30 text-on-primary px-lg py-sm rounded-xl font-bold text-center"
             >
               Call helpline
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </Reveal>
       </section>
     </main>
   );

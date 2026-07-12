@@ -47,27 +47,7 @@ export default function Sidebar({ user, mobileOpen = false, onClose }: SidebarPr
         </button>
       </div>
 
-      {/* Doctor profile */}
-      <div className="flex items-center gap-xs px-xs mb-md pb-md border-b border-outline-variant/30">
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest shrink-0 flex items-center justify-center">
-          {user.avatar ? (
-            <Image
-              src={user.avatar}
-              alt={user.name}
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
-              unoptimized
-            />
-          ) : (
-            <span className="material-symbols-outlined text-on-surface-variant text-[22px]">person</span>
-          )}
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-label-md font-semibold text-on-surface truncate">{user.name}</span>
-          <span className="text-caption text-on-surface-variant opacity-70">Clinical Director</span>
-        </div>
-      </div>
+    
 
       {/* Nav items */}
       <nav className="flex-1 flex flex-col gap-xs">
