@@ -23,7 +23,7 @@ export default function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.7, delay: delay / 1000, ease: [0.4, 0, 0.2, 1] }}
     >
       {children}

@@ -8,8 +8,10 @@ import LogoutButton from "@/components/auth/LogoutButton";
 const navItems = [
   { label: "Dashboard", icon: "dashboard", href: "/admin/dashboard" },
   { label: "Appointments", icon: "calendar_today", href: "/admin/appointments" },
+  { label: "Clinic Management", icon: "storefront", href: "/admin/clinics" },
   { label: "Patients", icon: "group", href: "/admin/patients" },
   { label: "Payments", icon: "payments", href: "/admin/payments" },
+  { label: "Procedures", icon: "medical_services", href: "/admin/procedures" },
   { label: "Messages", icon: "mail", href: "/admin/messages" },
   { label: "Website CMS", icon: "web", href: "/admin/cms" },
   { label: "Settings", icon: "settings", href: "/admin/settings" },

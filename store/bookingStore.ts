@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { WeeklySchedule } from "@/types/clinic";
 
 export interface SelectedClinic {
   id: string;
@@ -9,6 +10,8 @@ export interface SelectedClinic {
   address: string | null;
   fee_pkr: number;
   timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
   booking_link?: string;
   map_link?: string;
 }

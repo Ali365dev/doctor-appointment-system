@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { doctor } from "@/lib/data";
 import { useBookingStore } from "@/store/bookingStore";
 import BookingSidebar from "./BookingSidebar";
+import type { WeeklySchedule } from "@/types/clinic";
 
 interface ApiClinic {
   _id: string;
@@ -14,6 +15,8 @@ interface ApiClinic {
   address?: string;
   feePkr: number;
   timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
   mapLink?: string;
 }
 
@@ -103,6 +106,8 @@ export default function BookingStep1Form() {
         address: loc.address ?? null,
         fee_pkr: loc.feePkr,
         timings: loc.timings,
+        schedule: loc.schedule,
+        defaultSlotDurationMinutes: loc.defaultSlotDurationMinutes,
         map_link: loc.mapLink,
       });
     }
@@ -207,9 +212,9 @@ export default function BookingStep1Form() {
             </div>
 
             {clinicsLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex gap-4 overflow-x-auto pb-2">
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-80 rounded-xl bg-surface-container-low animate-pulse" />
+                  <div key={i} className="h-80 w-72 shrink-0 sm:w-80 rounded-xl bg-surface-container-low animate-pulse" />
                 ))}
               </div>
             ) : clinicsError ? (
@@ -218,7 +223,7 @@ export default function BookingStep1Form() {
                 <p className="text-error text-body-md font-semibold">{clinicsError}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth">
                 {locations.map((loc, i) => {
                   const days = formatTimings(loc.timings);
                   const hours = Object.values(loc.timings)[0] ?? "";
@@ -229,7 +234,7 @@ export default function BookingStep1Form() {
                     <div
                       key={loc._id}
                       onClick={() => setSelectedClinicIndex(i)}
-                      className={`p-6 rounded-xl flex flex-col justify-between min-h-80 cursor-pointer transition-all duration-200 ${
+                      className={`p-6 rounded-xl flex flex-col justify-between min-h-80 w-72 sm:w-80 shrink-0 snap-start cursor-pointer transition-all duration-200 ${
                         isSelected
                           ? "bg-primary shadow-xl shadow-primary/30 scale-[1.02]"
                           : "bg-surface border border-outline-variant/30 hover:border-primary/40 hover:shadow-md"

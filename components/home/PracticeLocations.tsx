@@ -2,6 +2,7 @@
 
 import React, {
   useState,
+  useEffect,
   useCallback,
   useRef,
   useMemo,
@@ -10,15 +11,50 @@ import React, {
 import { useRouter } from "next/navigation";
 import { doctor } from "@/lib/data";
 import { useBookingStore } from "@/store/bookingStore";
+import type { WeeklySchedule } from "@/types/clinic";
 
 interface Loc {
+  id: string;
   name: string;
   address: string | null;
   fee_pkr: number;
   timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
+  image?: string;
   map_link?: string;
   coordinates?: { lat: number; lng: number };
   booking_link?: string;
+}
+
+interface ApiClinic {
+  _id: string;
+  name: string;
+  address?: string | null;
+  feePkr: number;
+  timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
+  image?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  mapLink?: string | null;
+}
+
+function toLoc(c: ApiClinic): Loc {
+  return {
+    id: c._id,
+    name: c.name,
+    address: c.address ?? null,
+    fee_pkr: c.feePkr,
+    timings: c.timings ?? {},
+    schedule: c.schedule,
+    defaultSlotDurationMinutes: c.defaultSlotDurationMinutes,
+    image: c.image,
+    coordinates:
+      c.latitude != null && c.longitude != null ? { lat: c.latitude, lng: c.longitude } : undefined,
+    map_link: c.mapLink ?? undefined,
+  };
 }
 
 const DAYS = [
@@ -112,7 +148,8 @@ const LocationCard = memo(function LocationCard({
 });
 
 export default function PracticeLocations() {
-  const locations = doctor.practice_locations as unknown as Loc[];
+  const [locations, setLocations] = useState<Loc[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const router = useRouter();
@@ -123,9 +160,29 @@ export default function PracticeLocations() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef(0);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/clinics");
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          setLocations((data.clinics ?? []).map(toLoc));
+        }
+      } catch {
+        // Non-fatal — the section just won't render.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const active = locations[activeIndex];
-  const timingDays = DAYS.filter((d) => d in active.timings);
-  const closedDays = DAYS.filter((d) => !(d in active.timings));
+  const timingDays = active ? DAYS.filter((d) => d in active.timings) : [];
+  const closedDays = active ? DAYS.filter((d) => !(d in active.timings)) : [];
 
   const goTo = useCallback(
     (i: number) => {
@@ -164,13 +221,15 @@ export default function PracticeLocations() {
   );
 
   const handleBook = useCallback(
-    (loc: Loc, idx: number) => {
+    (loc: Loc) => {
       setClinic({
-        id: `loc-${idx}`,
+        id: loc.id,
         name: loc.name,
         address: loc.address,
         fee_pkr: loc.fee_pkr,
         timings: loc.timings,
+        schedule: loc.schedule,
+        defaultSlotDurationMinutes: loc.defaultSlotDurationMinutes,
         booking_link: loc.booking_link,
         map_link: loc.map_link,
       });
@@ -191,7 +250,7 @@ export default function PracticeLocations() {
     []
   );
 
-  if (!locations.length) return null;
+  if (loading || !locations.length || !active) return null;
 
   return (
     <section
@@ -298,7 +357,7 @@ export default function PracticeLocations() {
 
             <div className="flex flex-wrap gap-sm pt-sm">
               <button
-                onClick={() => handleBook(active, activeIndex)}
+                onClick={() => handleBook(active)}
                 className="flex items-center gap-xs bg-primary text-on-primary px-md py-xs rounded-xl text-label-md font-semibold hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-[18px]">calendar_month</span>

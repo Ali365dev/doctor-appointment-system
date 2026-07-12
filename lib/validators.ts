@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { GENDERS, VISIT_TYPES, type PatientSnapshot, type VisitType, type Gender } from "@/types/appointment";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/types/payment";
+import { DAYS_OF_WEEK, SLOT_DURATION_OPTIONS, type WeeklySchedule } from "@/types/clinic";
 
 export function isValidObjectId(value: unknown): value is string {
   return typeof value === "string" && Types.ObjectId.isValid(value);
@@ -118,6 +119,148 @@ export function validateProfileUpdateBody(body: unknown): string | null {
   }
   if (b.emergencyContactPhone !== undefined && b.emergencyContactPhone !== "" && !isValidPhone(b.emergencyContactPhone)) {
     return "Enter a valid emergency contact phone number";
+  }
+
+  return null;
+}
+
+export interface ProcedureRequestBody {
+  name?: string;
+  slug?: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  location?: string;
+  pricePkr?: number;
+  originalPricePkr?: number;
+  discountPercent?: number;
+  isActive?: boolean;
+  order?: number;
+}
+
+/**
+ * Validates the raw request body for POST/PATCH /api/procedures.
+ * `partial` skips required-field checks (used for PATCH updates).
+ * `pricePkr` and `discountPercent` are always optional — price is derived
+ * from originalPricePkr and discountPercent (see deriveProcedurePrice).
+ */
+export function validateProcedureBody(body: unknown, partial = false): string | null {
+  if (!body || typeof body !== "object") return "Request body is required";
+  const b = body as ProcedureRequestBody;
+
+  if (!partial || b.name !== undefined) {
+    if (!b.name || !b.name.trim()) return "Procedure name is required";
+  }
+  if (b.slug !== undefined && b.slug !== "" && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(b.slug)) {
+    return "Slug must be lowercase letters, numbers, and hyphens only";
+  }
+  if (!partial || b.location !== undefined) {
+    if (!b.location || !b.location.trim()) return "Location is required";
+  }
+  if (b.pricePkr !== undefined && (!Number.isFinite(b.pricePkr) || (b.pricePkr as number) < 0)) {
+    return "Price must be a non-negative number";
+  }
+  if (!partial || b.originalPricePkr !== undefined) {
+    if (!Number.isFinite(b.originalPricePkr) || (b.originalPricePkr as number) < 0) {
+      return "Original price must be a non-negative number";
+    }
+  }
+  if (b.discountPercent !== undefined && (!Number.isFinite(b.discountPercent) || (b.discountPercent as number) < 0 || (b.discountPercent as number) > 100)) {
+    return "Discount percent must be between 0 and 100";
+  }
+  if (b.isActive !== undefined && typeof b.isActive !== "boolean") return "isActive must be a boolean";
+  if (b.order !== undefined && !Number.isFinite(b.order)) return "order must be a number";
+
+  return null;
+}
+
+/**
+ * Turns a procedure name into a URL-safe slug, e.g. "ERCP (Advanced)" -> "ercp-advanced".
+ */
+export function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Price is auto-derived from originalPricePkr and discountPercent when not
+ * explicitly provided: no discount means price equals the original price.
+ */
+export function deriveProcedurePrice(originalPricePkr: number, discountPercent: number): number {
+  return Math.round(originalPricePkr * (1 - discountPercent / 100));
+}
+
+export interface ClinicRequestBody {
+  name?: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  feePkr?: number;
+  mapLink?: string;
+  mapEmbed?: string;
+  latitude?: number;
+  longitude?: number;
+  displayOrder?: number;
+  isActive?: boolean;
+  defaultSlotDurationMinutes?: number;
+  schedule?: WeeklySchedule;
+}
+
+/** Validates a single { day, isOpen, startTime, endTime } schedule entry. */
+function validateScheduleDay(entry: unknown): string | null {
+  if (!entry || typeof entry !== "object") return "Each schedule entry must be an object";
+  const e = entry as Partial<WeeklySchedule[number]>;
+  if (!e.day || !(DAYS_OF_WEEK as readonly string[]).includes(e.day)) {
+    return "Each schedule entry needs a valid day";
+  }
+  if (typeof e.isOpen !== "boolean") return `${e.day}: isOpen must be a boolean`;
+  if (e.isOpen) {
+    if (!isValidTimeString(e.startTime)) return `${e.day}: a valid opening time is required`;
+    if (!isValidTimeString(e.endTime)) return `${e.day}: a valid closing time is required`;
+  }
+  return null;
+}
+
+/**
+ * Validates the raw request body for POST/PATCH /api/clinics.
+ * `partial` skips required-field checks (used for PATCH updates).
+ */
+export function validateClinicBody(body: unknown, partial = false): string | null {
+  if (!body || typeof body !== "object") return "Request body is required";
+  const b = body as ClinicRequestBody;
+
+  if (!partial || b.name !== undefined) {
+    if (!b.name || !b.name.trim()) return "Clinic name is required";
+  }
+  if (!partial || b.city !== undefined) {
+    if (!b.city || !b.city.trim()) return "City is required";
+  }
+  if (!partial || b.feePkr !== undefined) {
+    if (!Number.isFinite(b.feePkr) || (b.feePkr as number) < 0) return "Consultation fee must be a non-negative number";
+  }
+  if (b.email !== undefined && b.email !== "" && !isValidEmail(b.email)) return "Enter a valid email address";
+  if (b.phone !== undefined && b.phone !== "" && !isValidPhone(b.phone)) return "Enter a valid phone number";
+  if (b.whatsapp !== undefined && b.whatsapp !== "" && !isValidPhone(b.whatsapp)) return "Enter a valid WhatsApp number";
+  if (b.latitude !== undefined && b.latitude !== null && !Number.isFinite(b.latitude)) return "Latitude must be a number";
+  if (b.longitude !== undefined && b.longitude !== null && !Number.isFinite(b.longitude)) return "Longitude must be a number";
+  if (b.displayOrder !== undefined && !Number.isFinite(b.displayOrder)) return "Display order must be a number";
+  if (b.isActive !== undefined && typeof b.isActive !== "boolean") return "isActive must be a boolean";
+  if (
+    b.defaultSlotDurationMinutes !== undefined &&
+    !(SLOT_DURATION_OPTIONS as readonly number[]).includes(b.defaultSlotDurationMinutes)
+  ) {
+    return `Default slot duration must be one of: ${SLOT_DURATION_OPTIONS.join(", ")} minutes`;
+  }
+  if (b.schedule !== undefined) {
+    if (!Array.isArray(b.schedule)) return "schedule must be an array";
+    for (const entry of b.schedule) {
+      const err = validateScheduleDay(entry);
+      if (err) return err;
+    }
   }
 
   return null;

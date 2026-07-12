@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
+import { openWeekdayNumbers } from "@/lib/slots";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -18,45 +19,6 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-function getAvailableDaysForClinic(timings: Record<string, string> | undefined): Set<number> {
-  if (!timings) return new Set([1, 2, 3, 4, 5]);
-  const dayMap: Record<string, number> = {
-    Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
-    Thursday: 4, Friday: 5, Saturday: 6,
-  };
-  return new Set(Object.keys(timings).map((d) => dayMap[d]).filter((d) => d !== undefined));
-}
-
-const DEFAULT_SLOT_DURATION_MINUTES = 5;
-
-function buildTimeSlots(timings: Record<string, string> | undefined): string[] {
-  if (!timings) return [];
-  const firstTiming = Object.values(timings)[0];
-  if (!firstTiming) return [];
-
-  const [startStr, endStr] = firstTiming.split(" - ");
-  const toMinutes = (t: string) => {
-    const [timePart, period] = t.trim().split(" ");
-    const [h, m] = timePart.split(":").map(Number);
-    let hours = h % 12;
-    if (period === "PM") hours += 12;
-    return hours * 60 + m;
-  };
-
-  const startMin = toMinutes(startStr);
-  const endMin = toMinutes(endStr);
-  const slots: string[] = [];
-
-  for (let min = startMin; min < endMin; min += DEFAULT_SLOT_DURATION_MINUTES) {
-    const h24 = Math.floor(min / 60);
-    const m = min % 60;
-    const period = h24 >= 12 ? "PM" : "AM";
-    const h12 = h24 % 12 || 12;
-    slots.push(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`);
-  }
-  return slots;
-}
-
 export default function BookingStep2Content() {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -67,8 +29,7 @@ export default function BookingStep2Content() {
   const router = useRouter();
 
   const { selectedClinic, setDate, setTime } = useBookingStore();
-  const availableDayNums = getAvailableDaysForClinic(selectedClinic?.timings);
-  const timeSlots = buildTimeSlots(selectedClinic?.timings);
+  const availableDayNums = openWeekdayNumbers(selectedClinic?.schedule);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
@@ -77,6 +38,7 @@ export default function BookingStep2Content() {
     ? `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`
     : null;
 
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
   const [slotsLoading, setSlotsLoading] = useState(false);
 
@@ -84,6 +46,7 @@ export default function BookingStep2Content() {
     let cancelled = false;
     (async () => {
       if (!selectedClinic || !isoDate) {
+        setTimeSlots([]);
         setBookedTimes(new Set());
         return;
       }
@@ -94,6 +57,7 @@ export default function BookingStep2Content() {
         );
         const data = await res.json();
         if (!cancelled && res.ok) {
+          setTimeSlots(data.slots ?? []);
           setBookedTimes(new Set<string>(data.bookedTimes ?? []));
         }
       } catch {
@@ -245,7 +209,10 @@ export default function BookingStep2Content() {
             <h3 className="text-headline-md font-semibold mb-4">Available Time Slots</h3>
             {selectedClinic && (
               <p className="text-caption text-on-surface-variant mb-6">
-                {Object.entries(selectedClinic.timings ?? {}).map(([d, t]) => `${d}: ${t}`).join(" · ")}
+                {(selectedClinic.schedule ?? [])
+                  .filter((d) => d.isOpen)
+                  .map((d) => `${d.day}: ${d.startTime} - ${d.endTime}`)
+                  .join(" · ")}
                 {slotsLoading && " · Checking availability…"}
               </p>
             )}

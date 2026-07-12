@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { doctor } from "@/lib/data";
-import ProcedureCard from "@/components/public/ProcedureCard";
+import ProcedureCard, { type Procedure } from "@/components/public/ProcedureCard";
 import CTASection from "@/components/public/CTASection";
 import Reveal from "@/components/common/Reveal";
 import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
@@ -27,22 +28,34 @@ const PREP_STEPS = [
 ];
 
 const FEATURE_TILES = [
-  { icon: "verified_user", label: "Certified Safety", bg: "bg-surface-container-high", color: "text-primary" },
-  { icon: "medical_information", label: "Detailed Reports", bg: "bg-primary", color: "text-on-primary" },
-  { icon: "psychology", label: "Expert Insight", bg: "bg-secondary-container", color: "text-on-secondary-container" },
-  { icon: "support_agent", label: "24/7 Support", bg: "bg-surface-container-high", color: "text-primary" },
+  {
+    icon: "verified_user",
+    label: "Certified Safety",
+    image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "medical_information",
+    label: "Detailed Reports",
+    image: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "psychology",
+    label: "Expert Insight",
+    image: "https://images.unsplash.com/photo-1550831107-1553da8c8464?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "support_agent",
+    label: "24/7 Support",
+    image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=800&auto=format&fit=crop",
+  },
 ];
 
 const HERO_IMG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD8Fl9bfESyniMxUDMxazH5L5msPPi4PznZ2TzyyUg_pNYKZMY-R57isUNVA5Q9khwloJZY0KzdJHYYre6wsjbKwPpUt2pWRGb63nvLUv095thZFZiilpxMVeUSZP520ZWck58M7G22JiwDG8GIey9sRd0VwrfxesVpyp1qUKL8bC3IEErtQtL03m10SJLs0S9qlqel0N4jR3WstiS8zq9dmTuEWefr0O7FgBtm9JU4enmB9WSmwm4ZLYAniLKu1hFwkpHxFoq7e-Y";
 
-export default function ServicesContent() {
-  const { treatments_offered } = doctor;
-
-  // ERCP is the most specialized (highest price)
-  const sorted = [...treatments_offered].sort(
-    (a, b) => b.price_pkr - a.price_pkr
-  );
+export default function ServicesContent({ procedures }: { procedures: Procedure[] }) {
+  // Most specialized (highest price) shown first
+  const sorted = [...procedures].sort((a, b) => b.pricePkr - a.pricePkr);
 
   return (
     <main className="pt-24">
@@ -85,7 +98,7 @@ export default function ServicesContent() {
               className="w-full md:w-1/2 relative h-100"
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, amount: 0.3 }}
+              viewport={{ once: true, amount: 0, margin: "0px 0px -10% 0px" }}
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <motion.div
@@ -116,7 +129,7 @@ export default function ServicesContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
             {sorted.map((t, i) => (
               <ProcedureCard
-                key={t.name}
+                key={t.id}
                 treatment={t}
                 featured={i === 0}
               />
@@ -164,14 +177,20 @@ export default function ServicesContent() {
                   key={tile.label}
                   variants={revealItem}
                   whileHover={{ y: -4, scale: 1.03 }}
-                  className={`${tile.bg} rounded-xl aspect-square flex flex-col items-center justify-center text-center p-md`}
+                  className="relative rounded-xl aspect-square overflow-hidden flex flex-col items-center justify-center text-center p-md"
                 >
-                  <span
-                    className={`material-symbols-outlined text-4xl mb-sm ${tile.color}`}
-                  >
+                  <Image
+                    src={tile.image}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-black/55" />
+                  <span className="material-symbols-outlined text-4xl mb-sm text-white relative z-10">
                     {tile.icon}
                   </span>
-                  <span className={`text-label-md font-semibold ${tile.color}`}>
+                  <span className="text-label-md font-semibold text-white relative z-10">
                     {tile.label}
                   </span>
                 </motion.div>

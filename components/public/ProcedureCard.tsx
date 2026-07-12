@@ -31,16 +31,20 @@ const PROCEDURE_DESCS: Record<string, string> = {
     "Endoscopic treatment for esophageal variceal bleeding",
 };
 
-interface Treatment {
+export interface Procedure {
+  id: string;
   name: string;
-  price_pkr: number;
-  original_price_pkr: number;
-  discount_percent: number;
+  slug?: string;
+  shortDescription?: string;
+  fullDescription?: string;
   location: string;
+  pricePkr: number;
+  originalPricePkr: number;
+  discountPercent: number;
 }
 
 interface ProcedureCardProps {
-  treatment: Treatment;
+  treatment: Procedure;
   featured?: boolean;
 }
 
@@ -67,13 +71,13 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
   }, [setClinic, router, treatment]);
 
   const icon = PROCEDURE_ICONS[treatment.name] ?? "medical_services";
-  const desc = PROCEDURE_DESCS[treatment.name] ?? treatment.location;
+  const desc = treatment.shortDescription || PROCEDURE_DESCS[treatment.name] || treatment.location;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.5 }}
       whileHover={{ y: -8 }}
       className={`bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm flex flex-col h-full relative overflow-hidden group transition-shadow duration-300 hover:shadow-xl ${
@@ -100,18 +104,20 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
       <div className="mt-auto pt-md border-t border-outline-variant/20">
         <div className="flex items-baseline gap-xs">
           <span className="text-headline-lg font-bold text-primary">
-            <AnimatedCounter value={treatment.price_pkr} format />
+            <AnimatedCounter value={treatment.pricePkr} format />
           </span>
           <span className="text-label-md text-on-surface-variant">PKR</span>
         </div>
-        <div className="flex items-center gap-sm mt-xs">
-          <span className="line-through text-outline text-body-md">
-            {treatment.original_price_pkr.toLocaleString()}
-          </span>
-          <span className="bg-error-container text-on-error-container px-xs py-[2px] rounded text-[10px] font-semibold">
-            {treatment.discount_percent}% OFF
-          </span>
-        </div>
+        {treatment.discountPercent > 0 && (
+          <div className="flex items-center gap-sm mt-xs">
+            <span className="line-through text-outline text-body-md">
+              {treatment.originalPricePkr.toLocaleString()}
+            </span>
+            <span className="bg-error-container text-on-error-container px-xs py-0.5 rounded text-[10px] font-semibold">
+              {treatment.discountPercent}% OFF
+            </span>
+          </div>
+        )}
       </div>
 
       <button

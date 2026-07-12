@@ -28,7 +28,7 @@ export default function RevealGroup({
       variants={container}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once, amount: 0.2 }}
+      viewport={{ once, amount: 0, margin: "0px 0px -10% 0px" }}
     >
       {children}
     </motion.div>

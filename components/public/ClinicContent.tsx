@@ -1,19 +1,55 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { doctor } from "@/lib/data";
 import ClinicCard from "@/components/public/ClinicCard";
 import Reveal from "@/components/common/Reveal";
 import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
+import type { WeeklySchedule } from "@/types/clinic";
 
 interface Loc {
+  id: string;
   name: string;
   address: string | null;
   fee_pkr: number;
   timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
+  image?: string;
   coordinates?: { lat: number; lng: number };
   map_link?: string;
   booking_link?: string;
+}
+
+interface ApiClinic {
+  _id: string;
+  name: string;
+  address?: string | null;
+  feePkr: number;
+  timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
+  image?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  mapLink?: string | null;
+}
+
+function toLoc(c: ApiClinic): Loc {
+  return {
+    id: c._id,
+    name: c.name,
+    address: c.address ?? null,
+    fee_pkr: c.feePkr,
+    timings: c.timings ?? {},
+    schedule: c.schedule,
+    defaultSlotDurationMinutes: c.defaultSlotDurationMinutes,
+    image: c.image,
+    coordinates:
+      c.latitude != null && c.longitude != null ? { lat: c.latitude, lng: c.longitude } : undefined,
+    map_link: c.mapLink ?? undefined,
+  };
 }
 
 function buildEmbedUrl(loc: Loc): string {
@@ -29,7 +65,29 @@ const CONSOLIDATED_MAP =
   "https://maps.google.com/maps?q=31.41,73.10&z=13&ie=UTF8&iwloc=&output=embed";
 
 export default function ClinicContent() {
-  const locations = doctor.practice_locations as unknown as Loc[];
+  const [locations, setLocations] = useState<Loc[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/clinics");
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          setLocations((data.clinics ?? []).map(toLoc));
+        }
+      } catch {
+        // Non-fatal — the page just shows no locations.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [loc0, loc1, loc2] = locations;
 
   return (
@@ -53,60 +111,66 @@ export default function ClinicContent() {
 
       {/* ── Locations Bento Grid ── */}
       <section className="py-xl max-w-[1280px] mx-auto px-gutter">
-        <RevealGroup className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
-          {/* Location 1 – Featured */}
-          {loc0 && (
-            <motion.div variants={revealItem} className="lg:col-span-8 flex flex-col gap-gutter">
-              <ClinicCard loc={loc0} index={0} variant="featured" />
-            </motion.div>
-          )}
+        {loading ? (
+          <p className="text-center text-on-surface-variant py-xl">Loading clinics…</p>
+        ) : locations.length === 0 ? (
+          <p className="text-center text-on-surface-variant py-xl">No clinics available right now.</p>
+        ) : (
+          <RevealGroup className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+            {/* Location 1 – Featured */}
+            {loc0 && (
+              <motion.div variants={revealItem} className="lg:col-span-8 flex flex-col gap-gutter">
+                <ClinicCard loc={loc0} index={0} variant="featured" />
+              </motion.div>
+            )}
 
-          {/* Map Widget for Location 1 */}
-          {loc0 && (
-            <motion.div
-              variants={revealItem}
-              className="lg:col-span-4 rounded-xl p-1 shadow-sm overflow-hidden min-h-75 bg-white/70 backdrop-blur-xl border border-gray-200/50"
-            >
-              <div className="w-full h-full rounded-lg bg-surface-container overflow-hidden relative min-h-75">
-                <iframe
-                  src={buildEmbedUrl(loc0)}
-                  className="absolute inset-0 w-full h-full border-0"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title={`Map — ${loc0.name}`}
-                />
-                <div className="absolute bottom-4 left-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md p-sm rounded-lg border border-outline-variant/30 pointer-events-none">
-                  <p className="text-label-md font-semibold text-on-surface truncate">
-                    {loc0.name}
-                  </p>
-                  {loc0.map_link && (
-                    <a
-                      href={loc0.map_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary text-caption font-semibold flex items-center gap-1 mt-1 pointer-events-auto"
-                    >
-                      Get Directions
-                      <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                    </a>
-                  )}
+            {/* Map Widget for Location 1 */}
+            {loc0 && (
+              <motion.div
+                variants={revealItem}
+                className="lg:col-span-4 rounded-xl p-1 shadow-sm overflow-hidden min-h-75 bg-white/70 backdrop-blur-xl border border-gray-200/50"
+              >
+                <div className="w-full h-full rounded-lg bg-surface-container overflow-hidden relative min-h-75">
+                  <iframe
+                    src={buildEmbedUrl(loc0)}
+                    className="absolute inset-0 w-full h-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title={`Map — ${loc0.name}`}
+                  />
+                  <div className="absolute bottom-4 left-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md p-sm rounded-lg border border-outline-variant/30 pointer-events-none">
+                    <p className="text-label-md font-semibold text-on-surface truncate">
+                      {loc0.name}
+                    </p>
+                    {loc0.map_link && (
+                      <a
+                        href={loc0.map_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary text-caption font-semibold flex items-center gap-1 mt-1 pointer-events-auto"
+                      >
+                        Get Directions
+                        <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {/* Locations 2 & 3 */}
-          {loc1 && (
-            <motion.div variants={revealItem} className="lg:col-span-6">
-              <ClinicCard loc={loc1} index={1} variant="standard" shift="Evening Shift" />
-            </motion.div>
-          )}
-          {loc2 && (
-            <motion.div variants={revealItem} className="lg:col-span-6">
-              <ClinicCard loc={loc2} index={2} variant="standard" shift="Night Shift" />
-            </motion.div>
-          )}
-        </RevealGroup>
+            {/* Locations 2 & 3 */}
+            {loc1 && (
+              <motion.div variants={revealItem} className="lg:col-span-6">
+                <ClinicCard loc={loc1} index={1} variant="standard" shift="Evening Shift" />
+              </motion.div>
+            )}
+            {loc2 && (
+              <motion.div variants={revealItem} className="lg:col-span-6">
+                <ClinicCard loc={loc2} index={2} variant="standard" shift="Night Shift" />
+              </motion.div>
+            )}
+          </RevealGroup>
+        )}
       </section>
 
       {/* ── Emergency Consultation Banner ── */}
@@ -166,9 +230,9 @@ export default function ClinicContent() {
 
             {/* Floating location chips */}
             <RevealGroup className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-sm pointer-events-none">
-              {locations.map((loc, i) => (
+              {locations.map((loc) => (
                 <motion.div
-                  key={i}
+                  key={loc.id}
                   variants={revealItem}
                   className="bg-surface-container-lowest/90 backdrop-blur-md px-sm py-xs rounded-lg border border-outline-variant/30 shadow-sm"
                 >

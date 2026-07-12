@@ -4,12 +4,17 @@ import Link from "next/link";
 import { useBookingStore } from "@/store/bookingStore";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import type { WeeklySchedule } from "@/types/clinic";
 
 interface Loc {
+  id: string;
   name: string;
   address: string | null;
   fee_pkr: number;
   timings: Record<string, string>;
+  schedule?: WeeklySchedule;
+  defaultSlotDurationMinutes?: number;
+  image?: string;
   map_link?: string;
   coordinates?: { lat: number; lng: number };
   booking_link?: string;
@@ -24,8 +29,8 @@ interface ClinicCardProps {
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-// Hospital placeholder images from the design reference
-const CLINIC_IMAGES = [
+// Fallback hospital placeholder images, used only when a clinic has no uploaded image.
+const FALLBACK_CLINIC_IMAGES = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuDJo-DhF7JckDcOakZJqynGdQAZfh66keSQGQu5VeeIDb6jVxLz9a27fCgYK7RSslTfy7vOl4yyAJOwiiMQ99-GtiS0T-q5_YLirzLzn-Sc3WsAdKko-gIOb3QDjZdG7P6UrLIyLMNaG6vBPrat-ks_UxEdGmIoG5knXpcUpIjd1eQkPmhoZkZB83G_GhvMtDb31RH6-rlD9TRjwXX2bgsRBmnk0tfHNywvIfy4aM-B-lzb5jb08kFyy9GDG1WAa0m7kAUuNkW7SKg",
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAAx0fXZH7EZ_6Qy22wNHySAMCY5PuOYcF_uEn4lqr0j30Di7m3oxlD6s4qC5HHtH5z1OAuCR1aWGV0mlNMszBW56u_BUq8jae_7yI-Os1d2Vv61_KXJmtwK-rb_2YRuHFRkQJADV9LgD0Eu8ee-JdJ_wmegRR5iqc8Pwi6rvo-lIO2F79bpSjMOT0bETmDbgDNptcuVhpHXaK74mhV6jskuHqv1GlpdI3j1v1shZdyFv2kTQyUhlmOvrbTmevU5yXrBRnXgCvZ9bY",
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCn0liy8WBMhAnXb79c6hVznyrUUFjx45woCENTAG7HymwZVrUXyAKDM1PPmtVV88w4qYoX2n9XjOXNWmLoa_6BvuIxDbhw21i843dchJ0O9pvxlqJOQRjS2RG5w5E8P1vIYoLib3YdREXvSH1Xvi00BvvkbD_ivRNKgrPteR-NsS4WQZJyH7ZYPBOhoGV_MH1j6_k6vSckHRnHzpl4oO0jlSAx6o8A5L43DvSEVjQwyd-zxtZCTXYpgFvAoUnHYgT8V4wBoMb2ZwE",
@@ -41,19 +46,21 @@ export default function ClinicCard({ loc, index, variant = "standard", shift }: 
 
   const handleBook = useCallback(() => {
     setClinic({
-      id: `loc-${index}`,
+      id: loc.id,
       name: loc.name,
       address: loc.address,
       fee_pkr: loc.fee_pkr,
       timings: loc.timings,
+      schedule: loc.schedule,
+      defaultSlotDurationMinutes: loc.defaultSlotDurationMinutes,
       booking_link: loc.booking_link,
       map_link: loc.map_link,
     });
     router.push("/book-appointment/step-1");
-  }, [setClinic, router, loc, index]);
+  }, [setClinic, router, loc]);
 
   const shiftLabel = shift ?? SHIFT_LABELS[index] ?? "Daytime";
-  const imgSrc = CLINIC_IMAGES[index] ?? CLINIC_IMAGES[0];
+  const imgSrc = loc.image || FALLBACK_CLINIC_IMAGES[index % FALLBACK_CLINIC_IMAGES.length];
 
   if (variant === "featured") {
     return (

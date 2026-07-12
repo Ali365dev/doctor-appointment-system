@@ -17,9 +17,33 @@ if (!uri) {
   process.exit(1);
 }
 
+const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DEFAULT_SLOT_DURATION_MINUTES = 30;
+
+// Hospital/clinic photos stored locally under public/images/clinics, one per
+// seeded location, assigned by index.
+const CLINIC_IMAGES = [
+  "/images/clinics/chughtai-medical-centre.jpg",
+  "/images/clinics/faisal-hospital.jpg",
+  "/images/clinics/united-hospital.jpg",
+];
+
+function scheduleFromTimings(timings) {
+  return DAYS_OF_WEEK.map((day) => {
+    const range = timings?.[day];
+    if (!range) {
+      return { day, isOpen: false, startTime: "09:00 AM", endTime: "05:00 PM" };
+    }
+    const [startTime, endTime] = range.split(" - ").map((s) => s.trim());
+    return { day, isOpen: true, startTime, endTime };
+  });
+}
+
 const data = JSON.parse(await readFile(new URL("../data.json", import.meta.url), "utf-8"));
 const city = data.city;
 const contact = data.contact?.helpline ?? data.contact?.phone ?? "";
+const phone = data.contact?.phone ?? "";
+const email = data.contact?.email ?? "";
 
 const client = new MongoClient(uri);
 
@@ -29,7 +53,9 @@ try {
   const clinics = db.collection("clinics");
   const now = new Date();
 
-  for (const loc of data.practice_locations ?? []) {
+  const locations = data.practice_locations ?? [];
+  for (let i = 0; i < locations.length; i++) {
+    const loc = locations[i];
     const result = await clinics.findOneAndUpdate(
       { name: loc.name },
       {
@@ -38,9 +64,17 @@ try {
           address: loc.address ?? null,
           city,
           contact,
+          phone,
+          email,
           feePkr: loc.fee_pkr,
           timings: loc.timings,
+          schedule: scheduleFromTimings(loc.timings),
+          defaultSlotDurationMinutes: DEFAULT_SLOT_DURATION_MINUTES,
           mapLink: loc.map_link ?? null,
+          latitude: loc.coordinates?.lat ?? null,
+          longitude: loc.coordinates?.lng ?? null,
+          image: CLINIC_IMAGES[i % CLINIC_IMAGES.length],
+          displayOrder: i,
           isActive: true,
           updatedAt: now,
         },

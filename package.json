@@ -9,7 +9,9 @@
     "lint": "eslint",
     "seed:doctor": "node --env-file=.env.local scripts/seed-doctor.mjs",
     "seed:clinics": "node --env-file=.env.local scripts/seed-clinics.mjs",
-    "seed:dummy-admin": "node --env-file=.env.local scripts/seed-dummy-admin.mjs"
+    "seed:procedures": "node --env-file=.env.local scripts/seed-procedures.mjs",
+    "seed:dummy-admin": "node --env-file=.env.local scripts/seed-dummy-admin.mjs",
+    "migrate:clinic-schedules": "node --env-file=.env.local scripts/backfill-clinic-schedules.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

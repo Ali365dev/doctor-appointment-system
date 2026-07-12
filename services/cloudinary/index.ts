@@ -35,7 +35,18 @@ export async function uploadReceiptImage(file: File): Promise<CloudinaryUploadRe
   return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.receipts, resourceType: "image" });
 }
 
-/** Deletes a previously-uploaded profile photo or receipt from Cloudinary. */
+/** Validates and uploads a clinic photo to the clinics folder. */
+export async function uploadClinicImage(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed for clinic photos");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Clinic photo must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.clinics, resourceType: "image" });
+}
+
+/** Deletes a previously-uploaded profile photo, receipt, or clinic photo from Cloudinary. */
 export async function deleteUploadedAsset(publicId: string): Promise<void> {
   return deleteFromCloudinary(publicId, "image");
 }

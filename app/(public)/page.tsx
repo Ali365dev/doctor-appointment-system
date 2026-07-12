@@ -453,7 +453,7 @@ export default function HomePage() {
               className={`relative rounded-3xl overflow-hidden shadow-md group ${img.span}`}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, amount: 0.3 }}
+              viewport={{ once: true, amount: 0, margin: "0px 0px -10% 0px" }}
               transition={{ duration: 0.7, delay: img.delay }}
               whileHover={{ scale: 1.02 }}
             >

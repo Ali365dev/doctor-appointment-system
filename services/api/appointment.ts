@@ -2,6 +2,7 @@ import "server-only";
 import { connectDB } from "@/services/mongodb";
 import { generateAppointmentNumber } from "@/lib/appointmentNumber";
 import { findClinicById } from "@/services/mongodb/repositories/clinic.repository";
+import { generateSlotsForDate } from "@/lib/slots";
 import {
   createAppointment as createAppointmentRecord,
   findAppointmentByClinicDateTime,
@@ -49,6 +50,11 @@ export async function createAppointment(params: CreateAppointmentParams): Promis
   }
   if (!clinic.isActive) {
     throw new AppointmentServiceError("This clinic is not currently accepting bookings", 409);
+  }
+
+  const validSlots = generateSlotsForDate(clinic.schedule, clinic.defaultSlotDurationMinutes, params.date);
+  if (!validSlots.includes(params.time)) {
+    throw new AppointmentServiceError("This clinic is closed at the requested date/time", 409);
   }
 
   const existing = await findAppointmentByClinicDateTime(params.clinicId, params.date, params.time);
