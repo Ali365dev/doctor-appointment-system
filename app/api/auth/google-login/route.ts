@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/services/firebase/admin";
 import { findUserByFirebaseUid, createGooglePatient, touchLastLogin } from "@/services/mongodb/repositories/user.repository";
