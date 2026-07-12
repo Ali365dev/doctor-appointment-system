@@ -112,21 +112,47 @@ export default function SuccessContent() {
 
   useEffect(() => {
     let cancelled = false;
+
+    const fetchConfirmation = async (): Promise<Confirmation | null> => {
+      if (!appointmentId) return null;
+      const res = await fetch(`/api/appointments/${appointmentId}/confirmation`);
+      const data = await res.json();
+      return res.ok ? data.confirmation : null;
+    };
+
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     (async () => {
       try {
+        let paid = false;
+
         // Stripe redirects here before our server has confirmed the session —
         // this call is what actually flips payment/appointment to verified/confirmed.
         if (method === "stripe" && sessionId) {
-          await fetch(`/api/verify-stripe-session?session_id=${encodeURIComponent(sessionId)}`);
+          const verifyRes = await fetch(`/api/verify-stripe-session?session_id=${encodeURIComponent(sessionId)}`);
+          const verifyData = await verifyRes.json();
+          paid = verifyRes.ok && verifyData.paid === true;
         }
 
-        if (appointmentId) {
-          const res = await fetch(`/api/appointments/${appointmentId}/confirmation`);
-          const data = await res.json();
-          if (!cancelled && res.ok) {
-            setConfirmation(data.confirmation);
+        let result = await fetchConfirmation();
+
+        // The Stripe verification write and this read can briefly race (e.g. on
+        // eventually-consistent replica reads) — if we know the session is paid
+        // but the appointment/payment doc hasn't caught up yet, poll briefly
+        // rather than showing a stale "Pending" status on a paid booking.
+        if (paid && result && (result.status !== "confirmed" || result.paymentStatus !== "verified")) {
+          for (let attempt = 0; attempt < 5 && !cancelled; attempt++) {
+            await sleep(700);
+            const retried = await fetchConfirmation();
+            if (retried && retried.status === "confirmed" && retried.paymentStatus === "verified") {
+              result = retried;
+              break;
+            }
+            if (retried) result = retried;
           }
         }
+
+        if (!cancelled) setConfirmation(result);
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -190,8 +190,10 @@ export default function BookingStep2Content() {
                   <button
                     onClick={() => { setSelectedDay(day); setSelectedTime(null); setError(""); }}
                     className={`w-12 h-12 flex items-center justify-center rounded-xl font-bold transition-all ${
-                      selected || todayHighlight
+                      selected
                         ? "bg-primary text-on-primary shadow-md ring-4 ring-primary/10"
+                        : todayHighlight
+                        ? "text-primary ring-2 ring-primary/40 hover:bg-surface-container"
                         : "hover:bg-surface-container"
                     }`}
                   >
