@@ -5,6 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SmoothScroll from "@/components/common/SmoothScroll";
+import ScrollProgressBar from "@/components/common/ScrollProgressBar";
 import { doctor } from "@/lib/data";
 
 const inter = Inter({
@@ -32,6 +34,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <SmoothScroll />
+        <ScrollProgressBar />
         <Header />
         {children}
         <Footer />

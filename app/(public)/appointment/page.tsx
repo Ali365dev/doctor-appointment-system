@@ -1,5 +1,6 @@
 import { doctor } from "@/lib/data";
 import ConditionsSearch from "@/components/public/ConditionsSearch";
+import Reveal from "@/components/common/Reveal";
 
 export const metadata = {
   title: "Treatments & Conditions | Dr. Zaid Gul",
@@ -19,7 +20,7 @@ export default function AppointmentPage() {
           background: "radial-gradient(circle at top right, #dbe1ff 0%, #faf8ff 50%)",
         }}
       >
-        <div className="max-w-[1280px] mx-auto text-center">
+        <Reveal className="max-w-[1280px] mx-auto text-center">
           <span className="inline-block bg-primary/10 text-primary px-sm py-xs rounded-full text-label-md font-semibold mb-md">
             Expert Gastrointestinal Care
           </span>
@@ -30,7 +31,7 @@ export default function AppointmentPage() {
             Advanced clinical solutions for digestive health, specializing in
             minimally invasive procedures and personalized therapeutic plans.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Client-rendered search + grid + CTA */}

@@ -7,17 +7,22 @@ export default function AnimatedCounter({
   value,
   suffix = "",
   decimals = 0,
+  format = false,
   className = "",
 }: {
   value: number;
   suffix?: string;
   decimals?: number;
+  format?: boolean;
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.6 });
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => `${v.toFixed(decimals)}${suffix}`);
+  const rounded = useTransform(count, (v) => {
+    const num = format ? v.toLocaleString(undefined, { maximumFractionDigits: decimals }) : v.toFixed(decimals);
+    return `${num}${suffix}`;
+  });
 
   useEffect(() => {
     if (!inView) return;

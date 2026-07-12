@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { motion } from "framer-motion";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
+import AnimatedCounter from "@/components/common/AnimatedCounter";
 
 const PROCEDURE_ICONS: Record<string, string> = {
   ERCP: "medical_services",
@@ -68,8 +70,13 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
   const desc = PROCEDURE_DESCS[treatment.name] ?? treatment.location;
 
   return (
-    <div
-      className={`bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm flex flex-col h-full relative overflow-hidden group hover:-translate-y-2 transition-all duration-300 hover:shadow-xl ${
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5 }}
+      whileHover={{ y: -8 }}
+      className={`bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm flex flex-col h-full relative overflow-hidden group transition-shadow duration-300 hover:shadow-xl ${
         featured ? "ring-2 ring-primary" : ""
       }`}
     >
@@ -93,7 +100,7 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
       <div className="mt-auto pt-md border-t border-outline-variant/20">
         <div className="flex items-baseline gap-xs">
           <span className="text-headline-lg font-bold text-primary">
-            {treatment.price_pkr.toLocaleString()}
+            <AnimatedCounter value={treatment.price_pkr} format />
           </span>
           <span className="text-label-md text-on-surface-variant">PKR</span>
         </div>
@@ -117,6 +124,6 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
       >
         Select Procedure
       </button>
-    </div>
+    </motion.div>
   );
 }

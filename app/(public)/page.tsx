@@ -9,7 +9,9 @@ import ReviewsCarousel from "@/components/common/ReviewsCarousel";
 import Reveal from "@/components/common/Reveal";
 import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
 import AnimatedCounter from "@/components/common/AnimatedCounter";
-import { motion } from "framer-motion";
+import TypewriterText from "@/components/common/TypewriterText";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 
 const MotionLink = motion.create(Link);
 
@@ -114,10 +116,28 @@ export default function HomePage() {
   const featuredConditions = conditions_treated.slice(0, 14);
   const moreConditionsCount = Math.max(0, conditions_treated.length - featuredConditions.length);
 
+  // Sequential hero reveal: name types out first, then each block below it
+  // fades in one after another so the page doesn't dump everything at once.
+  const typeEnd = 0.3 + displayName.length * 0.045;
+  const heroTiming = {
+    qualifications: typeEnd + 0.15,
+    specializations: typeEnd + 0.3,
+    stats: typeEnd + 0.45,
+    thumb: typeEnd + 0.75,
+    cta: typeEnd + 0.95,
+    booking: typeEnd + 0.5,
+  };
+
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScroll } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const blobYTop = useTransform(heroScroll, [0, 1], [0, 120]);
+  const blobYBottom = useTransform(heroScroll, [0, 1], [0, -80]);
+
   return (
     <main className="pt-24 overflow-x-hidden">
       {/* ── Hero ── */}
       <section
+        ref={heroRef}
         id="hero"
         className="relative min-h-[90vh] flex items-center px-gutter py-xl max-w-[1280px] mx-auto"
       >
@@ -144,20 +164,35 @@ export default function HomePage() {
               {doctor.verification}
             </motion.div>
 
-            <h1 className="text-display font-bold leading-[1.1] tracking-[-0.02em] text-on-surface">
-              {displayName}
+            <h1 className="text-display font-bold leading-[1.1] tracking-[-0.02em] text-on-surface min-h-[1.1em]">
+              <TypewriterText text={displayName} delay={0.3} />
             </h1>
 
-            <p className="text-headline-md font-semibold text-secondary leading-tight">
+            <motion.p
+              className="text-headline-md font-semibold text-secondary leading-tight"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: heroTiming.qualifications }}
+            >
               {qualifications}
-            </p>
+            </motion.p>
 
-            <p className="text-body-lg text-on-surface-variant max-w-md">
+            <motion.p
+              className="text-body-lg text-on-surface-variant max-w-md"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: heroTiming.specializations }}
+            >
               {specializations}
-            </p>
+            </motion.p>
 
             {/* Stats */}
-            <RevealGroup className="flex flex-wrap gap-md py-sm">
+            <motion.div
+              className="flex flex-wrap gap-md py-sm"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { delayChildren: heroTiming.stats, staggerChildren: 0.15 } } }}
+            >
               <motion.div variants={revealItem} whileHover={{ y: -3 }} className="flex items-center gap-xs">
                 <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined">work_history</span>
@@ -196,11 +231,20 @@ export default function HomePage() {
                   <p className="text-caption text-on-surface-variant">Patient Reviews</p>
                 </div>
               </motion.div>
-            </RevealGroup>
+            </motion.div>
 
             {/* Thumb + bio */}
-            <div className="flex items-center gap-4 pt-sm">
-              <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg border-4 border-white shrink-0">
+            <motion.div
+              className="flex items-center gap-4 pt-sm"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: heroTiming.thumb }}
+            >
+              <motion.div
+                className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg border-4 border-white shrink-0"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <Image
                   src={profile_image}
                   alt={displayName}
@@ -209,15 +253,20 @@ export default function HomePage() {
                   className="w-full h-full object-cover"
                   unoptimized
                 />
-              </div>
+              </motion.div>
               <p className="text-body-lg text-on-surface-variant max-w-md leading-relaxed">
                 Dedicated to providing high-quality medical care for gastrointestinal and liver
                 disorders with a patient-centric approach.
               </p>
-            </div>
+            </motion.div>
 
             {/* CTAs */}
-            <div className="flex flex-wrap gap-sm pt-md">
+            <motion.div
+              className="flex flex-wrap gap-sm pt-md"
+              initial={{ opacity: 0, y: 12, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5, delay: heroTiming.cta, ease: [0.34, 1.56, 0.64, 1] }}
+            >
               <MotionLink
                 href="#booking"
                 whileHover={{ scale: 1.05 }}
@@ -238,7 +287,7 @@ export default function HomePage() {
                 <span className="material-symbols-outlined text-label-md">chat</span>
                 WhatsApp
               </motion.a>
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Right: Booking Card */}
@@ -247,10 +296,16 @@ export default function HomePage() {
             id="booking"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.8, delay: heroTiming.booking, ease: [0.4, 0, 0.2, 1] }}
           >
-            <div className="absolute -z-10 -top-12 -right-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-            <div className="absolute -z-10 -bottom-12 -left-12 w-48 h-48 bg-secondary/10 rounded-full blur-3xl" />
+            <motion.div
+              style={{ y: blobYTop }}
+              className="absolute -z-10 -top-12 -right-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl"
+            />
+            <motion.div
+              style={{ y: blobYBottom }}
+              className="absolute -z-10 -bottom-12 -left-12 w-48 h-48 bg-secondary/10 rounded-full blur-3xl"
+            />
             <HeroBookingForm />
           </motion.div>
         </div>
@@ -263,7 +318,7 @@ export default function HomePage() {
           <Reveal className="relative order-2 lg:order-1">
             <motion.div
               className="aspect-square rounded-3xl overflow-hidden shadow-2xl relative z-10"
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.4 }}
             >
               <Image

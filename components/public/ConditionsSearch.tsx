@@ -2,9 +2,12 @@
 
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useBookingStore } from "@/store/bookingStore";
 import { doctor } from "@/lib/data";
+import Reveal from "@/components/common/Reveal";
+import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
 
 interface Props {
   conditions: string[];
@@ -116,7 +119,7 @@ export default function ConditionsSearch({ conditions, services }: Props) {
       {/* Search */}
    <section className="px-gutter pb-xl">
   <div className="max-w-[1280px] mx-auto">
-    <div className="relative max-w-xl mx-auto -mt-8">
+    <Reveal className="relative max-w-xl mx-auto -mt-8">
       <span
         className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-outline text-2xl"
       >
@@ -156,7 +159,7 @@ export default function ConditionsSearch({ conditions, services }: Props) {
           <span className="material-symbols-outlined">close</span>
         </button>
       )}
-    </div>
+    </Reveal>
   </div>
 </section>
 
@@ -167,15 +170,19 @@ export default function ConditionsSearch({ conditions, services }: Props) {
           {/* Diagnostic Services Bento */}
           {filteredServices.length > 0 && (
             <div className="mb-xl mt-12">
-              <div className="flex items-center gap-xs mb-lg">
+              <Reveal className="flex items-center gap-xs mb-lg">
                 <span className="material-symbols-outlined text-primary">biotech</span>
                 <h2 className="text-headline-lg font-bold">
                   Diagnostic &amp; Procedural Services
                 </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+              </Reveal>
+              <RevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-md">
                 {/* Featured: first service */}
-                <div className="md:col-span-2 group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:border-primary transition-all cursor-pointer relative overflow-hidden shadow-sm">
+                <motion.div
+                  variants={revealItem}
+                  whileHover={{ y: -4 }}
+                  className="md:col-span-2 group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:border-primary transition-colors cursor-pointer relative overflow-hidden shadow-sm"
+                >
                   <div className="relative z-10">
                     <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mb-md">
                       <span className="material-symbols-outlined">
@@ -191,11 +198,11 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                     </p>
                     <ul className="mt-md space-y-2">
                       <li className="flex items-center gap-xs text-body-md text-primary">
-                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        <span className="material-symbols-outlined text-body-lg">check_circle</span>
                         Fast recovery
                       </li>
                       <li className="flex items-center gap-xs text-body-md text-primary">
-                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        <span className="material-symbols-outlined text-body-lg">check_circle</span>
                         High-definition imaging
                       </li>
                     </ul>
@@ -203,13 +210,15 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                   <div className="absolute right-0 bottom-0 w-48 h-48 opacity-10 group-hover:opacity-20 transition-opacity">
                     <span className="material-symbols-outlined text-[192px]">medical_services</span>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Service cards 2 & 3 */}
                 {filteredServices.slice(1, 3).map((s, i) => (
-                  <div
+                  <motion.div
                     key={s}
-                    className={`group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:border-primary transition-all cursor-pointer shadow-sm ${
+                    variants={revealItem}
+                    whileHover={{ y: -4 }}
+                    className={`group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:border-primary transition-colors cursor-pointer shadow-sm ${
                       i === 1 ? "md:col-start-3" : ""
                     }`}
                   >
@@ -229,11 +238,14 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                       Precision procedure performed by a specialist using
                       state-of-the-art equipment.
                     </p>
-                  </div>
+                  </motion.div>
                 ))}
 
                 {/* Advanced Liver Imaging banner */}
-                <div className="md:col-span-2 bg-primary text-on-primary p-lg rounded-xl shadow-sm flex flex-col md:flex-row items-center gap-lg">
+                <motion.div
+                  variants={revealItem}
+                  className="md:col-span-2 bg-primary text-on-primary p-lg rounded-xl shadow-sm flex flex-col md:flex-row items-center gap-lg"
+                >
                   <div className="flex-1">
                     <h3 className="text-headline-md font-semibold mb-sm">
                       Advanced Liver Imaging
@@ -242,12 +254,14 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                       Utilizing non-invasive technology to assess liver health
                       and fibrosis levels without surgical intervention.
                     </p>
-                    <Link
-                      href="/services"
-                      className="bg-surface text-primary text-label-md font-semibold px-md py-xs rounded-xl inline-block hover:bg-surface-container transition-all"
-                    >
-                      View Procedures
-                    </Link>
+                    <motion.div className="inline-block" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+                      <Link
+                        href="/services"
+                        className="block bg-surface text-primary text-label-md font-semibold px-md py-xs rounded-xl hover:bg-surface-container transition-colors"
+                      >
+                        View Procedures
+                      </Link>
+                    </motion.div>
                   </div>
                   <div className="w-full md:w-1/3 aspect-video bg-on-primary/10 rounded-xl overflow-hidden relative">
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -256,21 +270,21 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                       </span>
                     </div>
                   </div>
-                </div>
-              </div>
+                </motion.div>
+              </RevealGroup>
             </div>
           )}
 
           {/* Conditions Grid */}
           <div className="mb-xl">
-            <div className="flex items-center gap-xs mb-lg">
+            <Reveal className="flex items-center gap-xs mb-lg">
               <span className="material-symbols-outlined text-primary">healing</span>
               <h2 className="text-headline-lg font-bold">Conditions Treated</h2>
-            </div>
+            </Reveal>
 
             {filteredConditions.length === 0 ? (
               <div className="text-center py-xl text-on-surface-variant">
-                <span className="material-symbols-outlined text-[48px] mb-md block text-outline">
+                <span className="material-symbols-outlined text-display mb-md block text-outline">
                   search_off
                 </span>
                 <p className="text-body-lg">
@@ -284,30 +298,32 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+              <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
                 {filteredConditions.map((condition) => (
-                  <button
+                  <motion.button
                     key={condition}
+                    variants={revealItem}
+                    whileHover={{ y: -4 }}
                     onClick={handleBook}
-                    className="bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high hover:-translate-y-1 transition-all cursor-pointer group text-left"
+                    className="bg-surface-container-low p-md rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group text-left"
                   >
                     <span className="material-symbols-outlined text-secondary mb-sm group-hover:scale-110 transition-transform block">
                       {CONDITION_ICONS[condition] ?? "health_and_safety"}
                     </span>
-                    <h4 className="text-[18px] font-semibold text-on-surface mb-xs">
+                    <h4 className="text-body-lg font-semibold text-on-surface mb-xs">
                       {condition}
                     </h4>
                     <p className="text-caption text-on-surface-variant">
                       {CONDITION_DESCS[condition] ?? "Expert diagnosis and personalized treatment plan."}
                     </p>
-                  </button>
+                  </motion.button>
                 ))}
-              </div>
+              </RevealGroup>
             )}
           </div>
 
           {/* CTA Banner */}
-          <div className="relative rounded-2xl overflow-hidden mb-xl">
+          <Reveal className="relative rounded-2xl overflow-hidden mb-xl">
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
@@ -325,23 +341,27 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                 receive the most accurate diagnosis and treatment plan.
               </p>
               <div className="flex flex-col sm:flex-row gap-md justify-center">
-                <Link
-                  href="/book-appointment/step-1"
-                  className="bg-surface text-primary px-lg py-md rounded-xl text-label-md font-semibold shadow-lg active:scale-95 transition-transform hover:bg-surface-container"
-                >
-                  Book a Consultation
-                </Link>
-                <a
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Link
+                    href="/book-appointment/step-1"
+                    className="block bg-surface text-primary px-lg py-md rounded-xl text-label-md font-semibold shadow-lg hover:bg-surface-container transition-colors"
+                  >
+                    Book a Consultation
+                  </Link>
+                </motion.div>
+                <motion.a
                   href={doctor.contact.whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className="border-2 border-on-primary text-on-primary px-lg py-md rounded-xl text-label-md font-semibold hover:bg-on-primary/10 transition-colors"
                 >
                   Contact Clinic
-                </a>
+                </motion.a>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
     </>
