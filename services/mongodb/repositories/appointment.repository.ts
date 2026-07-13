@@ -2,7 +2,7 @@ import { connectDB } from "../connection";
 import Appointment, { type AppointmentDoc } from "../models/Appointment";
 import "../models/Clinic"; // registers the "Clinic" model so populate("clinicId") below can resolve it
 import "../models/Payment"; // registers the "Payment" model so populate("paymentId") below can resolve it
-import type { AppointmentStatus, PatientSnapshot, VisitType } from "@/types/appointment";
+import type { AppointmentStatus, AppointmentType, PatientSnapshot, VisitType } from "@/types/appointment";
 import type { PaymentMethod } from "@/types/payment";
 
 const PAYMENT_POPULATE_FIELDS =
@@ -18,6 +18,13 @@ export interface CreateAppointmentInput {
   reason?: string;
   patientSnapshot: PatientSnapshot;
   feeSnapshotPkr: number;
+  appointmentType: AppointmentType;
+  procedureId?: string;
+  procedureNameSnapshot?: string;
+  durationMinutes: number;
+  totalAmount: number;
+  referralDoctor?: string;
+  medicalReportUrl?: string;
   paymentMethod?: PaymentMethod;
 }
 

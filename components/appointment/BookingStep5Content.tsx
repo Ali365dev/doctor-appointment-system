@@ -118,7 +118,7 @@ function WalletTab({
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function BookingStep5Content() {
   const router = useRouter();
-  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
+  const { selectedClinic, selectedProcedure, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
     useBookingStore();
   const [activeTab, setActiveTab] = useState<Tab>("stripe");
   const [stripeLoading, setStripeLoading] = useState(false);
@@ -132,7 +132,7 @@ export default function BookingStep5Content() {
     }
   }, [appointmentId, router]);
 
-  const fee = selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
 
   const formattedDate = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -153,7 +153,7 @@ export default function BookingStep5Content() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: fee,
-          description: `Consultation – ${selectedClinic?.name ?? "Clinic"} · ${formattedDate}`,
+          description: `${selectedProcedure?.name ?? "Consultation"} – ${selectedClinic?.name ?? "Clinic"} · ${formattedDate}`,
           appointmentId,
         }),
       });
@@ -197,6 +197,7 @@ export default function BookingStep5Content() {
   const waMessage = encodeURIComponent(
     `*New Appointment Request*\n\n` +
       `👨‍⚕️ Doctor: ${doctor.name}\n` +
+      `${selectedProcedure ? `🩻 Procedure: ${selectedProcedure.name}\n` : ""}` +
       `🏥 Clinic: ${selectedClinic?.name ?? "—"}\n` +
       `📅 Date: ${formattedDate}\n` +
       `⏰ Time: ${selectedTime ?? "—"}\n` +
@@ -213,6 +214,7 @@ export default function BookingStep5Content() {
   const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
 
   const summaryRows = [
+    ...(selectedProcedure ? [{ label: "Procedure", value: selectedProcedure.name }] : []),
     { label: "Clinic", value: selectedClinic?.name ?? "—" },
     { label: "Date", value: formattedDate },
     { label: "Time", value: selectedTime ?? "—" },
@@ -289,7 +291,7 @@ export default function BookingStep5Content() {
                     Rs. {fee.toLocaleString()}
                   </p>
                   <p className="text-body-md text-on-surface-variant">
-                    Consultation with {doctor.name}
+                    {selectedProcedure?.name ?? "Consultation"} with {doctor.name}
                     {selectedClinic?.name ? ` · ${selectedClinic.name}` : ""}
                   </p>
                 </div>
@@ -384,7 +386,7 @@ export default function BookingStep5Content() {
                     Rs. {fee.toLocaleString()}
                   </p>
                   <p className="text-body-md text-on-surface-variant">
-                    Consultation with {doctor.name}
+                    {selectedProcedure?.name ?? "Consultation"} with {doctor.name}
                     {selectedClinic?.name ? ` · ${selectedClinic.name}` : ""}
                   </p>
                 </div>
@@ -513,7 +515,7 @@ export default function BookingStep5Content() {
 
             <div className="border-t border-outline-variant/30 pt-5 space-y-3">
               <div className="flex justify-between text-body-md text-on-surface-variant">
-                <span>Consultation Fee</span>
+                <span>{selectedProcedure ? "Procedure Fee" : "Consultation Fee"}</span>
                 <span>Rs. {fee.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-body-md text-on-surface-variant">

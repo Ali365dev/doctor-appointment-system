@@ -2,7 +2,10 @@ import "server-only";
 import { connectDB } from "@/services/mongodb";
 import { generateAppointmentNumber } from "@/lib/appointmentNumber";
 import { findClinicById } from "@/services/mongodb/repositories/clinic.repository";
+import { findProcedureById } from "@/services/mongodb/repositories/procedure.repository";
+import { findAssignment } from "@/services/mongodb/repositories/clinicProcedure.repository";
 import { generateSlotsForDate } from "@/lib/slots";
+import { sendNotification } from "@/services/notifications";
 import {
   createAppointment as createAppointmentRecord,
   findAppointmentByClinicDateTime,
@@ -14,7 +17,7 @@ import {
   linkAppointmentPayment,
 } from "@/services/mongodb/repositories/appointment.repository";
 import type { AppointmentDoc } from "@/services/mongodb/models/Appointment";
-import type { AppointmentStatus, PatientSnapshot, VisitType } from "@/types/appointment";
+import type { AppointmentStatus, AppointmentType, PatientSnapshot, VisitType } from "@/types/appointment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 
 export interface CreateAppointmentParams {
@@ -26,6 +29,10 @@ export interface CreateAppointmentParams {
   reason?: string;
   patient: PatientSnapshot;
   paymentMethod?: PaymentMethod;
+  appointmentType?: AppointmentType;
+  procedureId?: string;
+  referralDoctor?: string;
+  medicalReportUrl?: string;
 }
 
 export class AppointmentServiceError extends Error {
@@ -62,9 +69,35 @@ export async function createAppointment(params: CreateAppointmentParams): Promis
     throw new AppointmentServiceError("This time slot has already been booked", 409);
   }
 
+  // Never trust a client-sent procedure name/price/duration — always re-resolve
+  // server-side from the Procedure doc and its clinic-specific assignment, and
+  // reject bookings for a procedure that isn't (or is no longer) offered here.
+  let procedureId: string | undefined;
+  let procedureNameSnapshot: string | undefined;
+  let durationMinutes: number = clinic.defaultSlotDurationMinutes;
+  let totalAmount: number = clinic.feePkr;
+
+  if (params.procedureId) {
+    const procedure = await findProcedureById(params.procedureId);
+    if (!procedure || procedure.isArchived) {
+      throw new AppointmentServiceError("Procedure not found", 404);
+    }
+    if (!procedure.isActive) {
+      throw new AppointmentServiceError("This procedure is no longer available for booking", 409);
+    }
+    const assignment = await findAssignment(params.clinicId, params.procedureId);
+    if (!assignment || !assignment.isActive) {
+      throw new AppointmentServiceError("This procedure is not offered at the selected clinic", 409);
+    }
+    procedureId = params.procedureId;
+    procedureNameSnapshot = procedure.name;
+    durationMinutes = assignment.durationOverrideMinutes ?? procedure.durationMinutes;
+    totalAmount = assignment.priceOverridePkr ?? procedure.pricePkr;
+  }
+
   const appointmentNumber = await generateAppointmentNumber();
 
-  return createAppointmentRecord({
+  const appointment = await createAppointmentRecord({
     appointmentNumber,
     patientId: params.patientId,
     clinicId: params.clinicId,
@@ -73,9 +106,27 @@ export async function createAppointment(params: CreateAppointmentParams): Promis
     time: params.time,
     reason: params.reason,
     patientSnapshot: params.patient,
-    feeSnapshotPkr: clinic.feePkr,
+    feeSnapshotPkr: totalAmount,
+    appointmentType: params.appointmentType ?? "consultation",
+    procedureId,
+    procedureNameSnapshot,
+    durationMinutes,
+    totalAmount,
+    referralDoctor: params.referralDoctor,
+    medicalReportUrl: params.medicalReportUrl,
     paymentMethod: params.paymentMethod,
   });
+
+  // Best-effort — a missing SMTP/WhatsApp config must never block booking creation.
+  void sendNotification(
+    { email: params.patient.email, phone: params.patient.phone },
+    {
+      subject: "Booking Confirmation",
+      text: `Hi ${params.patient.fullName}, your ${procedureNameSnapshot ?? "consultation"} appointment (${appointmentNumber}) on ${params.date} at ${params.time} has been booked. We'll notify you once your payment is confirmed.`,
+    }
+  );
+
+  return appointment;
 }
 
 export async function getAppointmentById(appointmentId: string): Promise<AppointmentDoc> {
@@ -112,6 +163,17 @@ export async function changeAppointmentStatus(
   if (!updated) {
     throw new AppointmentServiceError("Appointment not found", 404);
   }
+
+  if (status === "cancelled" || status === "rejected") {
+    void sendNotification(
+      { email: updated.patientSnapshot.email, phone: updated.patientSnapshot.phone },
+      {
+        subject: "Cancellation Notice",
+        text: `Hi ${updated.patientSnapshot.fullName}, your appointment (${updated.appointmentNumber}) on ${updated.date} at ${updated.time} has been ${status}.${note ? ` Reason: ${note}` : ""}`,
+      }
+    );
+  }
+
   return updated;
 }
 
@@ -143,6 +205,9 @@ export interface AppointmentConfirmation {
   feeSnapshotPkr: number;
   paymentMethod?: PaymentMethod;
   paymentStatus?: PaymentStatus;
+  appointmentType: AppointmentType;
+  procedureName?: string;
+  durationMinutes: number;
 }
 
 /**
@@ -173,5 +238,8 @@ export async function getAppointmentConfirmation(appointmentId: string): Promise
     feeSnapshotPkr: appointment.feeSnapshotPkr,
     paymentMethod: appointment.paymentMethod as PaymentMethod | undefined,
     paymentStatus: payment?.status,
+    appointmentType: appointment.appointmentType as AppointmentType,
+    procedureName: appointment.procedureNameSnapshot ?? undefined,
+    durationMinutes: appointment.durationMinutes,
   };
 }

@@ -86,6 +86,7 @@ interface Confirmation {
   appointmentNumber: string;
   status: AppointmentStatus;
   clinicName: string;
+  procedureName?: string;
   date: string;
   time: string;
   patientName: string;
@@ -190,6 +191,7 @@ export default function SuccessContent() {
       `Reference: ${refNumber}`,
       `Patient: ${patientName}`,
       `Doctor: ${doctor.name}`,
+      ...(confirmation?.procedureName ? [`Procedure: ${confirmation.procedureName}`] : []),
       `Clinic: ${clinicName}`,
       `Date: ${formattedDate}`,
       `Time: ${confirmation?.time ?? "—"}`,
@@ -354,6 +356,7 @@ export default function SuccessContent() {
 
               <div className="border-t border-outline-variant/30 pt-4 space-y-2">
                 {[
+                  ...(confirmation?.procedureName ? [{ label: "Procedure", value: confirmation.procedureName }] : []),
                   { label: "Patient", value: patientName },
                   { label: "Clinic", value: clinicName },
                   { label: "Date", value: formattedDate },

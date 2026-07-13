@@ -13,11 +13,14 @@ export default function BookingStep4Content() {
   const router = useRouter();
   const {
     selectedClinic,
+    selectedProcedure,
     selectedDate,
     selectedTime,
     visitType,
     reason,
     patientInfo,
+    referralDoctor,
+    medicalReportUrl,
     appointmentId,
     setAppointment,
   } = useBookingStore();
@@ -57,6 +60,10 @@ export default function BookingStep4Content() {
             condition: patientInfo.condition || undefined,
             notes: patientInfo.notes || undefined,
           },
+          appointmentType: selectedProcedure ? "procedure" : "consultation",
+          procedureId: selectedProcedure?.procedureId,
+          referralDoctor: referralDoctor || undefined,
+          medicalReportUrl: medicalReportUrl || undefined,
         }),
       });
       const data = await res.json();
@@ -79,7 +86,7 @@ export default function BookingStep4Content() {
       })
     : "—";
 
-  const fee = selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -135,8 +142,14 @@ export default function BookingStep4Content() {
               </div>
             </div>
           </div>
-          {selectedClinic && (
+          {selectedProcedure && (
             <div className="mt-6 pt-4 border-t border-outline-variant/20 flex items-center gap-2 text-on-surface-variant text-body-md">
+              <span className="material-symbols-outlined text-primary">medical_services</span>
+              <span className="font-semibold text-on-surface">{selectedProcedure.name}</span>
+            </div>
+          )}
+          {selectedClinic && (
+            <div className={`pt-4 flex items-center gap-2 text-on-surface-variant text-body-md ${selectedProcedure ? "" : "mt-6 border-t border-outline-variant/20"}`}>
               <span className="material-symbols-outlined text-primary">location_on</span>
               <span>{selectedClinic.name}</span>
               {selectedClinic.address && <span>— {selectedClinic.address}</span>}
@@ -205,7 +218,7 @@ export default function BookingStep4Content() {
           </div>
           <div className="p-6 space-y-4">
             <div className="flex justify-between items-center text-body-md">
-              <span className="text-on-surface-variant">Specialist Consultation Fee</span>
+              <span className="text-on-surface-variant">{selectedProcedure ? "Procedure Fee" : "Specialist Consultation Fee"}</span>
               <span className="font-semibold text-on-surface">Rs. {fee.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center text-body-md">

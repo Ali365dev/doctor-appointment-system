@@ -28,7 +28,7 @@ export default function BookingStep2Content() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const { selectedClinic, setDate, setTime } = useBookingStore();
+  const { selectedClinic, selectedProcedure, setDate, setTime } = useBookingStore();
   const availableDayNums = openWeekdayNumbers(selectedClinic?.schedule);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
@@ -279,14 +279,14 @@ export default function BookingStep2Content() {
               </div>
               <div>
                 <p className="text-[14px] font-semibold text-on-surface mb-0.5">
-                  {selectedClinic?.name ?? "No clinic selected"}
+                  {selectedProcedure?.name ?? selectedClinic?.name ?? "No clinic selected"}
                 </p>
                 {selectedClinic?.address && (
                   <p className="text-caption text-on-surface-variant">{selectedClinic.address}</p>
                 )}
                 {selectedClinic && (
                   <p className="text-caption text-primary font-semibold mt-xs">
-                    Rs. {selectedClinic.fee_pkr.toLocaleString()}
+                    Rs. {(selectedProcedure?.pricePkr ?? selectedClinic.fee_pkr).toLocaleString()}
                   </p>
                 )}
               </div>

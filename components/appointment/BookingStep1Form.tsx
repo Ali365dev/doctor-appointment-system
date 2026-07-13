@@ -47,7 +47,12 @@ export default function BookingStep1Form() {
   const setVisitType = useBookingStore((s) => s.setVisitType);
   const setReason_ = useBookingStore((s) => s.setReason);
   const storedClinic = useBookingStore((s) => s.selectedClinic);
+  const selectedProcedure = useBookingStore((s) => s.selectedProcedure);
+  const clearProcedure = useBookingStore((s) => s.clearProcedure);
   const clearAppointment = useBookingStore((s) => s.clearAppointment);
+
+  const searchParamsInit = useSearchParams();
+  const procedureParam = searchParamsInit.get("procedure");
 
   const [locations, setLocations] = useState<ApiClinic[]>([]);
   const [clinicsLoading, setClinicsLoading] = useState(true);
@@ -57,8 +62,12 @@ export default function BookingStep1Form() {
 
   // Landing on Step 1 always means a (re)start of the booking flow — never let a
   // leftover appointmentId from a previous booking make Step 4 skip creating a new one.
+  // The `?procedure=` query param is the only trusted signal that a procedure already
+  // in the store belongs to *this* flow — its absence means a plain "Book Appointment"
+  // click, so any stale procedure selection must be cleared rather than silently reused.
   useEffect(() => {
     clearAppointment();
+    if (!procedureParam) clearProcedure();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -69,7 +78,24 @@ export default function BookingStep1Form() {
         const res = await fetch("/api/clinics");
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Could not load clinics");
-        const clinics: ApiClinic[] = data.clinics ?? [];
+        let clinics: ApiClinic[] = data.clinics ?? [];
+
+        // When booking a procedure, only clinics that actively offer it are selectable.
+        if (procedureParam) {
+          const assignmentsRes = await fetch(`/api/procedures/${procedureParam}/clinics`);
+          const assignmentsData = await assignmentsRes.json();
+          if (assignmentsRes.ok) {
+            const activeClinicIds = new Set(
+              (assignmentsData.assignments ?? [])
+                .filter((a: { isActive: boolean }) => a.isActive)
+                .map((a: { clinicId: { _id: string } | string }) =>
+                  typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id
+                )
+            );
+            clinics = clinics.filter((c) => activeClinicIds.has(c._id));
+          }
+        }
+
         if (cancelled) return;
         setLocations(clinics);
         // Restore the previously-selected clinic (by real clinicId) if any.
@@ -88,7 +114,7 @@ export default function BookingStep1Form() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const searchParams = useSearchParams();
+  const searchParams = searchParamsInit;
   const [selectedVisitType, setSelectedVisitType] = useState<"clinic" | "online">(() =>
     searchParams.get("visitType") === "online" ? "online" : "clinic"
   );
@@ -168,10 +194,10 @@ export default function BookingStep1Form() {
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-outline uppercase font-bold tracking-widest block">
-                  Consultation Fee
+                  {selectedProcedure ? "Procedure Fee" : "Consultation Fee"}
                 </span>
                 <span className="text-[24px] font-bold text-primary">
-                  Rs. {locations[selectedClinicIndex]?.feePkr.toLocaleString() ?? "—"}
+                  Rs. {(selectedProcedure?.pricePkr ?? locations[selectedClinicIndex]?.feePkr)?.toLocaleString() ?? "—"}
                 </span>
               </div>
             </div>
@@ -196,6 +222,20 @@ export default function BookingStep1Form() {
 
         {/* Booking Form */}
         <section className="bg-white p-8 rounded-2xl border border-outline-variant/30 shadow-sm space-y-10">
+          {selectedProcedure && (
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <span className="material-symbols-outlined text-primary text-3xl">medical_services</span>
+              <div>
+                <span className="text-[10px] text-primary uppercase font-bold tracking-widest block">
+                  Booking Procedure
+                </span>
+                <h3 className="font-bold text-on-surface">
+                  {selectedProcedure.name} — Rs. {selectedProcedure.pricePkr.toLocaleString()}
+                </h3>
+              </div>
+            </div>
+          )}
+
           {/* 1. Clinic Selection */}
           <div>
             <div className="mb-6">
@@ -313,10 +353,10 @@ export default function BookingStep1Form() {
                           )}
                           <div className="flex justify-between gap-2">
                             <span className={isSelected ? "text-white/70" : "text-on-surface-variant"}>
-                              Fee
+                              {selectedProcedure ? "Procedure Fee" : "Fee"}
                             </span>
                             <span className={`font-bold ${isSelected ? "text-white" : "text-primary"}`}>
-                              Rs. {loc.feePkr.toLocaleString()}
+                              Rs. {(selectedProcedure?.pricePkr ?? loc.feePkr).toLocaleString()}
                             </span>
                           </div>
                         </div>

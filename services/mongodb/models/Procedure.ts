@@ -1,5 +1,13 @@
 import { Schema, model, models, Types, type InferSchemaType } from "mongoose";
 
+const faqSchema = new Schema(
+  {
+    question: { type: String, required: true },
+    answer: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 const procedureSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -11,7 +19,16 @@ const procedureSchema = new Schema(
     originalPricePkr: { type: Number, required: true },
     discountPercent: { type: Number, required: true, default: 0 },
     isActive: { type: Boolean, required: true, default: true },
+    isArchived: { type: Boolean, required: true, default: false },
     order: { type: Number, required: true, default: 0 },
+    durationMinutes: { type: Number, required: true, default: 30 },
+    image: { type: String },
+    imagePublicId: { type: String },
+    benefits: { type: [String], default: [] },
+    risks: { type: [String], default: [] },
+    preparationInstructions: { type: String, default: "" },
+    recoveryTime: { type: String, default: "" },
+    faqs: { type: [faqSchema], default: [] },
   },
   { timestamps: true }
 );

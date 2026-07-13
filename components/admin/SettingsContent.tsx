@@ -3,13 +3,10 @@
 import { useState } from "react";
 
 const tabs = [
-  { id: "clinic", label: "Clinic Settings", icon: "business" },
   { id: "payment", label: "Payment Settings", icon: "payments" },
   { id: "notifications", label: "Notifications", icon: "notifications" },
   { id: "security", label: "Security", icon: "lock" },
 ];
-
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const sessions = [
   { device: "MacBook Pro 16\"", os: "macOS 14.2", location: "Karachi, Pakistan", icon: "laptop_mac", current: true },
@@ -17,8 +14,7 @@ const sessions = [
 ];
 
 export default function SettingsContent() {
-  const [activeTab, setActiveTab] = useState("clinic");
-  const [activedays, setActiveDays] = useState(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+  const [activeTab, setActiveTab] = useState("payment");
   const [stripeConnected, setStripeConnected] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("jazzcash");
   const [notifications, setNotifications] = useState({
@@ -31,10 +27,6 @@ export default function SettingsContent() {
   function handleSave() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
-  }
-
-  function toggleDay(d: string) {
-    setActiveDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
   }
 
   return (
@@ -68,92 +60,6 @@ export default function SettingsContent() {
             </button>
           ))}
         </div>
-
-        {/* Tab: Clinic Settings */}
-        {activeTab === "clinic" && (
-          <div className="space-y-lg">
-            {/* Scheduling */}
-            <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
-              <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
-                <span className="material-symbols-outlined text-primary">schedule</span> Scheduling
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
-                <div>
-                  <label className="block text-label-md text-on-surface-variant mb-xs">Default Slot Duration</label>
-                  <select
-                    defaultValue="5 minutes"
-                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
-                  >
-                    <option>5 minutes</option>
-                    <option>15 minutes</option>
-                    <option>30 minutes</option>
-                    <option>45 minutes</option>
-                    <option>60 minutes</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-label-md text-on-surface-variant mb-xs">Buffer Time Between Slots</label>
-                  <select
-                    defaultValue="5 minutes"
-                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
-                  >
-                    <option>None</option>
-                    <option>5 minutes</option>
-                    <option>10 minutes</option>
-                    <option>15 minutes</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-label-md text-on-surface-variant mb-sm">Working Days & Hours</label>
-                <div className="space-y-xs">
-                  {days.map((d) => {
-                    const active = activedays.includes(d);
-                    return (
-                      <div key={d} className={`flex items-center gap-md p-sm rounded-xl transition-colors ${active ? "bg-primary/5 border border-primary/20" : "border border-outline-variant/50"}`}>
-                        <label className="flex items-center gap-sm cursor-pointer w-36 shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={active}
-                            onChange={() => toggleDay(d)}
-                            className="w-4 h-4 rounded border-outline accent-primary"
-                          />
-                          <span className={`text-label-md font-semibold ${active ? "text-primary" : "text-on-surface-variant"}`}>{d}</span>
-                        </label>
-                        {active ? (
-                          <div className="flex items-center gap-xs flex-1">
-                            <input type="time" defaultValue="08:00" className="bg-surface border border-outline-variant rounded-lg px-sm py-xs text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none" />
-                            <span className="text-on-surface-variant text-sm">to</span>
-                            <input type="time" defaultValue="18:00" className="bg-surface border border-outline-variant rounded-lg px-sm py-xs text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none" />
-                          </div>
-                        ) : (
-                          <span className="text-caption text-on-surface-variant italic">Closed</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-
-            {/* Clinic Branding */}
-            <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
-              <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
-                <span className="material-symbols-outlined text-secondary">palette</span> Clinic Branding
-              </h3>
-              <div className="flex items-center gap-md">
-                <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-outline-variant flex items-center justify-center bg-surface-container-low cursor-pointer hover:border-primary transition-colors group">
-                  <span className="material-symbols-outlined text-outline group-hover:text-primary">upload_file</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-on-surface">Clinic Logo</p>
-                  <p className="text-caption text-on-surface-variant mb-sm">PNG or SVG, 512×512px recommended</p>
-                  <button className="text-sm text-primary border border-primary/30 px-sm py-xs rounded-lg hover:bg-primary/5 transition-colors">Upload Logo</button>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
 
         {/* Tab: Payment Settings */}
         {activeTab === "payment" && (

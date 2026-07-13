@@ -49,6 +49,10 @@ export async function POST(req: NextRequest) {
       reason: body.reason,
       patient: body.patient,
       paymentMethod: body.paymentMethod,
+      appointmentType: body.appointmentType,
+      procedureId: body.procedureId,
+      referralDoctor: body.referralDoctor,
+      medicalReportUrl: body.medicalReportUrl,
     });
 
     return NextResponse.json({ appointment }, { status: 201 });

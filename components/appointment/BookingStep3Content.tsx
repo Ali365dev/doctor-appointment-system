@@ -11,8 +11,19 @@ const cities = ["Select City", "Lahore", "Karachi", "Islamabad", "Faisalabad", "
 
 export default function BookingStep3Content() {
   const router = useRouter();
-  const { selectedClinic, selectedDate, selectedTime, visitType, patientInfo, setPatientInfo } =
-    useBookingStore();
+  const {
+    selectedClinic,
+    selectedProcedure,
+    selectedDate,
+    selectedTime,
+    visitType,
+    patientInfo,
+    setPatientInfo,
+    referralDoctor,
+    setReferralDoctor,
+    medicalReportUrl,
+    setMedicalReportUrl,
+  } = useBookingStore();
 
   const [gender, setGender] = useState<"Male" | "Female" | "Other">(patientInfo.gender);
   const [form, setForm] = useState({
@@ -27,6 +38,7 @@ export default function BookingStep3Content() {
     isExisting: patientInfo.isExisting,
   });
   const [errors, setErrors] = useState<Partial<typeof form>>({});
+  const [uploadingReport, setUploadingReport] = useState(false);
 
   const formattedDate = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -65,6 +77,26 @@ export default function BookingStep3Content() {
     }
     setPatientInfo({ ...form, gender });
     router.push("/book-appointment/step-4");
+  };
+
+  const handleReportUpload = async (file: File) => {
+    setUploadingReport(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/uploads/medical-report", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload medical report");
+        return;
+      }
+      setMedicalReportUrl(data.url);
+      toast.success("Medical report uploaded");
+    } catch {
+      toast.error("Network error uploading medical report");
+    } finally {
+      setUploadingReport(false);
+    }
   };
 
   const inputCls = (field: string) =>
@@ -201,6 +233,37 @@ export default function BookingStep3Content() {
               </div>
             </div>
 
+            {selectedProcedure && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[18px]">badge</span>
+                    Referral Doctor (Optional)
+                  </label>
+                  <input type="text" value={referralDoctor} onChange={(e) => setReferralDoctor(e.target.value)}
+                    placeholder="e.g. Dr. Ahmed Khan" className={inputCls("")} />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                    Medical Reports (Optional)
+                  </label>
+                  <label className="flex items-center justify-center h-12 px-4 rounded-xl border border-dashed border-outline-variant bg-surface-container-low cursor-pointer hover:border-primary transition-all">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleReportUpload(e.target.files[0])}
+                      disabled={uploadingReport}
+                    />
+                    <span className="text-caption text-on-surface-variant">
+                      {uploadingReport ? "Uploading…" : medicalReportUrl ? "Report uploaded ✓" : "Choose file (image or PDF)"}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-6 border-t border-outline-variant/30">
               <button type="button" onClick={() => router.push("/book-appointment/step-2")}
                 className="px-8 py-3 rounded-xl border border-outline-variant text-[14px] font-semibold text-on-surface-variant hover:bg-surface-container-high transition-all flex items-center gap-2">
@@ -238,6 +301,9 @@ export default function BookingStep3Content() {
 
               <div className="space-y-4">
                 {[
+                  ...(selectedProcedure
+                    ? [{ icon: "medical_services", label: "Procedure", value: selectedProcedure.name }]
+                    : []),
                   { icon: "festival", label: "Clinic", value: selectedClinic?.name ?? "—" },
                   {
                     icon: "calendar_today", label: "Date & Time",
@@ -260,7 +326,7 @@ export default function BookingStep3Content() {
               <div className="pt-6 border-t border-outline-variant/30 flex justify-between items-center">
                 <span className="text-body-lg font-semibold text-on-surface">Total Fee</span>
                 <span className="text-headline-md font-bold text-primary">
-                  Rs. {(selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr).toLocaleString()}
+                  Rs. {(selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr).toLocaleString()}
                 </span>
               </div>
             </div>

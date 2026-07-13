@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import type { AppointmentStatus, VisitType } from "@/types/appointment";
+import type { AppointmentStatus, AppointmentType, VisitType } from "@/types/appointment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 import {
   toPatientAppointmentStatus,
@@ -45,6 +45,9 @@ interface ApiAppointment {
   paymentId?: ApiPayment | string;
   status: AppointmentStatus;
   createdAt: string;
+  appointmentType?: AppointmentType;
+  procedureId?: string;
+  procedureNameSnapshot?: string;
 }
 
 function clinicName(clinicId: ApiAppointment["clinicId"]): string {
@@ -95,9 +98,9 @@ function printSlip(apt: ApiAppointment, payment: ApiPayment | null) {
   win.print();
 }
 
-type Props = { limit?: number; showSearch?: boolean };
+type Props = { limit?: number; showSearch?: boolean; onlyProcedures?: boolean };
 
-export default function AppointmentTable({ limit, showSearch = false }: Props) {
+export default function AppointmentTable({ limit, showSearch = false, onlyProcedures = false }: Props) {
   const router = useRouter();
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +109,7 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [detailPrep, setDetailPrep] = useState<string | null>(null);
 
   const loadAppointments = useCallback(async () => {
     try {
@@ -131,6 +135,7 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
   }, [loadAppointments]);
 
   const filtered = appointments
+    .filter((a) => !onlyProcedures || a.appointmentType === "procedure")
     .filter((a) => filter === "all" || a.status === filter)
     .filter(
       (a) =>
@@ -189,6 +194,20 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
   const detail = appointments.find((a) => a._id === detailId);
   const detailPayment = detail ? getPayment(detail) : null;
 
+  useEffect(() => {
+    setDetailPrep(null);
+    if (!detail?.procedureId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/procedures/${detail.procedureId}`);
+        const data = await res.json();
+        if (res.ok) setDetailPrep(data.procedure?.preparationInstructions || null);
+      } catch {
+        // Non-fatal — detail modal just won't show prep instructions.
+      }
+    })();
+  }, [detail?.procedureId]);
+
   const filterOptions: { value: "all" | AppointmentStatus; label: string }[] = [
     { value: "all", label: "All" },
     { value: "confirmed", label: "Confirmed" },
@@ -236,7 +255,11 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
             <thead>
               <tr className="bg-surface-container-low border-b border-outline-variant/30">
                 <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Date &amp; Time</th>
-                <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Doctor</th>
+                {onlyProcedures ? (
+                  <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Procedure</th>
+                ) : (
+                  <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Doctor</th>
+                )}
                 <th className="px-md py-sm text-label-md text-on-surface-variant">Clinic</th>
                 <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Payment Type</th>
                 <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Payment Status</th>
@@ -275,7 +298,13 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
                         <div className="font-bold">{appt.date}</div>
                         <div className="text-caption text-on-surface-variant">{appt.time}</div>
                       </td>
-                      <td className="px-md py-md text-on-surface whitespace-nowrap">{doctor.name}</td>
+                      {onlyProcedures ? (
+                        <td className="px-md py-md text-on-surface whitespace-nowrap font-semibold">
+                          {appt.procedureNameSnapshot ?? "—"}
+                        </td>
+                      ) : (
+                        <td className="px-md py-md text-on-surface whitespace-nowrap">{doctor.name}</td>
+                      )}
                       <td className="px-md py-md text-on-surface">{clinicName(appt.clinicId)}</td>
                       <td className="px-md py-md text-on-surface whitespace-nowrap">
                         {payment ? PAYMENT_METHOD_LABEL[payment.method] : "—"}
@@ -391,6 +420,7 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
               {[
                 ["Appointment #", detail.appointmentNumber],
                 ["Booking Date", new Date(detail.createdAt).toLocaleDateString()],
+                ...(detail.procedureNameSnapshot ? [["Procedure", detail.procedureNameSnapshot]] : []),
                 ["Doctor", doctor.name],
                 ["Specialization", doctor.specialization.join(" & ")],
                 ["Clinic", clinicName(detail.clinicId)],
@@ -417,6 +447,13 @@ export default function AppointmentTable({ limit, showSearch = false }: Props) {
                 </div>
               ))}
             </div>
+
+            {detailPrep && (
+              <div className="mt-md p-md rounded-lg bg-primary/5 border border-primary/10">
+                <p className="text-label-md font-semibold text-primary mb-xs">Preparation Instructions</p>
+                <p className="text-body-md text-on-surface-variant whitespace-pre-line">{detailPrep}</p>
+              </div>
+            )}
 
             {detailPayment?.receiptUrl && (
               <div className="mt-md">

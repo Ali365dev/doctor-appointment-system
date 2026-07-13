@@ -17,7 +17,6 @@ const MOCK_APPOINTMENTS = [
   "None",
   "Jun 25 – Chughtai Medical Centre",
   "Jun 29 – Faisal Hospital (New Building)",
-  "Jul 03 – United Hospital (Faisalabad)",
 ];
 
 export default function UploadReportForm() {

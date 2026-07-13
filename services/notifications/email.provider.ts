@@ -1,6 +1,6 @@
 import "server-only";
 import nodemailer from "nodemailer";
-import type { TemporaryPasswordMessage } from "./types";
+import type { NotificationMessage, TemporaryPasswordMessage } from "./types";
 
 function isEmailConfigured(): boolean {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
@@ -18,7 +18,8 @@ function getTransport() {
   });
 }
 
-export async function sendTemporaryPasswordEmail(to: string, message: TemporaryPasswordMessage): Promise<boolean> {
+/** Generic sender used by every email notification — feature code should build a message and call this rather than talking to nodemailer directly. */
+export async function sendEmail(to: string, message: NotificationMessage): Promise<boolean> {
   if (!isEmailConfigured()) {
     return false;
   }
@@ -27,10 +28,18 @@ export async function sendTemporaryPasswordEmail(to: string, message: TemporaryP
   await transport.sendMail({
     from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
     to,
+    subject: message.subject,
+    text: message.text,
+    html: message.html ?? `<p>${message.text.replace(/\n/g, "<br/>")}</p>`,
+  });
+
+  return true;
+}
+
+export async function sendTemporaryPasswordEmail(to: string, message: TemporaryPasswordMessage): Promise<boolean> {
+  return sendEmail(to, {
     subject: "Your temporary password",
     text: `Hi ${message.name},\n\nYour temporary password is: ${message.temporaryPassword}\n\nPlease log in and change it immediately.`,
     html: `<p>Hi ${message.name},</p><p>Your temporary password is: <strong>${message.temporaryPassword}</strong></p><p>Please log in and change it immediately.</p>`,
   });
-
-  return true;
 }

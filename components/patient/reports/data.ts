@@ -169,7 +169,7 @@ export const MOCK_REPORTS: Report[] = [
     createdAt: "2026-06-20T08:00:00Z",
     updatedAt: "2026-06-22T09:40:00Z",
     doctor: { name: "Dr. Zaid Gul", avatar: AVATAR },
-    appointment: { id: "apt-8801", date: "2026-06-18", clinic: "United Hospital (Faisalabad)" },
+    appointment: { id: "apt-8801", date: "2026-06-18", clinic: "Faisal Hospital (New Building)" },
     files: [
       { id: "f-7", name: "lft_report.pdf", type: "pdf", size: "512 KB", url: "#", thumbnail: "" },
     ],

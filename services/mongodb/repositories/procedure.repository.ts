@@ -1,6 +1,11 @@
 import { connectDB } from "../connection";
 import Procedure, { type ProcedureDoc } from "../models/Procedure";
 
+export interface ProcedureFaq {
+  question: string;
+  answer: string;
+}
+
 export interface ProcedureInput {
   name: string;
   slug: string;
@@ -11,12 +16,21 @@ export interface ProcedureInput {
   originalPricePkr: number;
   discountPercent: number;
   isActive?: boolean;
+  isArchived?: boolean;
   order?: number;
+  durationMinutes?: number;
+  image?: string;
+  imagePublicId?: string;
+  benefits?: string[];
+  risks?: string[];
+  preparationInstructions?: string;
+  recoveryTime?: string;
+  faqs?: ProcedureFaq[];
 }
 
 export async function findActiveProcedures(): Promise<ProcedureDoc[]> {
   await connectDB();
-  return Procedure.find({ isActive: true })
+  return Procedure.find({ isActive: true, isArchived: { $ne: true } })
     .sort({ createdAt: -1 })
     .lean<ProcedureDoc[]>();
 }

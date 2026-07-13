@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { APPOINTMENT_STATUSES, type AppointmentStatus, type VisitType } from "@/types/appointment";
+import { APPOINTMENT_STATUSES, type AppointmentStatus, type AppointmentType, type VisitType } from "@/types/appointment";
 import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from "@/types/payment";
 import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
 import { doctor } from "@/lib/data";
@@ -30,7 +30,18 @@ interface ApiAppointment {
   feeSnapshotPkr: number;
   paymentId?: ApiPayment | string;
   status: AppointmentStatus;
+  appointmentType: AppointmentType;
+  procedureNameSnapshot?: string;
+  durationMinutes: number;
+  referralDoctor?: string;
+  medicalReportUrl?: string;
 }
+
+const APPOINTMENT_TYPE_LABEL: Record<AppointmentType, string> = {
+  consultation: "Consultation",
+  procedure: "Procedure",
+  follow_up: "Follow Up",
+};
 
 // Labels/colors per the admin spec: Pending=Orange, Confirmed=Green, Rejected=Red, Refunded=Purple.
 // "submitted"/"failed" aren't in the spec's 4-item dropdown but are real states the
@@ -100,6 +111,7 @@ export default function AppointmentsContent() {
   const [tab, setTab] = useState<AppointmentStatus | "All">("All");
   const [search, setSearch] = useState("");
   const [visitTypeFilter, setVisitTypeFilter] = useState("All");
+  const [appointmentTypeFilter, setAppointmentTypeFilter] = useState<AppointmentType | "All">("All");
   const [clinicFilter, setClinicFilter] = useState("All");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState("All");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
@@ -153,6 +165,8 @@ export default function AppointmentsContent() {
         a.appointmentNumber.toLowerCase().includes(search.toLowerCase()) ||
         a.patientSnapshot.phone.includes(search);
       const matchType = visitTypeFilter === "All" || a.visitType === visitTypeFilter;
+      const matchAppointmentType =
+        appointmentTypeFilter === "All" || (a.appointmentType ?? "consultation") === appointmentTypeFilter;
       const aClinicId = typeof a.clinicId === "string" ? a.clinicId : a.clinicId?._id;
       const matchClinic = clinicFilter === "All" || aClinicId === clinicFilter;
       const matchDateFrom = !dateFrom || a.date >= dateFrom;
@@ -161,11 +175,11 @@ export default function AppointmentsContent() {
       const matchPaymentType = paymentTypeFilter === "All" || payment?.method === paymentTypeFilter;
       const matchPaymentStatus = paymentStatusFilter === "All" || payment?.status === paymentStatusFilter;
       return (
-        matchTab && matchSearch && matchType && matchClinic && matchDateFrom && matchDateTo &&
+        matchTab && matchSearch && matchType && matchAppointmentType && matchClinic && matchDateFrom && matchDateTo &&
         matchPaymentType && matchPaymentStatus
       );
     });
-  }, [appointments, tab, search, visitTypeFilter, clinicFilter, dateFrom, dateTo, paymentTypeFilter, paymentStatusFilter]);
+  }, [appointments, tab, search, visitTypeFilter, appointmentTypeFilter, clinicFilter, dateFrom, dateTo, paymentTypeFilter, paymentStatusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -314,7 +328,7 @@ export default function AppointmentsContent() {
 
   const exportCSV = () => {
     const rows = [
-      ["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"],
+      ["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"],
       ...filtered.map((a) => {
         const payment = getPayment(a);
         return [
@@ -325,6 +339,7 @@ export default function AppointmentsContent() {
           a.time,
           clinicName(a.clinicId),
           a.visitType,
+          APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"],
           payment ? PAYMENT_METHOD_LABEL[payment.method] : "",
           payment ? PAYMENT_STATUS_META[payment.status].label : "",
           STATUS_META[a.status].label,
@@ -350,7 +365,7 @@ export default function AppointmentsContent() {
     doc.text("Appointments", 14, 14);
     autoTable(doc, {
       startY: 20,
-      head: [["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"]],
+      head: [["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"]],
       body: filtered.map((a) => {
         const payment = getPayment(a);
         return [
@@ -361,6 +376,7 @@ export default function AppointmentsContent() {
           a.time,
           clinicName(a.clinicId),
           a.visitType,
+          APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"],
           payment ? PAYMENT_METHOD_LABEL[payment.method] : "—",
           payment ? PAYMENT_STATUS_META[payment.status].label : "—",
           STATUS_META[a.status].label,
@@ -478,6 +494,18 @@ export default function AppointmentsContent() {
             ))}
           </select>
 
+          {/* Appointment type select */}
+          <select
+            value={appointmentTypeFilter}
+            onChange={(e) => { setAppointmentTypeFilter(e.target.value as AppointmentType | "All"); setPage(1); }}
+            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="All">All Appointment Types</option>
+            <option value="consultation">Consultation</option>
+            <option value="procedure">Procedure</option>
+            <option value="follow_up">Follow Up</option>
+          </select>
+
           {/* Payment type select */}
           <select
             value={paymentTypeFilter}
@@ -526,7 +554,7 @@ export default function AppointmentsContent() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
-                {["Patient", "Appointment ID", "Phone", "Date & Time", "Clinic", "Visit Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
+                {["Patient", "Appointment ID", "Phone", "Date & Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
                   <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
                     {h}
                   </th>
@@ -536,13 +564,13 @@ export default function AppointmentsContent() {
             <tbody className="divide-y divide-outline-variant/20">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={12} className="px-md py-xl text-center text-on-surface-variant">
                     Loading appointments…
                   </td>
                 </tr>
               ) : pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={12} className="px-md py-xl text-center text-on-surface-variant">
                     No appointments match your filters.
                   </td>
                 </tr>
@@ -586,6 +614,11 @@ export default function AppointmentsContent() {
                       <td className="px-md py-md whitespace-nowrap">
                         <span className="px-sm py-xs rounded-full bg-surface-container text-caption font-bold border border-outline-variant/30 capitalize">
                           {apt.visitType}
+                        </span>
+                      </td>
+                      <td className="px-md py-md whitespace-nowrap">
+                        <span className="px-sm py-xs rounded-full bg-primary/10 text-primary text-caption font-bold">
+                          {APPOINTMENT_TYPE_LABEL[apt.appointmentType ?? "consultation"]}
                         </span>
                       </td>
                       <td className="px-md py-md text-body-md text-on-surface-variant whitespace-nowrap">
@@ -769,12 +802,16 @@ export default function AppointmentsContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
                     {[
                       ["Appointment ID", detailApt.appointmentNumber],
+                      ["Type", APPOINTMENT_TYPE_LABEL[detailApt.appointmentType ?? "consultation"]],
                       ["Doctor", doctor.name],
+                      ...(detailApt.procedureNameSnapshot ? [["Procedure", detailApt.procedureNameSnapshot]] : []),
                       ["Clinic", clinicName(detailApt.clinicId)],
                       ["Date", detailApt.date],
                       ["Time", detailApt.time],
+                      ...(detailApt.durationMinutes ? [["Duration", `${detailApt.durationMinutes} min`]] : []),
                       ["Reason for Visit", detailApt.reason || "—"],
                       ...(detailApt.patientSnapshot.notes ? [["Notes", detailApt.patientSnapshot.notes]] : []),
+                      ...(detailApt.referralDoctor ? [["Referral Doctor", detailApt.referralDoctor]] : []),
                     ].map(([label, value]) => (
                       <div key={label} className="p-sm bg-surface-container-low rounded-lg">
                         <p className="text-caption text-outline uppercase tracking-tight mb-[2px]">{label}</p>
@@ -782,6 +819,17 @@ export default function AppointmentsContent() {
                       </div>
                     ))}
                   </div>
+                  {detailApt.medicalReportUrl && (
+                    <a
+                      href={detailApt.medicalReportUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-xs mt-sm text-label-md font-semibold text-primary hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">description</span>
+                      View Medical Report
+                    </a>
+                  )}
                 </section>
 
                 {/* Payment Information + Receipt Viewer */}

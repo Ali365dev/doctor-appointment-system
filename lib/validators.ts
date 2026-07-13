@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { GENDERS, VISIT_TYPES, type PatientSnapshot, type VisitType, type Gender } from "@/types/appointment";
+import { GENDERS, VISIT_TYPES, APPOINTMENT_TYPES, type PatientSnapshot, type VisitType, type Gender, type AppointmentType } from "@/types/appointment";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/types/payment";
 import { DAYS_OF_WEEK, SLOT_DURATION_OPTIONS, type WeeklySchedule } from "@/types/clinic";
 
@@ -44,6 +44,10 @@ export function isValidPaymentMethod(value: unknown): value is PaymentMethod {
   return typeof value === "string" && (PAYMENT_METHODS as readonly string[]).includes(value);
 }
 
+export function isValidAppointmentType(value: unknown): value is AppointmentType {
+  return typeof value === "string" && (APPOINTMENT_TYPES as readonly string[]).includes(value);
+}
+
 export interface CreateAppointmentRequestBody {
   clinicId: string;
   visitType: VisitType;
@@ -52,6 +56,10 @@ export interface CreateAppointmentRequestBody {
   reason?: string;
   patient: PatientSnapshot;
   paymentMethod?: PaymentMethod;
+  appointmentType?: AppointmentType;
+  procedureId?: string;
+  referralDoctor?: string;
+  medicalReportUrl?: string;
 }
 
 /**
@@ -79,6 +87,12 @@ export function validateCreateAppointmentBody(body: unknown): string | null {
 
   if (b.paymentMethod !== undefined && !isValidPaymentMethod(b.paymentMethod)) {
     return "paymentMethod must be one of stripe, jazzcash, easypaisa, reception";
+  }
+  if (b.appointmentType !== undefined && !isValidAppointmentType(b.appointmentType)) {
+    return "appointmentType must be one of consultation, procedure, follow_up";
+  }
+  if (b.procedureId !== undefined && !isValidObjectId(b.procedureId)) {
+    return "A valid procedureId is required";
   }
 
   return null;
@@ -134,7 +148,14 @@ export interface ProcedureRequestBody {
   originalPricePkr?: number;
   discountPercent?: number;
   isActive?: boolean;
+  isArchived?: boolean;
   order?: number;
+  durationMinutes?: number;
+  benefits?: string[];
+  risks?: string[];
+  preparationInstructions?: string;
+  recoveryTime?: string;
+  faqs?: { question: string; answer: string }[];
 }
 
 /**
@@ -168,7 +189,21 @@ export function validateProcedureBody(body: unknown, partial = false): string | 
     return "Discount percent must be between 0 and 100";
   }
   if (b.isActive !== undefined && typeof b.isActive !== "boolean") return "isActive must be a boolean";
+  if (b.isArchived !== undefined && typeof b.isArchived !== "boolean") return "isArchived must be a boolean";
   if (b.order !== undefined && !Number.isFinite(b.order)) return "order must be a number";
+  if (b.durationMinutes !== undefined && (!Number.isFinite(b.durationMinutes) || (b.durationMinutes as number) <= 0)) {
+    return "Duration must be a positive number of minutes";
+  }
+  if (b.benefits !== undefined && !Array.isArray(b.benefits)) return "benefits must be an array of strings";
+  if (b.risks !== undefined && !Array.isArray(b.risks)) return "risks must be an array of strings";
+  if (b.faqs !== undefined) {
+    if (!Array.isArray(b.faqs)) return "faqs must be an array";
+    for (const faq of b.faqs) {
+      if (!faq || typeof faq !== "object" || !faq.question?.trim() || !faq.answer?.trim()) {
+        return "Each FAQ needs a question and an answer";
+      }
+    }
+  }
 
   return null;
 }
@@ -190,6 +225,44 @@ export function slugify(value: string): string {
  */
 export function deriveProcedurePrice(originalPricePkr: number, discountPercent: number): number {
   return Math.round(originalPricePkr * (1 - discountPercent / 100));
+}
+
+export interface ClinicProcedureRequestBody {
+  clinicId?: string;
+  priceOverridePkr?: number | null;
+  durationOverrideMinutes?: number | null;
+  availableDays?: string[];
+  isActive?: boolean;
+}
+
+/**
+ * Validates the raw request body for POST/PATCH clinic↔procedure assignment
+ * endpoints. `partial` skips the required clinicId check (used for PATCH,
+ * where the clinic is already identified by the URL segment).
+ */
+export function validateClinicProcedureBody(body: unknown, partial = false): string | null {
+  if (!body || typeof body !== "object") return "Request body is required";
+  const b = body as ClinicProcedureRequestBody;
+
+  if (!partial && !isValidObjectId(b.clinicId)) return "A valid clinicId is required";
+  if (b.priceOverridePkr !== undefined && b.priceOverridePkr !== null && (!Number.isFinite(b.priceOverridePkr) || (b.priceOverridePkr as number) < 0)) {
+    return "Price override must be a non-negative number";
+  }
+  if (
+    b.durationOverrideMinutes !== undefined &&
+    b.durationOverrideMinutes !== null &&
+    (!Number.isFinite(b.durationOverrideMinutes) || (b.durationOverrideMinutes as number) <= 0)
+  ) {
+    return "Duration override must be a positive number of minutes";
+  }
+  if (b.availableDays !== undefined) {
+    if (!Array.isArray(b.availableDays) || b.availableDays.some((d) => !(DAYS_OF_WEEK as readonly string[]).includes(d))) {
+      return "availableDays must be an array of valid day names";
+    }
+  }
+  if (b.isActive !== undefined && typeof b.isActive !== "boolean") return "isActive must be a boolean";
+
+  return null;
 }
 
 export interface ClinicRequestBody {

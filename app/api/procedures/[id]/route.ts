@@ -7,6 +7,7 @@ import {
   deleteProcedure,
   isSlugTaken,
 } from "@/services/mongodb/repositories/procedure.repository";
+import { deleteUploadedAsset } from "@/services/cloudinary";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -53,7 +54,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.originalPricePkr !== undefined) update.originalPricePkr = body.originalPricePkr;
     if (body.discountPercent !== undefined) update.discountPercent = body.discountPercent;
     if (body.isActive !== undefined) update.isActive = body.isActive;
+    if (body.isArchived !== undefined) update.isArchived = body.isArchived;
     if (body.order !== undefined) update.order = body.order;
+    if (body.durationMinutes !== undefined) update.durationMinutes = body.durationMinutes;
+    if (body.benefits !== undefined) update.benefits = body.benefits;
+    if (body.risks !== undefined) update.risks = body.risks;
+    if (body.preparationInstructions !== undefined) update.preparationInstructions = body.preparationInstructions.trim();
+    if (body.recoveryTime !== undefined) update.recoveryTime = body.recoveryTime.trim();
+    if (body.faqs !== undefined) update.faqs = body.faqs;
 
     if (body.slug !== undefined && body.slug.trim()) {
       const slug = slugify(body.slug);
@@ -103,9 +111,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const existing = await findProcedureById(id);
     const deleted = await deleteProcedure(id);
     if (!deleted) {
       return NextResponse.json({ error: "Procedure not found" }, { status: 404 });
+    }
+    if (existing?.imagePublicId) {
+      await deleteUploadedAsset(existing.imagePublicId);
     }
 
     return NextResponse.json({ success: true });

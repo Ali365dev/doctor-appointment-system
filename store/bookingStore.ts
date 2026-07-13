@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { WeeklySchedule } from "@/types/clinic";
+import type { ProcedureSnapshot } from "@/types/appointment";
 
 export interface SelectedClinic {
   id: string;
@@ -31,22 +32,29 @@ export interface PatientInfo {
 
 interface BookingState {
   selectedClinic: SelectedClinic | null;
+  selectedProcedure: ProcedureSnapshot | null;
   visitType: "clinic" | "online";
   reason: string;
   selectedDate: string | null;
   selectedTime: string | null;
   patientInfo: PatientInfo;
+  referralDoctor: string;
+  medicalReportUrl: string;
   receiptUploaded: boolean;
   appointmentId: string | null;
   appointmentNumber: string | null;
   paymentMethod: "stripe" | "jazzcash" | "easypaisa" | "reception" | null;
 
   setClinic: (clinic: SelectedClinic) => void;
+  setProcedure: (procedure: ProcedureSnapshot) => void;
+  clearProcedure: () => void;
   setVisitType: (type: "clinic" | "online") => void;
   setReason: (reason: string) => void;
   setDate: (date: string) => void;
   setTime: (time: string) => void;
   setPatientInfo: (info: Partial<PatientInfo>) => void;
+  setReferralDoctor: (value: string) => void;
+  setMedicalReportUrl: (value: string) => void;
   setReceiptUploaded: (uploaded: boolean) => void;
   setAppointment: (appointmentId: string, appointmentNumber: string) => void;
   setPaymentMethod: (method: "stripe" | "jazzcash" | "easypaisa" | "reception") => void;
@@ -71,23 +79,30 @@ export const useBookingStore = create<BookingState>()(
   persist(
     (set) => ({
       selectedClinic: null,
+      selectedProcedure: null,
       visitType: "clinic",
       reason: "",
       selectedDate: null,
       selectedTime: null,
       patientInfo: defaultPatient,
+      referralDoctor: "",
+      medicalReportUrl: "",
       receiptUploaded: false,
       appointmentId: null,
       appointmentNumber: null,
       paymentMethod: null,
 
       setClinic: (clinic) => set({ selectedClinic: clinic }),
+      setProcedure: (procedure) => set({ selectedProcedure: procedure }),
+      clearProcedure: () => set({ selectedProcedure: null }),
       setVisitType: (visitType) => set({ visitType }),
       setReason: (reason) => set({ reason }),
       setDate: (selectedDate) => set({ selectedDate }),
       setTime: (selectedTime) => set({ selectedTime }),
       setPatientInfo: (info) =>
         set((s) => ({ patientInfo: { ...s.patientInfo, ...info } })),
+      setReferralDoctor: (referralDoctor) => set({ referralDoctor }),
+      setMedicalReportUrl: (medicalReportUrl) => set({ medicalReportUrl }),
       setReceiptUploaded: (receiptUploaded) => set({ receiptUploaded }),
       setAppointment: (appointmentId, appointmentNumber) => set({ appointmentId, appointmentNumber }),
       setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
@@ -103,11 +118,14 @@ export const useBookingStore = create<BookingState>()(
       reset: () =>
         set({
           selectedClinic: null,
+          selectedProcedure: null,
           visitType: "clinic",
           reason: "",
           selectedDate: null,
           selectedTime: null,
           patientInfo: defaultPatient,
+          referralDoctor: "",
+          medicalReportUrl: "",
           receiptUploaded: false,
           appointmentId: null,
           appointmentNumber: null,
@@ -124,11 +142,14 @@ export const useBookingStore = create<BookingState>()(
       // still work fine since zustand keeps them in memory regardless of persistence.
       partialize: (state) => ({
         selectedClinic: state.selectedClinic,
+        selectedProcedure: state.selectedProcedure,
         visitType: state.visitType,
         reason: state.reason,
         selectedDate: state.selectedDate,
         selectedTime: state.selectedTime,
         patientInfo: state.patientInfo,
+        referralDoctor: state.referralDoctor,
+        medicalReportUrl: state.medicalReportUrl,
       }),
     }
   )

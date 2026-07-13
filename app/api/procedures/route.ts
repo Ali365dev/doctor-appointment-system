@@ -54,7 +54,14 @@ export async function POST(req: NextRequest) {
       originalPricePkr: body.originalPricePkr,
       discountPercent,
       isActive: body.isActive ?? true,
+      isArchived: body.isArchived ?? false,
       order: body.order ?? 0,
+      durationMinutes: body.durationMinutes ?? 30,
+      benefits: body.benefits ?? [],
+      risks: body.risks ?? [],
+      preparationInstructions: body.preparationInstructions?.trim() ?? "",
+      recoveryTime: body.recoveryTime?.trim() ?? "",
+      faqs: body.faqs ?? [],
     });
 
     return NextResponse.json({ procedure }, { status: 201 });

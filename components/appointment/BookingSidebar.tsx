@@ -9,7 +9,9 @@ interface BookingSidebarProps {
 }
 
 export default function BookingSidebar({ visitTypeLabel }: BookingSidebarProps) {
-  const { selectedClinic, selectedDate, selectedTime } = useBookingStore();
+  const { selectedClinic, selectedProcedure, selectedDate, selectedTime } = useBookingStore();
+
+  const effectiveFee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
 
   const formattedDate = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -52,6 +54,14 @@ export default function BookingSidebar({ visitTypeLabel }: BookingSidebarProps) 
 
           {/* Details */}
           <div className="space-y-4 pt-4 border-t border-outline-variant/20">
+            {/* Procedure */}
+            {selectedProcedure && (
+              <div>
+                <span className="text-caption text-on-surface-variant block">Procedure</span>
+                <span className="text-[14px] font-bold text-on-surface">{selectedProcedure.name}</span>
+              </div>
+            )}
+
             {/* Clinic */}
             <div className={`transition-opacity ${selectedClinic ? "opacity-100" : "opacity-40"}`}>
               <span className="text-caption text-on-surface-variant block">Clinic</span>
@@ -91,9 +101,9 @@ export default function BookingSidebar({ visitTypeLabel }: BookingSidebarProps) 
             </div>
 
             <div className="flex justify-between items-center pt-4 border-t border-outline-variant/20">
-              <span className="font-bold text-on-surface">Consultation Fee</span>
+              <span className="font-bold text-on-surface">{selectedProcedure ? "Procedure Fee" : "Consultation Fee"}</span>
               <span className="text-[24px] font-extrabold text-primary">
-                Rs. {(selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr).toLocaleString()}
+                Rs. {effectiveFee.toLocaleString()}
               </span>
             </div>
           </div>

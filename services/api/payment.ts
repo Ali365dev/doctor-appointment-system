@@ -16,6 +16,7 @@ import {
   changeAppointmentStatus,
 } from "@/services/api/appointment";
 import { deleteUploadedAsset } from "@/services/cloudinary";
+import { sendNotification } from "@/services/notifications";
 import type { PaymentDoc } from "@/services/mongodb/models/Payment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 
@@ -133,12 +134,22 @@ export async function verifyManualPayment(
     throw new PaymentServiceError("Payment not found", 404);
   }
 
-  await changeAppointmentStatus(
+  const appointment = await changeAppointmentStatus(
     String(payment.appointmentId),
     approve ? "confirmed" : "pending_payment",
     verifiedBy,
     approve ? "Payment verified by admin" : (rejectionReason ?? "Payment rejected by admin — please re-upload your receipt")
   );
+
+  if (approve) {
+    void sendNotification(
+      { email: appointment.patientSnapshot.email, phone: appointment.patientSnapshot.phone },
+      {
+        subject: "Payment Confirmation",
+        text: `Hi ${appointment.patientSnapshot.fullName}, your payment for appointment ${appointment.appointmentNumber} has been verified and confirmed.`,
+      }
+    );
+  }
 
   return updated;
 }
@@ -208,7 +219,16 @@ export async function markStripePaymentVerified(paymentId: string): Promise<Paym
   if (!updated) {
     throw new PaymentServiceError("Payment not found", 404);
   }
-  await changeAppointmentStatus(String(payment.appointmentId), "confirmed", "system", "Stripe payment verified");
+  const appointment = await changeAppointmentStatus(String(payment.appointmentId), "confirmed", "system", "Stripe payment verified");
+
+  void sendNotification(
+    { email: appointment.patientSnapshot.email, phone: appointment.patientSnapshot.phone },
+    {
+      subject: "Payment Confirmation",
+      text: `Hi ${appointment.patientSnapshot.fullName}, your card payment for appointment ${appointment.appointmentNumber} has been confirmed.`,
+    }
+  );
+
   return updated;
 }
 

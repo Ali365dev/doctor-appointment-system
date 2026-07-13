@@ -1,5 +1,5 @@
 import { Schema, model, models, Types, type InferSchemaType } from "mongoose";
-import { APPOINTMENT_STATUSES, VISIT_TYPES, GENDERS } from "@/types/appointment";
+import { APPOINTMENT_STATUSES, APPOINTMENT_TYPES, VISIT_TYPES, GENDERS } from "@/types/appointment";
 import { PAYMENT_METHODS } from "@/types/payment";
 
 const patientSnapshotSchema = new Schema(
@@ -39,6 +39,13 @@ const appointmentSchema = new Schema(
     reason: { type: String },
     patientSnapshot: { type: patientSnapshotSchema, required: true },
     feeSnapshotPkr: { type: Number, required: true },
+    appointmentType: { type: String, enum: APPOINTMENT_TYPES, required: true, default: "consultation" },
+    procedureId: { type: Schema.Types.ObjectId, ref: "Procedure" },
+    procedureNameSnapshot: { type: String },
+    durationMinutes: { type: Number, required: true, default: 30 },
+    totalAmount: { type: Number, required: true },
+    referralDoctor: { type: String },
+    medicalReportUrl: { type: String },
     paymentMethod: { type: String, enum: PAYMENT_METHODS },
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
     status: { type: String, enum: APPOINTMENT_STATUSES, required: true, default: "pending_payment" },

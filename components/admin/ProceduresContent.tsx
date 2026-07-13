@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
+interface ProcedureFaq {
+  question: string;
+  answer: string;
+}
+
 interface Procedure {
   _id: string;
   name: string;
@@ -14,13 +19,28 @@ interface Procedure {
   originalPricePkr: number;
   discountPercent: number;
   isActive: boolean;
+  isArchived: boolean;
   order: number;
+  durationMinutes: number;
+  image?: string;
+  benefits: string[];
+  risks: string[];
+  preparationInstructions?: string;
+  recoveryTime?: string;
+  faqs: ProcedureFaq[];
 }
 
 interface Clinic {
   _id: string;
   name: string;
   city: string;
+}
+
+interface ClinicAssignment {
+  clinicId: Clinic | string;
+  priceOverridePkr?: number;
+  durationOverrideMinutes?: number;
+  isActive: boolean;
 }
 
 const EMPTY_FORM = {
@@ -32,6 +52,12 @@ const EMPTY_FORM = {
   originalPricePkr: "",
   discountPercent: "",
   isActive: true,
+  durationMinutes: "30",
+  benefits: "",
+  risks: "",
+  preparationInstructions: "",
+  recoveryTime: "",
+  faqs: [] as ProcedureFaq[],
 };
 
 function slugify(value: string): string {
@@ -53,6 +79,10 @@ export default function ProceduresContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"active" | "hidden" | "archived">("active");
+  const [assignId, setAssignId] = useState<string | null>(null);
+  const [assignments, setAssignments] = useState<ClinicAssignment[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
   const loadProcedures = async () => {
     setLoading(true);
@@ -104,11 +134,114 @@ export default function ProceduresContent() {
       originalPricePkr: String(p.originalPricePkr),
       discountPercent: p.discountPercent ? String(p.discountPercent) : "",
       isActive: p.isActive,
+      durationMinutes: String(p.durationMinutes ?? 30),
+      benefits: (p.benefits ?? []).join("\n"),
+      risks: (p.risks ?? []).join("\n"),
+      preparationInstructions: p.preparationInstructions ?? "",
+      recoveryTime: p.recoveryTime ?? "",
+      faqs: p.faqs ?? [],
     });
     setErrors({});
     setSlugTouched(true);
     setModalOpen(true);
   };
+
+  const toggleArchived = async (p: Procedure) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/procedures/${p._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isArchived: !p.isArchived }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update procedure");
+        return;
+      }
+      setProcedures((prev) => prev.map((x) => (x._id === p._id ? { ...x, isArchived: !x.isArchived } : x)));
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openAssign = async (p: Procedure) => {
+    setAssignId(p._id);
+    setAssignmentsLoading(true);
+    try {
+      const res = await fetch(`/api/procedures/${p._id}/clinics`);
+      const data = await res.json();
+      if (res.ok) setAssignments(data.assignments ?? []);
+    } catch {
+      toast.error("Could not load clinic assignments");
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  };
+
+  const clinicAssignment = (clinicId: string) =>
+    assignments.find((a) => (typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id) === clinicId);
+
+  const upsertClinicAssignment = async (
+    procedureId: string,
+    clinicId: string,
+    input: { priceOverridePkr?: number | null; durationOverrideMinutes?: number | null; isActive?: boolean }
+  ) => {
+    const existing = clinicAssignment(clinicId);
+    const res = await fetch(
+      existing ? `/api/procedures/${procedureId}/clinics/${clinicId}` : `/api/procedures/${procedureId}/clinics`,
+      {
+        method: existing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(existing ? input : { clinicId, ...input }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.error ?? "Could not update clinic assignment");
+      return;
+    }
+    setAssignments((prev) => {
+      const withoutThis = prev.filter((a) => (typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id) !== clinicId);
+      return [...withoutThis, data.assignment];
+    });
+  };
+
+  const removeClinicAssignment = async (procedureId: string, clinicId: string) => {
+    const res = await fetch(`/api/procedures/${procedureId}/clinics/${clinicId}`, { method: "DELETE" });
+    if (res.ok) {
+      setAssignments((prev) =>
+        prev.filter((a) => (typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id) !== clinicId)
+      );
+    }
+  };
+
+  const handleImageUpload = async (procedureId: string, file: File) => {
+    setBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/procedures/${procedureId}/image`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload image");
+        return;
+      }
+      setProcedures((prev) => prev.map((x) => (x._id === procedureId ? { ...x, image: data.procedure.image } : x)));
+      toast.success("Procedure image updated");
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addFaq = () => setForm((f) => ({ ...f, faqs: [...f.faqs, { question: "", answer: "" }] }));
+  const removeFaq = (i: number) => setForm((f) => ({ ...f, faqs: f.faqs.filter((_, idx) => idx !== i) }));
+  const updateFaq = (i: number, field: "question" | "answer", value: string) =>
+    setForm((f) => ({ ...f, faqs: f.faqs.map((faq, idx) => (idx === i ? { ...faq, [field]: value } : faq)) }));
 
   // Discount is optional; price with no discount is just the original price.
   const discountValue = form.discountPercent === "" ? 0 : Number(form.discountPercent);
@@ -147,6 +280,12 @@ export default function ProceduresContent() {
         originalPricePkr: Number(form.originalPricePkr),
         discountPercent: discountValue,
         isActive: form.isActive,
+        durationMinutes: Number(form.durationMinutes) || 30,
+        benefits: form.benefits.split("\n").map((s) => s.trim()).filter(Boolean),
+        risks: form.risks.split("\n").map((s) => s.trim()).filter(Boolean),
+        preparationInstructions: form.preparationInstructions.trim(),
+        recoveryTime: form.recoveryTime.trim(),
+        faqs: form.faqs.filter((f) => f.question.trim() && f.answer.trim()),
       };
 
       const res = await fetch(editId ? `/api/procedures/${editId}` : "/api/procedures", {
@@ -228,6 +367,23 @@ export default function ProceduresContent() {
         </button>
       </div>
 
+      {/* Status filter tabs */}
+      <div className="flex gap-xs mb-md">
+        {(["active", "hidden", "archived"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setStatusFilter(tab)}
+            className={`px-md py-xs rounded-full text-label-md font-semibold capitalize transition-colors ${
+              statusFilter === tab
+                ? "bg-primary text-on-primary"
+                : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div className="overflow-x-auto">
@@ -242,20 +398,29 @@ export default function ProceduresContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
-                    Loading procedures…
-                  </td>
-                </tr>
-              ) : procedures.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
-                    No procedures yet. Click &ldquo;Add Procedure&rdquo; to create one.
-                  </td>
-                </tr>
-              ) : (
-                procedures.map((p) => (
+              {(() => {
+                const visible = procedures.filter((p) =>
+                  statusFilter === "archived" ? p.isArchived : !p.isArchived && (statusFilter === "active" ? p.isActive : !p.isActive)
+                );
+                if (loading) {
+                  return (
+                    <tr>
+                      <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
+                        Loading procedures…
+                      </td>
+                    </tr>
+                  );
+                }
+                if (visible.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
+                        No {statusFilter} procedures.
+                      </td>
+                    </tr>
+                  );
+                }
+                return visible.map((p) => (
                   <tr key={p._id} className="hover:bg-surface-container-low transition-colors">
                     <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-on-surface">
                       {p.name}
@@ -288,6 +453,23 @@ export default function ProceduresContent() {
                     <td className="px-md py-md text-right">
                       <div className="flex items-center justify-end gap-xs">
                         <button
+                          onClick={() => openAssign(p)}
+                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
+                          title="Assign to Clinics"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">domain</span>
+                        </button>
+                        <button
+                          disabled={busy}
+                          onClick={() => toggleArchived(p)}
+                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
+                          title={p.isArchived ? "Unarchive" : "Archive"}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            {p.isArchived ? "unarchive" : "archive"}
+                          </span>
+                        </button>
+                        <button
                           onClick={() => openEdit(p)}
                           className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
                           title="Edit"
@@ -304,8 +486,8 @@ export default function ProceduresContent() {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ));
+              })()}
             </tbody>
           </table>
         </div>
@@ -352,25 +534,6 @@ export default function ProceduresContent() {
                 <h4 className="text-label-md font-bold text-on-surface-variant uppercase tracking-wide">
                   Description
                 </h4>
-
-                <div className="space-y-xs">
-                  <label className="text-label-md font-semibold text-on-surface-variant">
-                    Slug <span className="text-caption text-outline">(Optional — auto-generated from name)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={form.slug}
-                    onChange={(e) => {
-                      setSlugTouched(true);
-                      setForm((f) => ({ ...f, slug: e.target.value }));
-                    }}
-                    placeholder={slugify(form.name) || "e.g. colonoscopy"}
-                    className={`w-full px-md py-sm rounded-lg border bg-surface-container-lowest text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${
-                      errors.slug ? "border-error" : "border-outline-variant/50"
-                    }`}
-                  />
-                  {errors.slug && <p className="text-caption text-error">{errors.slug}</p>}
-                </div>
 
                 <div className="space-y-xs">
                   <label className="text-label-md font-semibold text-on-surface-variant">
@@ -459,6 +622,130 @@ export default function ProceduresContent() {
                 </div>
               </div>
 
+              <div className="space-y-xs">
+                <label className="text-label-md font-semibold text-on-surface-variant">
+                  Default Duration (minutes) <span className="text-error">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.durationMinutes}
+                  onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))}
+                  className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+              </div>
+
+              {editId && (
+                <div className="space-y-xs">
+                  <label className="text-label-md font-semibold text-on-surface-variant">Procedure Image</label>
+                  <div className="flex items-center gap-md">
+                    {procedures.find((p) => p._id === editId)?.image && (
+                      <img
+                        src={procedures.find((p) => p._id === editId)?.image}
+                        alt=""
+                        className="w-16 h-16 rounded-lg object-cover border border-outline-variant/30"
+                      />
+                    )}
+                    <label className="px-md py-xs rounded-xl border border-outline-variant text-label-md font-semibold cursor-pointer hover:bg-surface-container-high transition-colors">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleImageUpload(editId, e.target.files[0])}
+                        disabled={busy}
+                      />
+                      {busy ? "Uploading…" : "Upload Image"}
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                <div className="space-y-xs">
+                  <label className="text-label-md font-semibold text-on-surface-variant">
+                    Benefits <span className="text-caption text-outline">(one per line, optional)</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={form.benefits}
+                    onChange={(e) => setForm((f) => ({ ...f, benefits: e.target.value }))}
+                    placeholder={"Faster recovery\nMinimally invasive"}
+                    className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  />
+                </div>
+                <div className="space-y-xs">
+                  <label className="text-label-md font-semibold text-on-surface-variant">
+                    Risks <span className="text-caption text-outline">(one per line, optional)</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={form.risks}
+                    onChange={(e) => setForm((f) => ({ ...f, risks: e.target.value }))}
+                    placeholder={"Mild discomfort\nRare bleeding"}
+                    className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-xs">
+                <label className="text-label-md font-semibold text-on-surface-variant">
+                  Preparation Instructions <span className="text-caption text-outline">(Optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.preparationInstructions}
+                  onChange={(e) => setForm((f) => ({ ...f, preparationInstructions: e.target.value }))}
+                  className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                />
+              </div>
+
+              <div className="space-y-xs">
+                <label className="text-label-md font-semibold text-on-surface-variant">
+                  Recovery Time <span className="text-caption text-outline">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.recoveryTime}
+                  onChange={(e) => setForm((f) => ({ ...f, recoveryTime: e.target.value }))}
+                  placeholder="e.g. 24-48 hours"
+                  className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+              </div>
+
+              <div className="space-y-xs">
+                <div className="flex items-center justify-between">
+                  <label className="text-label-md font-semibold text-on-surface-variant">
+                    FAQs <span className="text-caption text-outline">(Optional)</span>
+                  </label>
+                  <button type="button" onClick={addFaq} className="text-label-md font-semibold text-primary hover:underline">
+                    + Add FAQ
+                  </button>
+                </div>
+                {form.faqs.map((faq, i) => (
+                  <div key={i} className="p-sm rounded-lg border border-outline-variant/30 space-y-xs">
+                    <div className="flex items-center gap-xs">
+                      <input
+                        type="text"
+                        value={faq.question}
+                        onChange={(e) => updateFaq(i, "question", e.target.value)}
+                        placeholder="Question"
+                        className="flex-1 px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md"
+                      />
+                      <button type="button" onClick={() => removeFaq(i)} className="p-xs text-error">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                      </button>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={faq.answer}
+                      onChange={(e) => updateFaq(i, "answer", e.target.value)}
+                      placeholder="Answer"
+                      className="w-full px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md resize-none"
+                    />
+                  </div>
+                ))}
+              </div>
+
               {/* Auto-calculated: original price minus the discount, or equal to it when no discount is set. */}
               <div className="flex items-center gap-sm p-sm bg-primary/5 rounded-xl border border-primary/10">
                 <span className="material-symbols-outlined text-primary">payments</span>
@@ -529,6 +816,89 @@ export default function ProceduresContent() {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign to Clinics modal */}
+      {assignId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
+          <div className="bg-surface rounded-2xl shadow-2xl max-w-lg w-full mx-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant/30 sticky top-0 bg-surface z-10">
+              <h3 className="text-headline-md font-bold text-on-surface">
+                Assign &ldquo;{procedures.find((p) => p._id === assignId)?.name}&rdquo; to Clinics
+              </h3>
+              <button
+                onClick={() => setAssignId(null)}
+                className="p-xs rounded-lg hover:bg-surface-container-high transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-lg space-y-md">
+              {assignmentsLoading ? (
+                <p className="text-body-md text-on-surface-variant text-center py-lg">Loading…</p>
+              ) : (
+                clinics.map((c) => {
+                  const a = clinicAssignment(c._id);
+                  const enabled = !!a;
+                  return (
+                    <div key={c._id} className="p-sm rounded-lg border border-outline-variant/30 space-y-xs">
+                      <label className="flex items-center gap-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              upsertClinicAssignment(assignId, c._id, { isActive: true });
+                            } else {
+                              removeClinicAssignment(assignId, c._id);
+                            }
+                          }}
+                          className="w-4 h-4 accent-primary"
+                        />
+                        <span className="font-semibold text-on-surface">{clinicLocation(c)}</span>
+                      </label>
+                      {enabled && (
+                        <div className="grid grid-cols-2 gap-xs pl-lg">
+                          <input
+                            type="number"
+                            placeholder="Price override (PKR)"
+                            defaultValue={a?.priceOverridePkr ?? ""}
+                            onBlur={(e) =>
+                              upsertClinicAssignment(assignId, c._id, {
+                                priceOverridePkr: e.target.value ? Number(e.target.value) : null,
+                              })
+                            }
+                            className="px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Duration override (min)"
+                            defaultValue={a?.durationOverrideMinutes ?? ""}
+                            onBlur={(e) =>
+                              upsertClinicAssignment(assignId, c._id, {
+                                durationOverrideMinutes: e.target.value ? Number(e.target.value) : null,
+                              })
+                            }
+                            className="px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md"
+                          />
+                          <label className="col-span-2 flex items-center gap-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={a?.isActive ?? true}
+                              onChange={(e) => upsertClinicAssignment(assignId, c._id, { isActive: e.target.checked })}
+                              className="w-4 h-4 accent-primary"
+                            />
+                            <span className="text-caption text-on-surface-variant">Active at this clinic</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

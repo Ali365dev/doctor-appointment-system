@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
 import AnimatedCounter from "@/components/common/AnimatedCounter";
 
 const PROCEDURE_ICONS: Record<string, string> = {
@@ -41,6 +42,25 @@ export interface Procedure {
   pricePkr: number;
   originalPricePkr: number;
   discountPercent: number;
+  durationMinutes?: number;
+}
+
+interface ApiClinic {
+  _id: string;
+  name: string;
+  address?: string;
+  feePkr: number;
+  timings: Record<string, string>;
+  schedule?: unknown;
+  defaultSlotDurationMinutes?: number;
+  mapLink?: string;
+}
+
+interface ApiAssignment {
+  clinicId: ApiClinic | string;
+  priceOverridePkr?: number;
+  durationOverrideMinutes?: number;
+  isActive: boolean;
 }
 
 interface ProcedureCardProps {
@@ -51,24 +71,51 @@ interface ProcedureCardProps {
 export default function ProcedureCard({ treatment, featured }: ProcedureCardProps) {
   const router = useRouter();
   const setClinic = useBookingStore((s) => s.setClinic);
+  const setProcedure = useBookingStore((s) => s.setProcedure);
+  const [selecting, setSelecting] = useState(false);
 
-  const handleSelect = useCallback(() => {
-    const loc = doctor.practice_locations.find((l) =>
-      treatment.location.includes(l.name)
-    );
-    if (loc) {
-      setClinic({
-        id: `loc-${doctor.practice_locations.indexOf(loc)}`,
-        name: loc.name,
-        address: loc.address,
-        fee_pkr: loc.fee_pkr,
-        timings: loc.timings as Record<string, string>,
-        booking_link: (loc as { booking_link?: string }).booking_link,
-        map_link: (loc as { map_link?: string }).map_link,
+  const handleSelect = useCallback(async () => {
+    setSelecting(true);
+    try {
+      const res = await fetch(`/api/procedures/${treatment.id}/clinics`);
+      const data = await res.json();
+      const assignments: ApiAssignment[] = res.ok ? data.assignments ?? [] : [];
+      const active = assignments.filter(
+        (a) => a.isActive && a.clinicId && typeof a.clinicId === "object"
+      );
+
+      if (active.length === 0) {
+        toast.error("This procedure isn't currently available for online booking. Please WhatsApp or call us.");
+        return;
+      }
+
+      setProcedure({
+        procedureId: treatment.id,
+        name: treatment.name,
+        pricePkr: treatment.pricePkr,
+        durationMinutes: treatment.durationMinutes ?? 30,
       });
+
+      if (active.length === 1) {
+        const clinic = active[0].clinicId as ApiClinic;
+        setClinic({
+          id: clinic._id,
+          name: clinic.name,
+          address: clinic.address ?? null,
+          fee_pkr: clinic.feePkr,
+          timings: clinic.timings,
+          defaultSlotDurationMinutes: clinic.defaultSlotDurationMinutes,
+          map_link: clinic.mapLink,
+        });
+      }
+
+      router.push(`/book-appointment/step-1?procedure=${treatment.id}`);
+    } catch {
+      toast.error("Could not check availability for this procedure. Please try again.");
+    } finally {
+      setSelecting(false);
     }
-    router.push("/book-appointment/step-1");
-  }, [setClinic, router, treatment]);
+  }, [setClinic, setProcedure, router, treatment]);
 
   const icon = PROCEDURE_ICONS[treatment.name] ?? "medical_services";
   const desc = treatment.shortDescription || PROCEDURE_DESCS[treatment.name] || treatment.location;
@@ -97,7 +144,15 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
         >
           {icon}
         </span>
-        <h3 className="text-headline-md font-semibold mb-xs">{treatment.name}</h3>
+        <h3 className="text-headline-md font-semibold mb-xs">
+          {treatment.slug ? (
+            <Link href={`/procedures/${treatment.slug}`} className="hover:text-primary transition-colors">
+              {treatment.name}
+            </Link>
+          ) : (
+            treatment.name
+          )}
+        </h3>
         <p className="text-caption text-on-surface-variant">{desc}</p>
       </div>
 
@@ -122,13 +177,14 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
 
       <button
         onClick={handleSelect}
-        className={`w-full mt-md py-sm rounded-xl text-label-md font-semibold transition-all ${
+        disabled={selecting}
+        className={`w-full mt-md py-sm rounded-xl text-label-md font-semibold transition-all disabled:opacity-60 ${
           featured
             ? "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary"
             : "bg-secondary text-on-secondary hover:bg-secondary/90"
         }`}
       >
-        Select Procedure
+        {selecting ? "Preparing…" : "Select Procedure"}
       </button>
     </motion.div>
   );
