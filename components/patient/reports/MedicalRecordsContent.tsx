@@ -2,22 +2,32 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { MOCK_REPORTS, Report } from "./data";
+import { Report } from "./data";
 import ReportsHeader from "./ReportsHeader";
 import ReportsFilters, { FilterKey, SortKey, ViewMode } from "./ReportsFilters";
 import ReportsGrid from "./ReportsGrid";
 
 export default function MedicalRecordsContent() {
   const [loading, setLoading] = useState(true);
-  const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
+  const [reports, setReports] = useState<Report[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [sort, setSort] = useState<SortKey>("newest");
   const [view, setView] = useState<ViewMode>("grid");
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
+    (async () => {
+      try {
+        const res = await fetch("/api/medical-records");
+        const data = await res.json();
+        if (res.ok) setReports(data.reports ?? []);
+        else toast.error(data.error ?? "Could not load medical records");
+      } catch {
+        toast.error("Network error loading medical records");
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const filtered = useMemo(() => {
@@ -35,9 +45,22 @@ export default function MedicalRecordsContent() {
     return sorted;
   }, [reports, filter, search, sort]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    const previous = reports;
     setReports((prev) => prev.filter((r) => r.id !== id));
-    toast.success("Report deleted.");
+    try {
+      const res = await fetch(`/api/medical-records/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        setReports(previous);
+        toast.error(data.error ?? "Could not delete report");
+        return;
+      }
+      toast.success("Report deleted.");
+    } catch {
+      setReports(previous);
+      toast.error("Network error deleting report");
+    }
   };
 
   return (

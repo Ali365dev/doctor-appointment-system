@@ -168,10 +168,10 @@
 
 :root {
   --space-xs: 0.5rem;    /* 8px  */
-  --space-sm: 0.75rem;      /* 16px */
-  --space-md: 1rem;    /* 24px */
-  --space-lg: 2rem;    /* 40px */
-  --space-xl: 3rem;      /* 64px */
+  --space-sm: 0.75rem;      /* 12px */
+  --space-md: 1rem;    /* 16px */
+  --space-lg: 2rem;    /* 32px */
+  --space-xl: 3rem;      /* 48px */
 
 
   --space-gutter: 1.5rem;

@@ -1,44 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import UploadDropzone from "./UploadDropzone";
 import FilePreviewGrid, { SelectedFile } from "./FilePreviewGrid";
 import UploadProgress, { UploadState } from "./UploadProgress";
-import { REPORT_CATEGORIES } from "./data";
+import { REPORT_CATEGORIES, formatDate } from "./data";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const MOCK_APPOINTMENTS = [
-  "None",
-  "Jun 25 – Chughtai Medical Centre",
-  "Jun 29 – Faisal Hospital (New Building)",
-];
+interface AppointmentOption {
+  id: string;
+  label: string;
+}
+
+// Keeps the raw File objects alongside their preview metadata — the preview
+// grid only needs the metadata, but the real upload needs the actual File.
+interface SelectedFileWithSource extends SelectedFile {
+  file: File;
+}
 
 export default function UploadReportForm() {
   const router = useRouter();
-  const [files, setFiles] = useState<SelectedFile[]>([]);
+  const [files, setFiles] = useState<SelectedFileWithSource[]>([]);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(REPORT_CATEGORIES[0]);
   const [description, setDescription] = useState("");
   const [symptoms, setSymptoms] = useState("");
-  const [appointment, setAppointment] = useState(MOCK_APPOINTMENTS[0]);
+  const [appointmentOptions, setAppointmentOptions] = useState<AppointmentOption[]>([]);
+  const [appointment, setAppointment] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [progress, setProgress] = useState(0);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/appointments");
+        const data = await res.json();
+        if (!res.ok) return;
+        const options: AppointmentOption[] = (data.appointments ?? []).map(
+          (a: { _id: string; date: string; clinicId: { name: string } | string }) => ({
+            id: a._id,
+            label: `${formatDate(a.date)} – ${typeof a.clinicId === "string" ? a.clinicId : a.clinicId?.name ?? "Clinic"}`,
+          })
+        );
+        setAppointmentOptions(options);
+      } catch {
+        // Related-appointment dropdown just won't populate — not fatal.
+      }
+    })();
+  }, []);
+
   const handleFilesSelected = (newFiles: File[]) => {
-    const mapped: SelectedFile[] = newFiles.map((file) => ({
+    const mapped: SelectedFileWithSource[] = newFiles.map((file) => ({
       id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
       name: file.name,
       type: file.type === "application/pdf" ? "pdf" : "image",
       size: formatSize(file.size),
       url: file.type === "application/pdf" ? "#" : URL.createObjectURL(file),
       thumbnail: file.type === "application/pdf" ? "" : URL.createObjectURL(file),
+      file,
     }));
     setFiles((prev) => [...prev, ...mapped]);
     setErrors((prev) => ({ ...prev, files: "" }));
@@ -66,16 +92,45 @@ export default function UploadReportForm() {
   const runUpload = () => {
     setUploadState("uploading");
     setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((p) => (p >= 100 ? 100 : p + 20));
-    }, 250);
-    setTimeout(() => {
-      clearInterval(interval);
-      setProgress(100);
-      setUploadState("success");
-      toast.success("Report uploaded successfully!");
-      setTimeout(() => router.push("/patient/medical-records"), 1200);
-    }, 1250);
+
+    const formData = new FormData();
+    formData.append("title", title.trim());
+    formData.append("category", category);
+    const fullDescription = [description.trim(), symptoms.trim() ? `Symptoms: ${symptoms.trim()}` : ""]
+      .filter(Boolean)
+      .join("\n\n");
+    formData.append("description", fullDescription);
+    if (appointment) formData.append("appointmentId", appointment);
+    files.forEach((f) => formData.append("files", f.file));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/medical-records");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        setProgress(100);
+        setUploadState("success");
+        toast.success("Report uploaded successfully!");
+        setTimeout(() => router.push("/patient/medical-records"), 1200);
+      } else {
+        setUploadState("error");
+        const data = (() => {
+          try {
+            return JSON.parse(xhr.responseText);
+          } catch {
+            return null;
+          }
+        })();
+        toast.error(data?.error ?? "Could not upload report");
+      }
+    };
+    xhr.onerror = () => {
+      setUploadState("error");
+      toast.error("Network error uploading report");
+    };
+    xhr.send(formData);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -143,7 +198,10 @@ export default function UploadReportForm() {
               onChange={(e) => setAppointment(e.target.value)}
               className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             >
-              {MOCK_APPOINTMENTS.map((a) => <option key={a}>{a}</option>)}
+              <option value="">None</option>
+              {appointmentOptions.map((a) => (
+                <option key={a.id} value={a.id}>{a.label}</option>
+              ))}
             </select>
           </div>
         </div>

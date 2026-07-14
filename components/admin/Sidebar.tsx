@@ -10,6 +10,7 @@ const navItems = [
   { label: "Appointments", icon: "calendar_today", href: "/admin/appointments" },
   { label: "Clinic Management", icon: "storefront", href: "/admin/clinics" },
   { label: "Patients", icon: "group", href: "/admin/patients" },
+  { label: "Medical Records", icon: "folder_shared", href: "/admin/medical-records" },
   { label: "Payments", icon: "payments", href: "/admin/payments" },
   { label: "Procedures", icon: "medical_services", href: "/admin/procedures" },
   { label: "Messages", icon: "mail", href: "/admin/messages" },

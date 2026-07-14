@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -11,9 +12,34 @@ import DoctorSummaryCard from "./DoctorSummaryCard";
 
 export default function ReportDetails({ report }: { report: Report }) {
   const router = useRouter();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleDownload = () => {
-    toast.success(`Downloading all ${report.files.length} file(s)…`);
+    if (report.files.length === 0) {
+      toast.error("This report has no files to download.");
+      return;
+    }
+    report.files.forEach((file) => window.open(file.url, "_blank", "noopener,noreferrer"));
+    toast.success(`Opening ${report.files.length} file(s)…`);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/medical-records/${report.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not delete report");
+        return;
+      }
+      toast.success("Report deleted");
+      router.push("/patient/medical-records");
+    } catch {
+      toast.error("Network error deleting report");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -67,6 +93,14 @@ export default function ReportDetails({ report }: { report: Report }) {
       <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-surface border-t border-outline-variant/30 px-gutter py-sm flex items-center justify-end gap-sm z-30">
         <button
           type="button"
+          onClick={() => setConfirmingDelete(true)}
+          className="px-lg py-sm rounded-xl border border-error/20 text-error hover:bg-error/10 transition-all font-semibold text-label-md flex items-center gap-xs"
+        >
+          <span className="material-symbols-outlined text-body-lg">delete</span>
+          Delete
+        </button>
+        <button
+          type="button"
           onClick={() => router.push("/patient/medical-records/upload")}
           className="px-lg py-sm rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-all font-semibold text-label-md flex items-center gap-xs"
         >
@@ -89,6 +123,34 @@ export default function ReportDetails({ report }: { report: Report }) {
           Discuss
         </Link>
       </div>
+
+      {/* Delete confirm modal */}
+      {confirmingDelete && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-sm w-full mx-md">
+            <h3 className="text-headline-md font-bold text-on-surface mb-sm">Delete Report?</h3>
+            <p className="text-body-md text-on-surface-variant mb-lg">
+              This will permanently delete <span className="font-semibold text-on-surface">{report.title}</span> and all its
+              uploaded files. This action cannot be undone.
+            </p>
+            <div className="flex gap-sm justify-end">
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                className="px-md py-xs rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleting}
+                onClick={handleDelete}
+                className="px-md py-xs rounded-xl bg-error text-on-error font-semibold hover:opacity-90 disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

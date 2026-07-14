@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Medical Records | Dr. Zaid Gul Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface": "#191b23", "on-surface-variant": "#434655", "outline": "#737686",
+                        "outline-variant": "#c3c6d7", "surface": "#faf8ff", "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f3fe", "surface-container": "#ededf9",
+                        "surface-container-high": "#e7e7f3", "surface-container-highest": "#e1e2ed",
+                        "background": "#faf8ff", "primary": "#004ac6", "on-primary": "#ffffff",
+                        "primary-container": "#2563eb", "on-primary-container": "#eeefff",
+                        "secondary": "#006591", "secondary-container": "#39b8fd",
+                        "error": "#ba1a1a", "on-error": "#ffffff", "error-container": "#ffdad6", "on-error-container": "#93000a"
+                    },
+                    spacing: { xs: "0.5rem", sm: "0.75rem", md: "1rem", lg: "2rem", xl: "3rem", gutter: "1.5rem" },
+                    fontFamily: { "label-md": ["Inter"], "body-md": ["Inter"], "body-lg": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"], "caption": ["Inter"] }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c3c6d7; border-radius: 999px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md">
+
+<!-- Sidebar (reused exactly from components/admin/Sidebar.tsx) -->
+<aside class="flex flex-col h-screen w-64 bg-surface border-r border-outline-variant/30 py-4 px-3 fixed left-0 top-0 z-40">
+<div class="flex items-center px-2 mb-8">
+<img alt="Dr. Zaid Gul" class="h-12 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVFroceKentGX_zGpM9-kSeItLNGte67uw7a_iy8AVgJDxpncKJUShPW32MHwO_26oqWMbaNOmY8nH8hoWCZ5Fs334tjg1igym1in0KeISACyl951Fp6OZIwn92MQHIraVdZxDVy-MCoT2x3oNF0r7hc7AVu-u4A8cDDIqy2B2QZBA47CbRv9sRwGCLpVvJNyDUbf4Q7vJE7RDOpDOoZ7c6YN0Z_5w_m1CRS94Lhj2Mpd3nu-sQTE0yCzUsrIyXW13fiWdxe5MI-4"/>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">calendar_today</span>Appointments</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">storefront</span>Clinic Management</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Patients</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold bg-primary/10 text-primary" href="#"><span class="material-symbols-outlined text-[20px]">folder_shared</span>Medical Records
+<span class="ml-auto bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full">4</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">payments</span>Payments</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">medical_services</span>Procedures</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">mail</span>Messages</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">web</span>Website CMS</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">settings</span>Settings</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant/30 pt-4 px-2 space-y-1">
+<a class="w-full bg-primary-container text-on-primary-container text-label-md font-semibold py-2 rounded-lg flex items-center justify-center gap-2" href="#"><span class="material-symbols-outlined text-[20px]">add</span>New Appointment</a>
+</div>
+</aside>
+
+<!-- TopBar (reused exactly from components/admin/TopBar.tsx) -->
+<header class="fixed top-0 right-0 left-64 z-30 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 px-6 py-3 flex items-center justify-between gap-4">
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-10 pr-3 py-2 bg-surface-container-low border border-outline-variant/50 rounded-lg text-body-md placeholder:text-on-surface-variant/50" placeholder="Search reports or patients..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 rounded-lg hover:bg-surface-container-high"><span class="material-symbols-outlined text-on-surface-variant text-[22px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span></button>
+<div class="h-6 w-px bg-outline-variant/50"></div>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">person</span></div>
+<span class="text-label-md font-semibold">Dr. Zaid Gul</span>
+</div>
+</div>
+</header>
+
+<!-- Main content -->
+<main class="ml-64 pt-20 px-6 pb-10">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h1 class="text-headline-lg font-bold text-on-surface" style="font-size:32px">Patient Medical Records</h1>
+<p class="text-on-surface-variant mt-1">Review uploaded reports, reply to patients, and log clinical recommendations.</p>
+</div>
+</div>
+
+<!-- Stat cards -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4">
+<p class="text-caption text-on-surface-variant uppercase tracking-wider">Pending Review</p>
+<p class="text-headline-md font-bold text-amber-600 mt-1">4</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4">
+<p class="text-caption text-on-surface-variant uppercase tracking-wider">Reviewing</p>
+<p class="text-headline-md font-bold text-primary mt-1">2</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4">
+<p class="text-caption text-on-surface-variant uppercase tracking-wider">Replied</p>
+<p class="text-headline-md font-bold text-emerald-600 mt-1">11</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4">
+<p class="text-caption text-on-surface-variant uppercase tracking-wider">Closed</p>
+<p class="text-headline-md font-bold text-on-surface-variant mt-1">27</p>
+</div>
+</div>
+
+<!-- Filter bar -->
+<div class="bg-surface-container-lowest rounded-2xl p-3 mb-4 shadow-sm border border-outline-variant/30 flex flex-wrap items-center gap-2">
+<button class="px-4 py-2 rounded-full bg-primary text-on-primary text-label-md font-semibold">All (44)</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-label-md font-semibold hover:bg-surface-container-high">Pending (4)</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-label-md font-semibold hover:bg-surface-container-high">Reviewing (2)</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-label-md font-semibold hover:bg-surface-container-high">Replied (11)</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-label-md font-semibold hover:bg-surface-container-high">Closed (27)</button>
+</div>
+
+<!-- Table -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/30 bg-surface-container-low/50">
+<th class="px-4 py-3 text-label-md text-on-surface-variant">Patient</th>
+<th class="px-4 py-3 text-label-md text-on-surface-variant">Report</th>
+<th class="px-4 py-3 text-label-md text-on-surface-variant">Category</th>
+<th class="px-4 py-3 text-label-md text-on-surface-variant">Files</th>
+<th class="px-4 py-3 text-label-md text-on-surface-variant">Submitted</th>
+<th class="px-4 py-3 text-label-md text-on-surface-variant">Status</th>
+<th class="px-4 py-3 text-label-md text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-caption">AK</div><span class="font-semibold">Ahmed Khan</span></div></td>
+<td class="px-4 py-3">Prescription Refill – Omeprazole</td>
+<td class="px-4 py-3 text-on-surface-variant">Prescription</td>
+<td class="px-4 py-3 text-on-surface-variant">2 files</td>
+<td class="px-4 py-3 text-on-surface-variant">Jul 3, 2026</td>
+<td class="px-4 py-3"><span class="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-caption font-bold flex items-center gap-1 w-fit"><span class="material-symbols-outlined text-[14px]">hourglass_empty</span>Pending Review</span></td>
+<td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button class="p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high" title="Message patient"><span class="material-symbols-outlined text-[18px]">chat</span></button><button class="px-4 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-semibold">Review</button></div></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-caption">SF</div><span class="font-semibold">Sara Fatima</span></div></td>
+<td class="px-4 py-3">Abdominal Ultrasound</td>
+<td class="px-4 py-3 text-on-surface-variant">Ultrasound</td>
+<td class="px-4 py-3 text-on-surface-variant">1 file</td>
+<td class="px-4 py-3 text-on-surface-variant">Jul 1, 2026</td>
+<td class="px-4 py-3"><span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-caption font-bold flex items-center gap-1 w-fit"><span class="material-symbols-outlined text-[14px]">visibility</span>Reviewing</span></td>
+<td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button class="p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high" title="Message patient"><span class="material-symbols-outlined text-[18px]">chat</span></button><button class="px-4 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-semibold">Review</button></div></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors bg-primary/[0.02]">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-caption">RA</div><span class="font-semibold">Raza Ali</span></div></td>
+<td class="px-4 py-3">Complete Blood Count (CBC)</td>
+<td class="px-4 py-3 text-on-surface-variant">Blood Test</td>
+<td class="px-4 py-3 text-on-surface-variant">2 files</td>
+<td class="px-4 py-3 text-on-surface-variant">Jun 28, 2026</td>
+<td class="px-4 py-3"><span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-caption font-bold flex items-center gap-1 w-fit"><span class="material-symbols-outlined text-[14px]">mark_chat_read</span>Doctor Replied</span></td>
+<td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button class="p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high" title="Message patient"><span class="material-symbols-outlined text-[18px]">chat</span></button><button class="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-label-md font-semibold hover:bg-surface-container-high">View</button></div></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-caption">KA</div><span class="font-semibold">Kashif Ali</span></div></td>
+<td class="px-4 py-3">Chest X-Ray</td>
+<td class="px-4 py-3 text-on-surface-variant">Imaging</td>
+<td class="px-4 py-3 text-on-surface-variant">1 file</td>
+<td class="px-4 py-3 text-on-surface-variant">Jun 10, 2026</td>
+<td class="px-4 py-3"><span class="px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant text-caption font-bold flex items-center gap-1 w-fit"><span class="material-symbols-outlined text-[14px]">task_alt</span>Closed</span></td>
+<td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button class="p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high" title="Message patient"><span class="material-symbols-outlined text-[18px]">chat</span></button><button class="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-label-md font-semibold hover:bg-surface-container-high">View</button></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</main>
+
+<!-- ============================================================ -->
+<!-- Detail slide-over (opened via "Review" — shown here already open for the mockup) -->
+<!-- ============================================================ -->
+<div class="fixed inset-0 bg-black/40 z-50 flex justify-end">
+<div class="w-full max-w-2xl h-full bg-surface flex flex-col shadow-2xl">
+<!-- Header -->
+<div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant/30 shrink-0">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">AK</div>
+<div>
+<h3 class="font-bold text-on-surface">Ahmed Khan</h3>
+<p class="text-caption text-on-surface-variant">Prescription Refill – Omeprazole · Prescription</p>
+</div>
+</div>
+<button class="p-2 rounded-lg hover:bg-surface-container-high"><span class="material-symbols-outlined">close</span></button>
+</div>
+
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Status changer -->
+<div class="flex items-center justify-between bg-surface-container-low rounded-xl p-3">
+<span class="text-label-md font-semibold text-on-surface-variant">Report Status</span>
+<select class="bg-surface border border-outline-variant/50 rounded-lg px-3 py-1.5 text-label-md font-semibold">
+<option>Pending Review</option>
+<option>Doctor Reviewing</option>
+<option>Doctor Replied</option>
+<option>Closed</option>
+</select>
+</div>
+
+<!-- Description -->
+<div>
+<h4 class="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-2">Patient Notes</h4>
+<p class="text-body-md text-on-surface-variant">Can I get this prescription refilled? Still experiencing mild acidity.</p>
+</div>
+
+<!-- Files -->
+<div>
+<h4 class="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-2">Uploaded Files (2)</h4>
+<div class="grid grid-cols-4 gap-2">
+<div class="aspect-square rounded-xl bg-surface-container-high flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[32px]">image</span></div>
+<div class="aspect-square rounded-xl bg-surface-container-high flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[32px]">image</span></div>
+</div>
+</div>
+
+<!-- Conversation -->
+<div>
+<h4 class="text-label-md font-bold text-on-surface-variant uppercase tracking-wide mb-2">Conversation</h4>
+<div class="space-y-3">
+<div class="flex justify-start"><div class="max-w-[75%] bg-surface-container-low rounded-2xl rounded-tl-none p-3"><p class="text-body-md">Can I get this prescription refilled? Still experiencing mild acidity.</p><span class="text-caption text-on-surface-variant">Jul 3, 4:21 PM</span></div></div>
+</div>
+</div>
+
+<!-- Doctor Review form -->
+<div class="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-3">
+<h4 class="text-label-md font-bold text-primary uppercase tracking-wide">Doctor Review &amp; Recommendations</h4>
+<textarea class="w-full px-3 py-2 rounded-lg border border-outline-variant/50 bg-surface text-body-md resize-none" placeholder="Clinical summary..." rows="2"></textarea>
+<div class="space-y-2">
+<p class="text-caption font-semibold text-on-surface-variant">Recommendations</p>
+<div class="flex items-center gap-2"><input class="flex-1 px-3 py-1.5 rounded-lg border border-outline-variant/50 bg-surface text-body-md" placeholder="e.g. Continue omeprazole 20mg for 2 more weeks" type="text"/><button class="p-1.5 rounded-lg bg-primary/10 text-primary"><span class="material-symbols-outlined text-[18px]">add</span></button></div>
+</div>
+<div class="space-y-2">
+<p class="text-caption font-semibold text-on-surface-variant">Medicine Changes</p>
+<div class="flex items-center gap-2"><input class="flex-1 px-3 py-1.5 rounded-lg border border-outline-variant/50 bg-surface text-body-md" placeholder="e.g. Increase dosage to 40mg" type="text"/><button class="p-1.5 rounded-lg bg-primary/10 text-primary"><span class="material-symbols-outlined text-[18px]">add</span></button></div>
+</div>
+<button class="w-full py-2.5 rounded-xl bg-primary text-on-primary font-bold hover:opacity-90 transition-all">Save Review &amp; Mark as Replied</button>
+</div>
+</div>
+
+<!-- Reply composer -->
+<div class="border-t border-outline-variant/30 bg-surface p-4 flex items-end gap-2 shrink-0">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high"><span class="material-symbols-outlined">attach_file</span></button>
+<textarea class="flex-1 resize-none max-h-32 px-3 py-2 rounded-xl border border-outline-variant/50 bg-surface-container-low text-body-md" placeholder="Reply to patient…" rows="1"></textarea>
+<button class="p-3 rounded-full bg-primary text-on-primary"><span class="material-symbols-outlined">send</span></button>
+</div>
+</div>
+</div>
+
+</body></html>

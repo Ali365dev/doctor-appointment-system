@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { Report, Message, MessageAttachment } from "./data";
+import { Report, Message } from "./data";
 import ChatBubble from "./ChatBubble";
 import ChatComposer from "./ChatComposer";
 import QuickQuestionCards from "./QuickQuestionCards";
-import MedicineRequestCard from "./MedicineRequestCard";
 import MedicalFileCard from "./MedicalFileCard";
 import EmptyReports from "./EmptyReports";
 
@@ -18,42 +17,35 @@ export default function DiscussionPanel({ report }: { report: Report }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const appendPatientMessage = (text: string, attachments: MessageAttachment[] = []) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `m-${Date.now()}`,
-        sender: "patient",
-        message: text,
-        attachments,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+  const sendMessage = async (text: string, attachments: File[] = []) => {
+    try {
+      const formData = new FormData();
+      formData.append("message", text);
+      attachments.forEach((file) => formData.append("attachments", file));
+
+      const res = await fetch(`/api/medical-records/${report.id}/messages`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not send message");
+        return false;
+      }
+      setMessages(data.report.conversation);
+      return true;
+    } catch {
+      toast.error("Network error sending message");
+      return false;
+    }
   };
 
-  const handleSend = (text: string) => {
-    appendPatientMessage(text);
-    toast.success("Message sent to your doctor.");
+  const handleSend = async (text: string) => {
+    if (await sendMessage(text)) toast.success("Message sent to your doctor.");
   };
 
-  const handleAttach = (files: File[]) => {
-    const attachments: MessageAttachment[] = files.map((file) => ({
-      id: `att-${file.name}-${Date.now()}`,
-      name: file.name,
-      type: file.type === "application/pdf" ? "pdf" : "image",
-      url: file.type === "application/pdf" ? "#" : URL.createObjectURL(file),
-      thumbnail: file.type === "application/pdf" ? "" : URL.createObjectURL(file),
-    }));
-    appendPatientMessage("Sent attachment(s).", attachments);
-    toast.success(`${files.length} file(s) attached.`);
-  };
-
-  const handleMedicineRequest = (message: string, photo: File | null) => {
-    const attachments: MessageAttachment[] = photo
-      ? [{ id: `att-${photo.name}-${Date.now()}`, name: photo.name, type: "image", url: URL.createObjectURL(photo), thumbnail: URL.createObjectURL(photo) }]
-      : [];
-    appendPatientMessage(message, attachments);
-    toast.success("Medicine change request sent to your doctor.");
+  const handleAttach = async (files: File[]) => {
+    if (await sendMessage("Sent attachment(s).", files)) toast.success(`${files.length} file(s) attached.`);
   };
 
   return (
@@ -85,7 +77,6 @@ export default function DiscussionPanel({ report }: { report: Report }) {
 
         <div className="px-md pb-sm space-y-sm">
           <QuickQuestionCards onSelect={handleSend} />
-          <MedicineRequestCard onSubmit={handleMedicineRequest} />
         </div>
 
         <ChatComposer onSend={handleSend} onAttach={handleAttach} />

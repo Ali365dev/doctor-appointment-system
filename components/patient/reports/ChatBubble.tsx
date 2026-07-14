@@ -43,9 +43,15 @@ export default function ChatBubble({ message, doctorAvatar }: { message: Message
                 a.type === "pdf" ? (
                   <PdfPreviewCard key={a.id} file={a} />
                 ) : (
-                  <div key={a.id} className="relative w-24 h-24 rounded-lg overflow-hidden border border-outline-variant/30">
+                  <a
+                    key={a.id}
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative w-24 h-24 rounded-lg overflow-hidden border border-outline-variant/30 block"
+                  >
                     <Image src={a.thumbnail} alt={a.name} fill className="object-cover" unoptimized />
-                  </div>
+                  </a>
                 )
               )}
             </div>

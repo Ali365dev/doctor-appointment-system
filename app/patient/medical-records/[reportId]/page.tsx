@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getReportById } from "@/components/patient/reports/data";
+import { getSession } from "@/lib/auth/getSession";
+import { getMedicalRecordById, MedicalRecordServiceError } from "@/services/api/medicalRecord";
 import ReportDetails from "@/components/patient/reports/ReportDetails";
 import EmptyReports from "@/components/patient/reports/EmptyReports";
 
@@ -11,7 +12,13 @@ export default async function ReportDetailsPage({
   params: Promise<{ reportId: string }>;
 }) {
   const { reportId } = await params;
-  const report = getReportById(reportId);
+  const session = await getSession();
+  const report = session
+    ? await getMedicalRecordById(reportId, session.userId).catch((err) => {
+        if (err instanceof MedicalRecordServiceError && err.status === 404) return null;
+        throw err;
+      })
+    : null;
 
   if (!report) {
     return (

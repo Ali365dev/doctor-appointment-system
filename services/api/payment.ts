@@ -20,6 +20,13 @@ import { sendNotification } from "@/services/notifications";
 import type { PaymentDoc } from "@/services/mongodb/models/Payment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 
+// Receipts don't record their own file type — a PDF was uploaded as a "raw"
+// Cloudinary resource (see uploadReceiptImage) while images are "image", so
+// deleting the right asset means telling them apart by the stored URL.
+function receiptResourceType(url?: string | null): "image" | "raw" {
+  return url && /\.pdf($|\?)/i.test(url) ? "raw" : "image";
+}
+
 export class PaymentServiceError extends Error {
   status: number;
   constructor(message: string, status = 400) {
@@ -56,7 +63,7 @@ export async function createPaymentForAppointment(params: CreatePaymentParams): 
   if (params.receiptPublicId) {
     const previous = await findPaymentByAppointmentId(params.appointmentId);
     if (previous?.receiptPublicId) {
-      await deleteUploadedAsset(previous.receiptPublicId);
+      await deleteUploadedAsset(previous.receiptPublicId, receiptResourceType(previous.receiptUrl));
     }
   }
 
@@ -166,7 +173,7 @@ export async function deletePaymentReceipt(paymentId: string): Promise<PaymentDo
     throw new PaymentServiceError("Payment not found", 404);
   }
   if (payment.receiptPublicId) {
-    await deleteUploadedAsset(payment.receiptPublicId);
+    await deleteUploadedAsset(payment.receiptPublicId, receiptResourceType(payment.receiptUrl));
   }
   await clearPaymentReceipt(paymentId);
   const updated = await findPaymentById(paymentId);

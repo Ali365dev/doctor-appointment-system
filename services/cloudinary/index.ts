@@ -32,7 +32,11 @@ export async function uploadReceiptImage(file: File): Promise<CloudinaryUploadRe
   if (file.size > MAX_RECEIPT_SIZE_BYTES) {
     throw new Error("Receipt file must be 10 MB or smaller");
   }
-  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.receipts, resourceType: "image" });
+  // PDFs must upload as "raw" — Cloudinary blocks unauthenticated delivery of
+  // PDF/ZIP files served through the "image" delivery pipeline by default,
+  // which would otherwise make every uploaded PDF 401 when opened.
+  const isPdf = file.type === "application/pdf";
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.receipts, resourceType: isPdf ? "raw" : "image" });
 }
 
 /** Validates and uploads a clinic photo to the clinics folder. */
@@ -65,10 +69,12 @@ export async function uploadMedicalReport(file: File): Promise<CloudinaryUploadR
   if (file.size > MAX_RECEIPT_SIZE_BYTES) {
     throw new Error("Medical report file must be 10 MB or smaller");
   }
-  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.medicalReports, resourceType: "image" });
+  // See uploadReceiptImage — PDFs must upload as "raw" or they 401 on open.
+  const isPdf = file.type === "application/pdf";
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.medicalReports, resourceType: isPdf ? "raw" : "image" });
 }
 
-/** Deletes a previously-uploaded profile photo, receipt, clinic, or procedure photo from Cloudinary. */
-export async function deleteUploadedAsset(publicId: string): Promise<void> {
-  return deleteFromCloudinary(publicId, "image");
+/** Deletes a previously-uploaded profile photo, receipt, clinic, procedure, or medical report file from Cloudinary. */
+export async function deleteUploadedAsset(publicId: string, resourceType: "image" | "raw" = "image"): Promise<void> {
+  return deleteFromCloudinary(publicId, resourceType);
 }
