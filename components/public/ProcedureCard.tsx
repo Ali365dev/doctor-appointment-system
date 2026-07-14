@@ -43,6 +43,7 @@ export interface Procedure {
   originalPricePkr: number;
   discountPercent: number;
   durationMinutes?: number;
+  image?: string;
 }
 
 interface ApiClinic {
@@ -119,6 +120,7 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
 
   const icon = PROCEDURE_ICONS[treatment.name] ?? "medical_services";
   const desc = treatment.shortDescription || PROCEDURE_DESCS[treatment.name] || treatment.location;
+  const detailHref = treatment.slug ? `/procedures/${treatment.slug}` : null;
 
   return (
     <motion.div
@@ -127,65 +129,78 @@ export default function ProcedureCard({ treatment, featured }: ProcedureCardProp
       viewport={{ once: true, amount: 0, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.5 }}
       whileHover={{ y: -8 }}
-      className={`bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm flex flex-col h-full relative overflow-hidden group transition-shadow duration-300 hover:shadow-xl ${
-        featured ? "ring-2 ring-primary" : ""
-      }`}
+      className="bg-white p-md rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col h-full transition-shadow duration-300 hover:shadow-xl"
     >
-      {featured && (
-        <div className="absolute top-0 right-0 bg-primary px-sm py-xs text-on-primary text-label-md font-semibold">
-          Most Specialized
-        </div>
-      )}
-
-      <div className="mb-md">
-        <span
-          className="material-symbols-outlined text-primary mb-sm block"
-          style={{ fontVariationSettings: featured ? "'FILL' 1" : "'FILL' 0" }}
-        >
-          {icon}
-        </span>
-        <h3 className="text-headline-md font-semibold mb-xs">
-          {treatment.slug ? (
-            <Link href={`/procedures/${treatment.slug}`} className="hover:text-primary transition-colors">
-              {treatment.name}
-            </Link>
-          ) : (
-            treatment.name
-          )}
-        </h3>
-        <p className="text-caption text-on-surface-variant">{desc}</p>
-      </div>
-
-      <div className="mt-auto pt-md border-t border-outline-variant/20">
-        <div className="flex items-baseline gap-xs">
-          <span className="text-headline-lg font-bold text-primary">
-            <AnimatedCounter value={treatment.pricePkr} format />
-          </span>
-          <span className="text-label-md text-on-surface-variant">PKR</span>
-        </div>
-        {treatment.discountPercent > 0 && (
-          <div className="flex items-center gap-sm mt-xs">
-            <span className="line-through text-outline text-body-md">
-              {treatment.originalPricePkr.toLocaleString()}
+      {/* Image / icon banner */}
+      <div className="relative h-44 w-full bg-primary/5 rounded-xl overflow-hidden mb-md shrink-0">
+        {treatment.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={treatment.image} alt={treatment.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span
+              className="material-symbols-outlined text-primary text-5xl"
+              style={{ fontVariationSettings: featured ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              {icon}
             </span>
-            <span className="bg-error-container text-on-error-container px-xs py-0.5 rounded text-[10px] font-semibold">
-              {treatment.discountPercent}% OFF
-            </span>
+          </div>
+        )}
+        {featured && (
+          <div className="absolute top-sm right-sm bg-primary/10 backdrop-blur-sm px-sm py-[2px] rounded-full text-primary text-caption font-semibold">
+            Most Specialized
           </div>
         )}
       </div>
 
-      <button
-        onClick={handleSelect}
-        disabled={selecting}
-        className={`w-full mt-md py-sm rounded-xl text-label-md font-semibold transition-all disabled:opacity-60 ${
-          featured
-            ? "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary"
-            : "bg-secondary text-on-secondary hover:bg-secondary/90"
-        }`}
-      >
-        {selecting ? "Preparing…" : "Select Procedure"}
-      </button>
+      <h3 className="text-headline-md font-bold text-on-surface mb-xs">
+        {detailHref ? (
+          <Link href={detailHref} className="hover:text-primary transition-colors">
+            {treatment.name}
+          </Link>
+        ) : (
+          treatment.name
+        )}
+      </h3>
+      <p className="text-body-md text-on-surface-variant mb-md line-clamp-2">{desc}</p>
+
+      <div className="flex items-center gap-lg mb-md">
+        {treatment.durationMinutes && (
+          <span className="flex items-center gap-1 text-body-md text-on-surface-variant">
+            <span className="material-symbols-outlined text-[18px]">schedule</span>
+            {treatment.durationMinutes} min
+          </span>
+        )}
+        <span className="flex items-center gap-1 text-body-md font-semibold text-on-surface">
+          <span className="material-symbols-outlined text-[18px] text-primary">payments</span>
+          <AnimatedCounter value={treatment.pricePkr} format /> PKR
+        </span>
+        {treatment.discountPercent > 0 && (
+          <span className="bg-error-container text-on-error-container px-xs py-0.5 rounded text-[10px] font-semibold">
+            {treatment.discountPercent}% OFF
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-xs mt-auto">
+        {detailHref && (
+          <Link
+            href={detailHref}
+            className="w-full flex items-center justify-center gap-xs py-sm rounded-xl border border-primary text-primary text-label-md font-semibold hover:bg-primary/5 transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">visibility</span>
+            View Details
+          </Link>
+        )}
+        <button
+          onClick={handleSelect}
+          disabled={selecting}
+          className="w-full flex items-center justify-center gap-xs py-sm rounded-xl bg-primary text-on-primary text-label-md font-semibold hover:opacity-90 transition-all disabled:opacity-60"
+        >
+          {selecting ? "Preparing…" : "Select Procedure"}
+          {!selecting && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
+        </button>
+      </div>
     </motion.div>
   );
 }

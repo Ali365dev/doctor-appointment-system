@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import ProcedureDetailContent from "@/components/public/ProcedureDetailContent";
-import { findProcedureBySlug } from "@/services/mongodb/repositories/procedure.repository";
+import { findActiveProcedures, findProcedureBySlug } from "@/services/mongodb/repositories/procedure.repository";
 import { findAssignmentsForProcedure } from "@/services/mongodb/repositories/clinicProcedure.repository";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,24 @@ export default async function ProcedureDetailPage({ params }: { params: Promise<
     ? Math.min(procedure.pricePkr, ...clinics.map((c) => c.priceOverridePkr ?? procedure.pricePkr))
     : procedure.pricePkr;
 
+  const allProcedures = await findActiveProcedures();
+  const related = allProcedures
+    .filter((p) => String(p._id) !== String(procedure._id))
+    .slice(0, 3)
+    .map((p) => ({
+      id: String(p._id),
+      name: p.name,
+      slug: p.slug,
+      shortDescription: p.shortDescription,
+      fullDescription: p.fullDescription,
+      location: p.location,
+      pricePkr: p.pricePkr,
+      originalPricePkr: p.originalPricePkr,
+      discountPercent: p.discountPercent,
+      durationMinutes: p.durationMinutes,
+      image: p.image ?? undefined,
+    }));
+
   return (
     <ProcedureDetailContent
       procedure={{
@@ -38,6 +56,8 @@ export default async function ProcedureDetailPage({ params }: { params: Promise<
         fullDescription: procedure.fullDescription,
         shortDescription: procedure.shortDescription,
         pricePkr: startingPrice,
+        originalPricePkr: procedure.originalPricePkr,
+        discountPercent: procedure.discountPercent,
         durationMinutes: procedure.durationMinutes,
         image: procedure.image ?? undefined,
         benefits: procedure.benefits ?? [],
@@ -47,6 +67,7 @@ export default async function ProcedureDetailPage({ params }: { params: Promise<
         faqs: procedure.faqs ?? [],
       }}
       clinics={clinics}
+      related={related}
     />
   );
 }

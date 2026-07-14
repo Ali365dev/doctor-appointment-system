@@ -22,6 +22,7 @@ export default async function ServicesPage() {
     originalPricePkr: p.originalPricePkr,
     discountPercent: p.discountPercent,
     durationMinutes: p.durationMinutes,
+    image: p.image ?? undefined,
   }));
 
   return <ServicesContent procedures={procedures} />;
