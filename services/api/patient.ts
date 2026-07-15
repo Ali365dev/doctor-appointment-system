@@ -22,6 +22,7 @@ export interface PatientDirectoryRow {
   totalVisits: number;
   status: PatientDirectoryStatus;
   lastReason: string;
+  createdAt: string;
 }
 
 function calculateAge(dob?: Date | null): number | undefined {
@@ -217,6 +218,7 @@ export async function getPatientsWithStats(): Promise<PatientDirectoryRow[]> {
       totalVisits: userAppointments.length,
       status,
       lastReason: mostRecent?.reason || "—",
+      createdAt: new Date(user.createdAt).toISOString(),
     };
   });
 }

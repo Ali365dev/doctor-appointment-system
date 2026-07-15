@@ -14,6 +14,7 @@ const navItems = [
   { label: "Medical Records", icon: "folder_shared", href: "/admin/medical-records" },
   { label: "Payments", icon: "payments", href: "/admin/payments" },
   { label: "Procedures", icon: "medical_services", href: "/admin/procedures" },
+  { label: "Reports", icon: "analytics", href: "/admin/reports" },
   { label: "Website CMS", icon: "web", href: "/admin/cms" },
   { label: "Settings", icon: "settings", href: "/admin/settings" },
 ];

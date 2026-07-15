@@ -145,24 +145,20 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
     ];
   }, [todaysSchedule, payments, appointments]);
 
+  // Per-day revenue for whichever month the mini calendar is currently
+  // browsing — mirrors dailyAppointmentsInMonth so both charts stay in sync.
   const revenueTrend = useMemo(() => {
-    const days: { iso: string; label: string; revenue: number }[] = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      days.push({ iso, label, revenue: 0 });
-    }
-    const byDay = new Map(days.map((d) => [d.iso, d]));
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const days = Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, revenue: 0 }));
     for (const p of payments) {
       if (p.status !== "verified") continue;
-      const iso = new Date(p.createdAt).toISOString().slice(0, 10);
-      const entry = byDay.get(iso);
-      if (entry) entry.revenue += p.amountPkr;
+      const d = new Date(p.createdAt);
+      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+        days[d.getDate() - 1].revenue += p.amountPkr;
+      }
     }
     return days;
-  }, [payments]);
+  }, [payments, calYear, calMonth]);
 
   // Per-day appointment counts for whichever month the mini calendar is
   // currently browsing — updates live as calMonth/calYear change.
@@ -185,10 +181,16 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
           <h1 className="text-headline-md font-bold text-primary">Overview</h1>
           <p className="text-caption text-on-surface-variant">{todayStr}</p>
         </div>
-        <Link href="/admin/appointments"
-          className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-xl text-label-md font-semibold hover:shadow-lg transition-all">
-          <span className="material-symbols-outlined">event</span> View Appointments
-        </Link>
+        <div className="flex items-center gap-sm">
+          <Link href="/admin/reports"
+            className="flex items-center gap-xs px-md py-xs border border-outline-variant text-on-surface rounded-xl text-label-md font-semibold hover:bg-surface-container-high transition-all">
+            <span className="material-symbols-outlined">analytics</span> View Reports
+          </Link>
+          <Link href="/admin/appointments"
+            className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-xl text-label-md font-semibold hover:shadow-lg transition-all">
+            <span className="material-symbols-outlined">event</span> View Appointments
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -213,8 +215,16 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
 
       {/* Bookings & Revenue by period */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-md mb-xl">
-         <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm">
-            <h3 className="text-headline-md font-semibold mb-md">Revenue — Last 14 Days</h3>
+         <Link
+            href="/admin/reports"
+            className="block bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between mb-md">
+              <h3 className="text-headline-md font-semibold">Revenue — {monthLabel}</h3>
+              <span className="text-caption text-primary font-semibold flex items-center gap-0.5">
+                Reports <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </span>
+            </div>
             {revenueTrend.every((d) => d.revenue === 0) ? (
               <p className="text-body-md text-on-surface-variant text-center py-lg">No verified payments in this period.</p>
             ) : (
@@ -228,11 +238,11 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                   </defs>
                   <CartesianGrid vertical={false} stroke="#e1e2ed" />
                   <XAxis
-                    dataKey="label"
+                    dataKey="day"
                     tick={{ fontSize: 11, fill: "#737686" }}
                     axisLine={{ stroke: "#e1e2ed" }}
                     tickLine={false}
-                    interval={1}
+                    interval={2}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "#737686" }}
@@ -242,6 +252,7 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                     tickFormatter={(v: number) => (v >= 1000 ? `${v / 1000}k` : String(v))}
                   />
                   <Tooltip
+                    labelFormatter={(day) => `${monthLabel.split(" ")[0]} ${day}`}
                     formatter={(value) => [`Rs. ${Number(Array.isArray(value) ? value[0] : value ?? 0).toLocaleString()}`, "Revenue"]}
                     contentStyle={{ borderRadius: 8, borderColor: "#c3c6d7", fontSize: 12 }}
                   />
@@ -257,9 +268,17 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                 </AreaChart>
               </ResponsiveContainer>
             )}
-          </div>
-            <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm">
-            <h3 className="text-headline-md font-semibold mb-md">Appointments by Day — {monthLabel}</h3>
+          </Link>
+          <Link
+            href="/admin/reports"
+            className="block bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between mb-md">
+              <h3 className="text-headline-md font-semibold">Appointments — {monthLabel}</h3>
+              <span className="text-caption text-primary font-semibold flex items-center gap-0.5">
+                Reports <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </span>
+            </div>
             {appointments.length === 0 ? (
               <p className="text-body-md text-on-surface-variant text-center py-lg">No appointments recorded yet.</p>
             ) : (
@@ -282,7 +301,7 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </div>
+          </Link>
       </div>
 
       {/* Main Grid */}
