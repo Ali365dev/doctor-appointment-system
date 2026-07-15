@@ -2,6 +2,17 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 import { doctor } from "@/lib/data";
 import type { AppointmentStatus, VisitType } from "@/types/appointment";
 import type { PaymentStatus } from "@/types/payment";
@@ -17,6 +28,7 @@ interface ApiAppointment {
   patientSnapshot: { fullName: string };
   feeSnapshotPkr: number;
   status: AppointmentStatus;
+  createdAt: string;
 }
 
 interface ApiPayment {
@@ -133,6 +145,39 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
     ];
   }, [todaysSchedule, payments, appointments]);
 
+  const revenueTrend = useMemo(() => {
+    const days: { iso: string; label: string; revenue: number }[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      days.push({ iso, label, revenue: 0 });
+    }
+    const byDay = new Map(days.map((d) => [d.iso, d]));
+    for (const p of payments) {
+      if (p.status !== "verified") continue;
+      const iso = new Date(p.createdAt).toISOString().slice(0, 10);
+      const entry = byDay.get(iso);
+      if (entry) entry.revenue += p.amountPkr;
+    }
+    return days;
+  }, [payments]);
+
+  // Per-day appointment counts for whichever month the mini calendar is
+  // currently browsing — updates live as calMonth/calYear change.
+  const dailyAppointmentsInMonth = useMemo(() => {
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const days = Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, count: 0 }));
+    for (const a of appointments) {
+      const d = new Date(a.date + "T00:00:00");
+      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+        days[d.getDate() - 1].count += 1;
+      }
+    }
+    return days;
+  }, [appointments, calYear, calMonth]);
+
   return (
     <div className="px-gutter py-lg max-w-[1280px] mx-auto">
       <div className="flex items-start justify-between mb-lg">
@@ -166,6 +211,80 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
         ))}
       </div>
 
+      {/* Bookings & Revenue by period */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-md mb-xl">
+         <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm">
+            <h3 className="text-headline-md font-semibold mb-md">Revenue — Last 14 Days</h3>
+            {revenueTrend.every((d) => d.revenue === 0) ? (
+              <p className="text-body-md text-on-surface-variant text-center py-lg">No verified payments in this period.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={revenueTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#006591" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#006591" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#e1e2ed" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "#737686" }}
+                    axisLine={{ stroke: "#e1e2ed" }}
+                    tickLine={false}
+                    interval={1}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#737686" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={48}
+                    tickFormatter={(v: number) => (v >= 1000 ? `${v / 1000}k` : String(v))}
+                  />
+                  <Tooltip
+                    formatter={(value) => [`Rs. ${Number(Array.isArray(value) ? value[0] : value ?? 0).toLocaleString()}`, "Revenue"]}
+                    contentStyle={{ borderRadius: 8, borderColor: "#c3c6d7", fontSize: 12 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#006591"
+                    strokeWidth={2}
+                    fill="url(#revenueFill)"
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+            <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm">
+            <h3 className="text-headline-md font-semibold mb-md">Appointments by Day — {monthLabel}</h3>
+            {appointments.length === 0 ? (
+              <p className="text-body-md text-on-surface-variant text-center py-lg">No appointments recorded yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dailyAppointmentsInMonth} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#e1e2ed" />
+                  <XAxis
+                    dataKey="day"
+                    tick={{ fontSize: 11, fill: "#737686" }}
+                    axisLine={{ stroke: "#e1e2ed" }}
+                    tickLine={false}
+                    interval={2}
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: "#737686" }} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
+                  <Tooltip
+                    labelFormatter={(day) => `${monthLabel.split(" ")[0]} ${day}`}
+                    contentStyle={{ borderRadius: 8, borderColor: "#c3c6d7", fontSize: 12 }}
+                  />
+                  <Bar dataKey="count" name="Appointments" fill="#006591" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+      </div>
+
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-xl items-start">
         {/* Left: Today's Schedule */}
@@ -194,7 +313,7 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                 </Link>
               </div>
             </div>
-            <div className="divide-y divide-outline-variant/20">
+            <div className="divide-y divide-outline-variant/20 max-h-105 overflow-y-auto">
               {selectedSchedule.length === 0 ? (
                 <p className="px-md py-lg text-center text-on-surface-variant text-body-md">
                   No appointments scheduled for {selectedDate === todayIso ? "today" : "this day"}.
@@ -226,36 +345,6 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                 })
               )}
             </div>
-          </div>
-
-          {/* Rating summary from data.json */}
-          <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm">
-            <h3 className="text-headline-md font-semibold mb-md">Rating Breakdown</h3>
-            <div className="flex items-center gap-lg mb-md">
-              <div className="text-center">
-                <p className="text-[48px] font-black text-primary leading-none">{doctor.rating.score}</p>
-                <p className="text-caption text-on-surface-variant">{doctor.rating.reviews_count} reviews</p>
-              </div>
-              <div className="flex-1 space-y-sm">
-                {Object.entries(doctor.rating.breakdown).map(([key, val]) => (
-                  <div key={key}>
-                    <div className="flex justify-between text-caption text-on-surface-variant mb-xs">
-                      <span className="capitalize">{key.replace(/_/g, " ")}</span>
-                      <span className="font-bold text-primary">{val}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                      <div
-                        className="bg-primary h-full rounded-full"
-                        style={{ width: val }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <p className="text-caption text-on-surface-variant">
-              {doctor.rating.satisfaction_percent}% patient satisfaction · {doctor.verification}
-            </p>
           </div>
         </div>
 
@@ -334,20 +423,7 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
             </div>
           </div>
 
-          {/* Contact card */}
-          <div className="bg-primary/5 p-md rounded-xl border border-primary/10">
-            <p className="text-label-md font-semibold text-on-surface mb-sm">Helpline</p>
-            <a href={`tel:${doctor.contact.helpline}`}
-              className="flex items-center gap-sm text-primary font-bold hover:underline">
-              <span className="material-symbols-outlined">call</span>
-              {doctor.contact.helpline}
-            </a>
-            <a href={doctor.contact.whatsapp} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-sm text-primary font-bold hover:underline mt-sm">
-              <span className="material-symbols-outlined">chat</span>
-              WhatsApp
-            </a>
-          </div>
+        
         </div>
       </div>
     </div>
