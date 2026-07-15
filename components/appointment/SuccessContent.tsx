@@ -184,28 +184,36 @@ export default function SuccessContent() {
   const isStripe = method === "stripe";
   const isReception = method === "reception";
 
-  const handleDownload = () => {
-    const content = [
-      "APPOINTMENT CONFIRMATION",
-      "========================",
-      `Reference: ${refNumber}`,
-      `Patient: ${patientName}`,
-      `Doctor: ${doctor.name}`,
-      ...(confirmation?.procedureName ? [`Procedure: ${confirmation.procedureName}`] : []),
-      `Clinic: ${clinicName}`,
-      `Date: ${formattedDate}`,
-      `Time: ${confirmation?.time ?? "—"}`,
-      `Fee: Rs. ${fee.toLocaleString()}`,
-      "",
-      "Present this at the clinic for check-in.",
-    ].join("\n");
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `appointment-${refNumber}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownload = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Appointment Confirmation", 14, 18);
+
+    autoTable(doc, {
+      startY: 26,
+      body: [
+        ["Reference", refNumber],
+        ["Patient", patientName],
+        ["Doctor", doctor.name],
+        ...(confirmation?.procedureName ? [["Procedure", confirmation.procedureName]] : []),
+        ["Clinic", clinicName],
+        ["Date", formattedDate],
+        ["Time", confirmation?.time ?? "—"],
+        ["Fee", `Rs. ${fee.toLocaleString()}`],
+      ],
+      styles: { fontSize: 11 },
+      theme: "plain",
+      columnStyles: { 0: { fontStyle: "bold", cellWidth: 40 } },
+    });
+
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+    doc.setFontSize(10);
+    doc.text("Present this at the clinic for check-in.", 14, finalY + 10);
+
+    doc.save(`appointment-${refNumber}.pdf`);
   };
 
   return (

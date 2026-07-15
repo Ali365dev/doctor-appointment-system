@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import LogoutButton from "@/components/auth/LogoutButton";
+import { doctor } from "@/lib/data";
 
 const navItems = [
   { label: "Dashboard", icon: "dashboard", href: "/admin/dashboard" },
@@ -13,7 +14,6 @@ const navItems = [
   { label: "Medical Records", icon: "folder_shared", href: "/admin/medical-records" },
   { label: "Payments", icon: "payments", href: "/admin/payments" },
   { label: "Procedures", icon: "medical_services", href: "/admin/procedures" },
-  { label: "Messages", icon: "mail", href: "/admin/messages" },
   { label: "Website CMS", icon: "web", href: "/admin/cms" },
   { label: "Settings", icon: "settings", href: "/admin/settings" },
 ];
@@ -76,6 +76,7 @@ export default function Sidebar({ user, mobileOpen = false, onClose }: SidebarPr
 
       {/* New Appointment CTA */}
       <div className="mt-auto border-t border-outline-variant/30 pt-md px-xs space-y-1">
+       
         <Link
           href="/book-appointment/step-1"
           onClick={onClose}

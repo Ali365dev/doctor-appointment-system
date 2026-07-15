@@ -555,7 +555,10 @@ export default function AppointmentsContent() {
             <thead>
               <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
                 {["Patient", "Appointment ID", "Phone", "Date & Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
-                  <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
+                  <th
+                    key={h}
+                    className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""} ${h === "Clinic" ? "w-45" : ""}`}
+                  >
                     {h}
                   </th>
                 ))}
@@ -608,8 +611,10 @@ export default function AppointmentsContent() {
                         <p className="text-body-md font-medium">{apt.date}</p>
                         <p className="text-caption text-on-surface-variant">{apt.time}</p>
                       </td>
-                      <td className="px-md py-md whitespace-nowrap">
-                        <p className="text-body-md text-on-surface-variant max-w-[180px] truncate">{clinicName(apt.clinicId)}</p>
+                      <td className="px-md py-md whitespace-nowrap w-45">
+                        <p className="text-body-md text-on-surface-variant max-w-45 truncate" title={clinicName(apt.clinicId)}>
+                          {clinicName(apt.clinicId)}
+                        </p>
                       </td>
                       <td className="px-md py-md whitespace-nowrap">
                         <span className="px-sm py-xs rounded-full bg-surface-container text-caption font-bold border border-outline-variant/30 capitalize">

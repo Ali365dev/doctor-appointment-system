@@ -48,6 +48,7 @@ export default async function PatientDashboardPage() {
       sub: upcoming ? upcoming.date : "Book your next visit",
       badge: upcoming?.date ?? "",
       badgeColor: "text-primary",
+      href: "/patient/appointments",
     },
     {
       icon: "history",
@@ -59,6 +60,7 @@ export default async function PatientDashboardPage() {
       badge: "All time",
       badgeColor: "text-on-surface-variant",
       valueSub: `/ ${completedCount} Completed`,
+      href: "/patient/appointments",
     },
     {
       icon: "check_circle",
@@ -69,6 +71,7 @@ export default async function PatientDashboardPage() {
       sub: mostRecent ? `Last: Rs. ${mostRecent.feeSnapshotPkr.toLocaleString()}` : "—",
       badge: "",
       badgeColor: "text-emerald-600",
+      href: "/patient/appointments",
     },
     {
       icon: "notifications_active",
@@ -77,6 +80,7 @@ export default async function PatientDashboardPage() {
       label: "Notifications",
       value: "0 Unread",
       sub: "No new notifications",
+      href: null,
     },
   ];
 
@@ -105,27 +109,38 @@ export default async function PatientDashboardPage() {
 
       {/* Summary Cards */}
       <section className="grid my-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
-        {summaryCards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className={`${card.iconBg} p-xs rounded-lg ${card.iconColor}`}>
-                <span className="material-symbols-outlined">{card.icon}</span>
+        {summaryCards.map((card) => {
+          const cardClassName = `bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md shadow-sm transition-all duration-300 block ${
+            card.href ? "hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 cursor-pointer" : ""
+          }`;
+          const cardBody = (
+            <>
+              <div className="flex justify-between items-start mb-4">
+                <div className={`${card.iconBg} p-xs rounded-lg ${card.iconColor}`}>
+                  <span className="material-symbols-outlined">{card.icon}</span>
+                </div>
+                {card.badge && <span className={`font-bold text-label-md ${card.badgeColor}`}>{card.badge}</span>}
               </div>
-              {card.badge && <span className={`font-bold text-label-md ${card.badgeColor}`}>{card.badge}</span>}
+              <h3 className="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">{card.label}</h3>
+              <div className="flex items-baseline gap-2">
+                <p className="text-headline-md font-bold text-on-surface">{card.value}</p>
+                {card.valueSub && (
+                  <span className="text-caption text-on-surface-variant">{card.valueSub}</span>
+                )}
+              </div>
+              <p className="text-caption text-on-surface-variant mt-2">{card.sub}</p>
+            </>
+          );
+          return card.href ? (
+            <Link key={card.label} href={card.href} className={cardClassName}>
+              {cardBody}
+            </Link>
+          ) : (
+            <div key={card.label} className={cardClassName}>
+              {cardBody}
             </div>
-            <h3 className="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">{card.label}</h3>
-            <div className="flex items-baseline gap-2">
-              <p className="text-headline-md font-bold text-on-surface">{card.value}</p>
-              {card.valueSub && (
-                <span className="text-caption text-on-surface-variant">{card.valueSub}</span>
-              )}
-            </div>
-            <p className="text-caption text-on-surface-variant mt-2">{card.sub}</p>
-          </div>
-        ))}
+          );
+        })}
       </section>
 
       {/* Appointments Table */}

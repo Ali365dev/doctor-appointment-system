@@ -7,6 +7,8 @@ import {
   createProcedure,
   isSlugTaken,
 } from "@/services/mongodb/repositories/procedure.repository";
+import { findClinicByNameMatch } from "@/services/mongodb/repositories/clinic.repository";
+import { upsertAssignment } from "@/services/mongodb/repositories/clinicProcedure.repository";
 
 export async function GET() {
   try {
@@ -63,6 +65,17 @@ export async function POST(req: NextRequest) {
       recoveryTime: body.recoveryTime?.trim() ?? "",
       faqs: body.faqs ?? [],
     });
+
+    // New procedures are only bookable at Faisal Hospital by default — there is
+    // no manual clinic-assignment UI anymore.
+    const faisal = await findClinicByNameMatch("faisal");
+    if (faisal) {
+      await upsertAssignment({
+        clinicId: String(faisal._id),
+        procedureId: String(procedure._id),
+        isActive: true,
+      });
+    }
 
     return NextResponse.json({ procedure }, { status: 201 });
   } catch (err) {

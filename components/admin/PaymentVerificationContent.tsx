@@ -204,21 +204,24 @@ export default function PaymentVerificationContent() {
     }
   }
 
-  function exportCSV() {
+  async function exportPDF() {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
     const header = ["Patient", "Phone", "Appointment", "Method", "Ref/TXN", "Amount (PKR)", "Status", "Date"];
-    const csvRows = filtered.map((r) => {
+    const bodyRows = filtered.map((r) => {
       const info = appointmentInfo(r.appointmentId);
-      return [info.name, info.phone, info.number, METHOD_LABEL[r.method], r.transactionRef ?? "", r.amountPkr, r.status, r.createdAt?.slice(0, 10)];
+      return [info.name, info.phone, info.number, METHOD_LABEL[r.method], r.transactionRef ?? "", r.amountPkr.toLocaleString(), r.status, r.createdAt?.slice(0, 10) ?? "—"];
     });
-    const csv = [header, ...csvRows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.text("Payments", 14, 14);
+    autoTable(doc, {
+      startY: 20,
+      head: [header],
+      body: bodyRows,
+      styles: { fontSize: 8 },
+    });
     const label = dateFrom && dateTo ? `${dateFrom}_to_${dateTo}` : "all";
-    a.download = `payments_${label}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    doc.save(`payments_${label}.pdf`);
   }
 
   const verifyInfo = verifyTarget ? appointmentInfo(verifyTarget.appointmentId) : null;
@@ -237,11 +240,11 @@ export default function PaymentVerificationContent() {
           <p className="text-body-md text-on-surface-variant">Review uploaded payment receipts and approve or reject payments.</p>
         </div>
         <button
-          onClick={exportCSV}
+          onClick={exportPDF}
           className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-xl text-label-md font-semibold hover:opacity-90 transition-all shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
-          Export CSV
+          Export PDF
         </button>
       </div>
 

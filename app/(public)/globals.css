@@ -219,13 +219,47 @@
   .pt-xs  { padding-top: var(--space-xs); }
   .pt-sm  { padding-top: var(--space-sm); }
   .pt-md  { padding-top: var(--space-md); }
+  .pt-lg  { padding-top: var(--space-lg); }
+  .pt-xl  { padding-top: var(--space-xl); }
 
   .pb-xs  { padding-bottom: var(--space-xs); }
   .pb-sm  { padding-bottom: var(--space-sm); }
   .pb-md  { padding-bottom: var(--space-md); }
+  .pb-lg  { padding-bottom: var(--space-lg); }
+  .pb-xl  { padding-bottom: var(--space-xl); }
 
   .pl-xs  { padding-left: var(--space-xs); }
   .pl-sm  { padding-left: var(--space-sm); }
+  .pl-md  { padding-left: var(--space-md); }
+  .pl-lg  { padding-left: var(--space-lg); }
+  .pl-xl  { padding-left: var(--space-xl); }
+
+  .pr-xs  { padding-right: var(--space-xs); }
+  .pr-sm  { padding-right: var(--space-sm); }
+  .pr-md  { padding-right: var(--space-md); }
+  .pr-lg  { padding-right: var(--space-lg); }
+  .pr-xl  { padding-right: var(--space-xl); }
+
+  /* absolute/relative position offsets */
+  .top-xs     { top: var(--space-xs); }
+  .top-sm     { top: var(--space-sm); }
+  .top-md     { top: var(--space-md); }
+  .top-lg     { top: var(--space-lg); }
+
+  .bottom-xs  { bottom: var(--space-xs); }
+  .bottom-sm  { bottom: var(--space-sm); }
+  .bottom-md  { bottom: var(--space-md); }
+  .bottom-lg  { bottom: var(--space-lg); }
+
+  .left-xs    { left: var(--space-xs); }
+  .left-sm    { left: var(--space-sm); }
+  .left-md    { left: var(--space-md); }
+  .left-lg    { left: var(--space-lg); }
+
+  .right-xs   { right: var(--space-xs); }
+  .right-sm   { right: var(--space-sm); }
+  .right-md   { right: var(--space-md); }
+  .right-lg   { right: var(--space-lg); }
 
   /* margin */
   .mt-xs  { margin-top: var(--space-xs); }
@@ -270,6 +304,19 @@ body {
   color: var(--color-on-surface);
   font-size: var(--text-body);
   line-height: var(--line-height-body);
+}
+
+/* Every <select> gets one consistent custom arrow instead of relying on
+   inconsistent native browser rendering. !important on padding-right only
+   overrides the right side, so components' own left-padding classes still work. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23434655' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 18px;
+  padding-right: 2.25rem !important;
 }
 
 /* ===================================

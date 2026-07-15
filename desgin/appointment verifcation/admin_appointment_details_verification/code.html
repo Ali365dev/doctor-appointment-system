@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Appointment Verification - DoctorPortal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#eeefff",
+                    "surface": "#faf8ff",
+                    "primary": "#004ac6",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-surface": "#191b23",
+                    "inverse-on-surface": "#f0f0fb",
+                    "surface-tint": "#0053db",
+                    "surface-dim": "#d9d9e5",
+                    "secondary-fixed-dim": "#89ceff",
+                    "on-primary-fixed": "#00174b",
+                    "secondary-container": "#39b8fd",
+                    "primary-fixed": "#dbe1ff",
+                    "on-secondary-fixed-variant": "#004c6e",
+                    "primary-container": "#2563eb",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#bc4800",
+                    "surface-container": "#ededf9",
+                    "inverse-surface": "#2e3039",
+                    "inverse-primary": "#b4c5ff",
+                    "secondary-fixed": "#c9e6ff",
+                    "outline-variant": "#c3c6d7",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#943700",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-primary": "#ffffff",
+                    "secondary": "#006591",
+                    "on-tertiary-fixed": "#360f00",
+                    "on-tertiary-container": "#ffede6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-highest": "#e1e2ed",
+                    "background": "#faf8ff",
+                    "on-surface-variant": "#434655",
+                    "outline": "#737686",
+                    "surface-container-low": "#f3f3fe",
+                    "on-background": "#191b23",
+                    "surface-container-high": "#e7e7f3",
+                    "surface-variant": "#e1e2ed",
+                    "surface-bright": "#faf8ff",
+                    "on-tertiary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#ffdbcd",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001e2f",
+                    "on-secondary-container": "#004666"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "0.5rem",
+                    "xl": "4rem",
+                    "gutter": "24px",
+                    "sm": "1rem",
+                    "md": "1.5rem",
+                    "lg": "2.5rem",
+                    "container-max": "1280px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "caption": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf8ff; }
+        .glass-header { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .sidebar-active { background-color: rgba(0, 74, 198, 0.1); border-radius: 0.5rem; color: #004ac6; font-weight: 700; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); }
+        .timeline-line::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background-color: #e1e2ed; }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col p-md z-50">
+<div class="mb-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">DoctorPortal</h1>
+<p class="text-caption text-on-surface-variant">Clinical Authority</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-primary font-bold bg-primary-container/10 rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-body-md text-body-md">Appointments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-md text-body-md">Patients</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md text-body-md">Payments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-body-md text-body-md">Messages</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">star</span>
+<span class="font-body-md text-body-md">Reviews</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">web</span>
+<span class="font-body-md text-body-md">Website CMS</span>
+</a>
+</nav>
+<div class="mt-auto pt-md border-t border-outline-variant flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A professional studio headshot of a senior medical specialist with a calm, authoritative expression, wearing a white clinical coat and a stethoscope. The background is a clean, softly lit medical office with cool blue accents, reflecting a high-end, reliable healthcare professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCR3FyNAVIpLfLeXgut4mPZ7CuXP2Fg8C8qePz2sd2x5nBHzJcdTW4OgI03Fsx4EPOh4YE-qnINeRJGUjaRaYB5FA5IhsPjjPUgLICdHBM7nhLZ7sXF3qDsosTHnTLvHXXyOfXZ5rvlu6E5f-PX8Z0iExuKivxosxcv7hEmovKXvWryUIjrt1QKcyB4cNmtzKVjuE4_l0cdrCh4uGprEHNW_1IQobmvS5a5nH29C0GXJuYi4Oi1KlGuklae2jNdIQ6eB6JyX10vKwo"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Dr. Specialist</p>
+<p class="text-caption text-on-surface-variant">Admin Level 4</p>
+</div>
+<a class="ml-auto text-on-surface-variant hover:text-primary" href="#">
+<span class="material-symbols-outlined">settings</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 ml-64 px-lg w-[calc(100%-16rem)] sticky top-0 bg-surface/70 backdrop-blur-xl border-b border-outline-variant z-40">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors font-label-md" onclick="window.history.back()">
+<span class="material-symbols-outlined">arrow_back</span>
+                Back to Search
+            </button>
+<div class="h-6 w-px bg-outline-variant"></div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Appointment Details</h2>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 p-lg max-w-[1400px]">
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left Column: Patient & Appointment Cards -->
+<div class="col-span-12 lg:col-span-8 space-y-md">
+<!-- Patient Profile Card -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md card-shadow">
+<div class="flex items-start justify-between mb-md">
+<div class="flex items-center gap-4">
+<div class="w-16 h-16 bg-primary-fixed text-on-primary-fixed rounded-full flex items-center justify-center font-bold text-headline-md">
+                                JP
+                            </div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">James Patterson</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded text-caption font-semibold">ID: SP-8821</span>
+<span class="text-on-surface-variant text-caption">•</span>
+<span class="text-on-surface-variant text-caption">42 Years • Male</span>
+</div>
+</div>
+</div>
+<button class="text-primary hover:underline font-label-md">View Full Record</button>
+</div>
+<div class="grid grid-cols-3 gap-md border-t border-outline-variant pt-md">
+<div>
+<p class="text-caption text-on-surface-variant uppercase tracking-wider mb-1">Email Address</p>
+<p class="font-body-md text-body-md">james.p@example.com</p>
+</div>
+<div>
+<p class="text-caption text-on-surface-variant uppercase tracking-wider mb-1">Phone Number</p>
+<p class="font-body-md text-body-md">+92 300 1234567</p>
+</div>
+<div>
+<p class="text-caption text-on-surface-variant uppercase tracking-wider mb-1">Emergency Contact</p>
+<p class="font-body-md text-body-md">Sarah Patterson (Wife)</p>
+</div>
+</div>
+</section>
+<!-- Appointment Details Card -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md card-shadow">
+<h4 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mb-md">Appointment Information</h4>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+<div class="space-y-1">
+<p class="text-caption text-on-surface-variant">Schedule</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Oct 24, 2023</p>
+<p class="text-caption text-on-surface-variant">10:30 AM — 11:00 AM</p>
+</div>
+<div class="space-y-1">
+<p class="text-caption text-on-surface-variant">Visit Type</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">clinical_notes</span>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Clinic Consultation</p>
+</div>
+</div>
+<div class="space-y-1">
+<p class="text-caption text-on-surface-variant">Status</p>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary-fixed text-on-secondary-fixed-variant">
+                                Confirmed
+                            </span>
+</div>
+<div class="space-y-1">
+<p class="text-caption text-on-surface-variant">Clinic Location</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface">City Specialist Wing</p>
+<p class="text-caption text-on-surface-variant">Room 402, 4th Floor</p>
+</div>
+</div>
+</section>
+<!-- Payment Verification Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md card-shadow">
+<div class="flex items-center justify-between mb-md">
+<h4 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Payment Verification</h4>
+<span class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Under Review</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="space-y-md">
+<div class="p-md bg-surface-container-low rounded-lg border border-outline-variant/50">
+<div class="flex justify-between items-center mb-2">
+<span class="text-on-surface-variant font-body-md">Payment Method</span>
+<span class="font-semibold text-on-surface">JazzCash (Manual)</span>
+</div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-on-surface-variant font-body-md">Transaction ID</span>
+<span class="font-mono text-on-surface">JC88219904X</span>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-outline-variant">
+<span class="text-on-surface font-bold">Total Amount</span>
+<span class="text-headline-md font-bold text-primary">Rs. 2,500</span>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="flex-1 text-center py-2 px-4 rounded-lg border border-outline bg-surface-container-highest text-on-surface font-semibold opacity-50 cursor-not-allowed">Pending</span>
+<span class="flex-1 text-center py-2 px-4 rounded-lg border-2 border-primary bg-primary/5 text-primary font-bold shadow-sm">Under Review</span>
+<span class="flex-1 text-center py-2 px-4 rounded-lg border border-outline-variant hover:bg-primary-container/10 transition-colors cursor-pointer text-on-surface-variant">Paid</span>
+</div>
+</div>
+<div>
+<p class="text-caption text-on-surface-variant mb-2">Uploaded Receipt Image</p>
+<div class="relative group cursor-zoom-in overflow-hidden rounded-xl border-2 border-outline-variant hover:border-primary transition-all">
+<img class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg"/>
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 text-display">fullscreen</span>
+</div>
+</div>
+<p class="text-center text-caption text-on-surface-variant mt-2 italic">Click to enlarge proof of payment</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Admin Actions & History -->
+<div class="col-span-12 lg:col-span-4 space-y-md">
+<!-- Admin Actions Panel -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md card-shadow sticky top-24">
+<h4 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mb-md">Administrative Actions</h4>
+<form class="space-y-md">
+<div class="space-y-1.5">
+<label class="font-label-md text-on-surface">Update Appointment Status</label>
+<select class="w-full h-11 px-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+<option>Pending</option>
+<option selected="">Confirmed</option>
+<option>Completed</option>
+<option>Cancelled</option>
+<option>No Show</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="font-label-md text-on-surface">Update Payment Status</label>
+<select class="w-full h-11 px-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+<option>Pending</option>
+<option selected="">Under Review</option>
+<option>Paid</option>
+<option>Failed</option>
+<option>Refunded</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="font-label-md text-on-surface">Internal Admin Notes</label>
+<textarea class="w-full px-3 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none font-body-md" placeholder="Add specific details about the verification or issues encountered..." rows="4"></textarea>
+</div>
+<button class="w-full py-3 bg-primary text-white font-bold rounded-lg shadow-lg hover:bg-surface-tint transition-all active:scale-[0.98]" type="submit">
+                            Save Changes &amp; Notify Patient
+                        </button>
+</form>
+<div class="mt-lg pt-lg border-t border-outline-variant">
+<h5 class="font-label-md text-on-surface-variant uppercase tracking-widest mb-md">Modification Timeline</h5>
+<div class="relative pl-8 space-y-md timeline-line">
+<div class="relative">
+<span class="absolute -left-8 w-6 h-6 bg-primary-container rounded-full flex items-center justify-center z-10 border-4 border-surface-container-lowest">
+<span class="material-symbols-outlined text-[12px] text-white" style="font-variation-settings: 'FILL' 1;">check</span>
+</span>
+<div>
+<p class="font-label-md text-on-surface">Appointment Confirmed</p>
+<p class="text-caption text-on-surface-variant">Oct 22, 11:45 AM • Admin: AS</p>
+</div>
+</div>
+<div class="relative">
+<span class="absolute -left-8 w-6 h-6 bg-tertiary-container rounded-full flex items-center justify-center z-10 border-4 border-surface-container-lowest">
+<span class="material-symbols-outlined text-[12px] text-white" style="font-variation-settings: 'FILL' 1;">sync</span>
+</span>
+<div>
+<p class="font-label-md text-on-surface">Payment: Marked Under Review</p>
+<p class="text-caption text-on-surface-variant">Oct 22, 11:44 AM • Admin: AS</p>
+</div>
+</div>
+<div class="relative">
+<span class="absolute -left-8 w-6 h-6 bg-surface-variant rounded-full flex items-center justify-center z-10 border-4 border-surface-container-lowest">
+<span class="material-symbols-outlined text-[12px] text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">description</span>
+</span>
+<div>
+<p class="font-label-md text-on-surface">Receipt Uploaded by Patient</p>
+<p class="text-caption text-on-surface-variant">Oct 21, 09:20 PM</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Success Modal Interaction (Hidden by default) -->
+<div class="fixed bottom-8 right-8 bg-on-surface text-surface px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 translate-y-24 opacity-0 transition-all duration-300 pointer-events-none z-[60]" id="success-toast">
+<div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-white">check</span>
+</div>
+<div>
+<p class="font-bold">Record Updated</p>
+<p class="text-caption opacity-80">Notification sent to James Patterson via SMS/Email.</p>
+</div>
+</div>
+<script>
+        // Simple Interaction Logic
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const toast = document.getElementById('success-toast');
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 4000);
+        });
+
+        // Receipt Image Zoom simulation
+        const receiptImg = document.querySelector('[src="{{DATA:IMAGE:IMAGE_9}}"]').parentElement;
+        receiptImg.addEventListener('click', () => {
+            alert('Opening full-screen clinical verification lightbox for receipt detail analysis.');
+        });
+    </script>
+</body></html>

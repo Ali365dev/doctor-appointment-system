@@ -1,6 +1,6 @@
 import { connectDB } from "../connection";
 import ClinicProcedure, { type ClinicProcedureDoc } from "../models/ClinicProcedure";
-import "../models/Clinic"; // registers "Clinic" for populate("clinicId")
+import Clinic from "../models/Clinic"; // registers "Clinic" for populate("clinicId")
 import "../models/Procedure"; // registers "Procedure" for populate("procedureId")
 import type { DayOfWeek } from "@/types/clinic";
 
@@ -16,6 +16,18 @@ export interface ClinicProcedureInput {
 export async function findAssignmentsForProcedure(procedureId: string): Promise<ClinicProcedureDoc[]> {
   await connectDB();
   return ClinicProcedure.find({ procedureId }).populate("clinicId", "name city address").lean<ClinicProcedureDoc[]>();
+}
+
+/** Procedure ids that are bookable — assigned to at least one active clinic, with the assignment itself active. */
+export async function findProcedureIdsWithActiveAssignment(): Promise<Set<string>> {
+  await connectDB();
+  const activeClinicIds = await Clinic.find({ isActive: true }, { _id: 1 }).lean<{ _id: unknown }[]>();
+  const clinicIdSet = new Set(activeClinicIds.map((c) => String(c._id)));
+  const assignments = await ClinicProcedure.find(
+    { isActive: true, clinicId: { $in: [...clinicIdSet] } },
+    { procedureId: 1 }
+  ).lean<{ procedureId: unknown }[]>();
+  return new Set(assignments.map((a) => String(a.procedureId)));
 }
 
 export async function findAssignmentsForClinic(clinicId: string): Promise<ClinicProcedureDoc[]> {

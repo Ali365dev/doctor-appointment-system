@@ -39,6 +39,11 @@ export async function findClinicById(clinicId: string): Promise<ClinicDoc | null
   return Clinic.findById(clinicId).lean<ClinicDoc>();
 }
 
+export async function findClinicByNameMatch(pattern: string): Promise<ClinicDoc | null> {
+  await connectDB();
+  return Clinic.findOne({ name: new RegExp(pattern, "i") }).lean<ClinicDoc>();
+}
+
 export async function createClinic(input: ClinicInput): Promise<ClinicDoc> {
   await connectDB();
   const doc = await Clinic.create(input);

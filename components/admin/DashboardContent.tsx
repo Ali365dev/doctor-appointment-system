@@ -280,9 +280,9 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                 { icon: "qr_code_scanner", label: "Verify Appointment", href: "/admin/appointments/verify", color: "text-primary" },
                 { icon: "payments", label: "Review Payments", href: "/admin/payments", color: "text-secondary" },
                 { icon: "group", label: "Patient Directory", href: "/admin/patients", color: "text-tertiary" },
-                { icon: "chat", label: "Messages", href: "/admin/messages", color: "text-on-surface-variant" },
-              ].map(({ icon, label, href, color }) => (
-                <Link key={label} href={href}
+                { icon: "chat", label: "Contact on WhatsApp", href: doctor.contact.whatsapp, color: "text-on-surface-variant", external: true },
+              ].map(({ icon, label, href, color, external }) => (
+                <Link key={label} href={href} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="flex items-center gap-sm px-sm py-xs rounded-lg hover:bg-surface-container-high transition-colors group">
                   <span className={`material-symbols-outlined ${color}`}>{icon}</span>
                   <span className="text-body-md text-on-surface group-hover:text-primary transition-colors">{label}</span>

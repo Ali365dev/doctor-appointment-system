@@ -15,6 +15,7 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 interface AppointmentSummary {
   clinicName: string;
+  procedureName?: string;
   date: string;
   time: string;
   feeSnapshotPkr: number;
@@ -60,6 +61,7 @@ export default function UploadReceiptContent() {
         if (!cancelled && res.ok) {
           setRemoteSummary({
             clinicName: data.confirmation.clinicName,
+            procedureName: data.confirmation.procedureName,
             date: data.confirmation.date,
             time: data.confirmation.time,
             feeSnapshotPkr: data.confirmation.feeSnapshotPkr,
@@ -79,6 +81,7 @@ export default function UploadReceiptContent() {
 
   const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? remoteSummary?.feeSnapshotPkr ?? doctor.fee_summary.min_fee_pkr;
   const clinicLabel = selectedClinic?.name ?? remoteSummary?.clinicName ?? "—";
+  const procedureName = selectedProcedure?.name ?? remoteSummary?.procedureName ?? null;
   const dateValue = selectedDate ?? remoteSummary?.date ?? null;
   const timeLabel = selectedTime ?? remoteSummary?.time ?? "—";
   const appointmentNumber = storeAppointmentNumber ?? remoteSummary?.appointmentNumber;
@@ -350,6 +353,7 @@ export default function UploadReceiptContent() {
 
             <div className="space-y-3 pt-3 border-t border-outline-variant/10">
               {[
+                ...(procedureName ? [{ icon: "medical_services", label: "Procedure", value: procedureName }] : []),
                 { icon: "location_on", label: "Clinic", value: clinicLabel },
                 { icon: "calendar_today", label: "Date", value: formattedDate },
                 { icon: "schedule", label: "Time", value: timeLabel },

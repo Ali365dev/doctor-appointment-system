@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { toast } from "react-toastify";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import type { AppointmentStatus, VisitType } from "@/types/appointment";
+import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 
-interface StatusHistoryEntry {
-  status: AppointmentStatus;
-  changedAt: string;
-  changedBy: string;
-  note?: string;
+interface ApiPayment {
+  method: PaymentMethod;
+  status: PaymentStatus;
 }
 
 interface ApiAppointment {
@@ -18,12 +17,9 @@ interface ApiAppointment {
   visitType: VisitType;
   date: string;
   time: string;
-  reason?: string;
   patientSnapshot: { fullName: string; phone: string };
-  feeSnapshotPkr: number;
-  paymentMethod?: string;
+  paymentId?: ApiPayment | string;
   status: AppointmentStatus;
-  statusHistory: StatusHistoryEntry[];
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -38,17 +34,48 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
   no_show: "No Show",
 };
 
+const STATUS_BADGE: Record<AppointmentStatus, string> = {
+  pending_payment: "bg-amber-100 text-amber-700",
+  payment_submitted: "bg-amber-100 text-amber-700",
+  payment_verification: "bg-amber-100 text-amber-700",
+  confirmed: "bg-primary-container text-on-primary-container",
+  completed: "bg-blue-100 text-blue-700",
+  cancelled: "bg-error/10 text-error",
+  rejected: "bg-error/10 text-error",
+  rescheduled: "bg-primary/10 text-primary",
+  no_show: "bg-gray-100 text-gray-700",
+};
+
+const PAYMENT_STATUS_META: Record<PaymentStatus, { label: string; badgeClass: string; icon: string }> = {
+  pending: { label: "Pending", badgeClass: "bg-surface-container-high text-on-surface-variant", icon: "pending" },
+  submitted: { label: "Under Review", badgeClass: "bg-amber-100 text-amber-700", icon: "hourglass_top" },
+  verified: { label: "Paid", badgeClass: "bg-green-100 text-green-700", icon: "check_circle" },
+  rejected: { label: "Rejected", badgeClass: "bg-error/10 text-error", icon: "cancel" },
+  failed: { label: "Failed", badgeClass: "bg-error/10 text-error", icon: "error" },
+  refunded: { label: "Refunded", badgeClass: "bg-purple-100 text-purple-700", icon: "undo" },
+};
+
+const PAGE_SIZE = 5;
+
 function clinicName(clinicId: ApiAppointment["clinicId"]): string {
   return typeof clinicId === "string" ? clinicId : clinicId?.name ?? "—";
 }
 
+function getPayment(apt: ApiAppointment): ApiPayment | null {
+  return apt.paymentId && typeof apt.paymentId === "object" ? apt.paymentId : null;
+}
+
+function initialsOf(name: string): string {
+  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
+
 export default function AppointmentVerificationContent() {
+  const router = useRouter();
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [phone, setPhone] = useState("");
-  const [result, setResult] = useState<ApiAppointment | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -57,210 +84,187 @@ export default function AppointmentVerificationContent() {
         const data = await res.json();
         if (res.ok) setAppointments(data.appointments ?? []);
       } catch {
-        // Search will simply return no results if this fails.
+        // List simply stays empty if this fails.
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
 
-  function handleSearch() {
-    const term = searchTerm.trim().toLowerCase();
-    const phoneTerm = phone.trim();
-    if (!term && !phoneTerm) {
-      toast.error("Enter an appointment ID, patient name, or phone number.");
-      return;
-    }
-    const match = appointments.find((a) => {
-      const matchesTerm =
-        !term ||
-        a.appointmentNumber.toLowerCase().includes(term) ||
-        a.patientSnapshot.fullName.toLowerCase().includes(term);
-      const matchesPhone = !phoneTerm || a.patientSnapshot.phone.includes(phoneTerm);
-      return matchesTerm && matchesPhone;
-    });
-    if (!match) {
-      setResult(null);
-      setNotFound(true);
-      return;
-    }
-    setNotFound(false);
-    setResult(match);
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const list = !term
+      ? appointments
+      : appointments.filter(
+          (a) =>
+            a.appointmentNumber.toLowerCase().includes(term) ||
+            a.patientSnapshot.fullName.toLowerCase().includes(term) ||
+            a.patientSnapshot.phone.includes(term)
+        );
+    return [...list].sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1));
+  }, [appointments, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  function runSearch() {
+    setSearch(searchInput);
+    setPage(1);
   }
 
-  async function updateStatus(status: AppointmentStatus) {
-    if (!result) return;
-    setBusy(true);
-    try {
-      const endpoint = status === "cancelled" ? `/api/appointments/${result._id}/cancel` : `/api/appointments/${result._id}`;
-      const res = await fetch(endpoint, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: status === "cancelled" ? undefined : JSON.stringify({ status }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not update appointment");
-        return;
-      }
-      setResult(data.appointment);
-      toast.success("Appointment updated");
-    } catch {
-      toast.error("Network error");
-    } finally {
-      setBusy(false);
-    }
+  function goToDetails(id: string) {
+    router.push(`/admin/appointments/verify/${id}`);
   }
 
   return (
-    <div className="px-gutter py-lg max-w-[1280px] mx-auto">
+    <div className="px-gutter py-lg max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-xl">
-        <h2 className="text-headline-lg font-bold text-on-surface">Appointment Verification</h2>
-        <p className="text-body-lg text-on-surface-variant">Search by Appointment ID, patient name, or phone number to verify a booking.</p>
+      <div className="mb-lg">
+        <h2 className="text-headline-lg font-bold text-primary mb-xs">Appointment Verification</h2>
+        <p className="text-body-md text-on-surface-variant">Verify patient identity and clinical appointments instantly.</p>
       </div>
 
-      {/* Search Card */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm max-w-2xl mb-xl">
-        <div className="flex items-center gap-xs mb-md">
-          <span className="material-symbols-outlined text-primary">search_check</span>
-          <h3 className="text-headline-md font-semibold text-on-surface">Search Appointment</h3>
-        </div>
-        <div className="space-y-md">
-          <div>
-            <label className="block text-label-md text-on-surface-variant mb-xs">Appointment # or Patient Name</label>
+      {/* Search Area */}
+      <div className="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant mb-lg">
+        <div className="flex flex-col md:flex-row gap-md">
+          <div className="flex-1 relative">
+            <span className="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline pointer-events-none">
+              search
+            </span>
             <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-body-md"
-              placeholder="APT-260705-0001 or Ahmed Khan"
-              type="text"
-            />
-          </div>
-          <div>
-            <label className="block text-label-md text-on-surface-variant mb-xs">Phone Number</label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full border border-outline rounded-lg h-12 px-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-              placeholder="+92 300 0000000"
-              type="tel"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runSearch()}
+              placeholder="Appointment ID, Patient Name, or Phone…"
+              className="w-full pl-12 pr-md py-md bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-body-md"
             />
           </div>
           <button
-            onClick={handleSearch}
-            className="w-full border border-primary text-primary text-label-md h-12 rounded-lg hover:bg-primary/5 transition-all"
+            onClick={runSearch}
+            className="px-lg bg-primary text-on-primary text-label-md rounded-lg flex items-center justify-center gap-xs hover:brightness-110 transition-all shadow-md active:scale-95"
           >
-            Search Appointment
+            <span className="material-symbols-outlined">manage_search</span>
+            Search
           </button>
         </div>
       </div>
 
-      {notFound && (
-        <div className="bg-error/10 border border-error/30 rounded-xl p-md flex items-center gap-md mb-gutter max-w-2xl">
-          <span className="material-symbols-outlined text-error">error</span>
-          <p className="text-body-md text-error">No appointment matched that search. Check the details and try again.</p>
+      {/* Results */}
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
+        <div className="flex flex-col gap-md p-md">
+          {loading ? (
+            <p className="text-center text-body-md text-on-surface-variant py-xl">Loading appointments…</p>
+          ) : pageItems.length === 0 ? (
+            <p className="text-center text-body-md text-on-surface-variant py-xl">
+              No appointments matched that search.
+            </p>
+          ) : (
+            pageItems.map((apt) => {
+              const payment = getPayment(apt);
+              const paymentMeta = payment ? PAYMENT_STATUS_META[payment.status] : null;
+              return (
+                <div
+                  key={apt._id}
+                  className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-lg shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-center justify-between gap-lg"
+                >
+                  {/* Identity */}
+                  <div className="flex items-center gap-sm flex-1 w-full md:w-auto">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-label-md">
+                      {initialsOf(apt.patientSnapshot.fullName)}
+                    </div>
+                    <div>
+                      <h3 className="text-label-md font-bold text-on-surface">{apt.patientSnapshot.fullName}</h3>
+                      <p className="text-caption text-outline">ID: {apt.appointmentNumber}</p>
+                      <p className="text-caption text-outline">{apt.patientSnapshot.phone}</p>
+                    </div>
+                  </div>
+
+                  {/* Schedule / location */}
+                  <div className="flex flex-col gap-xs flex-[2] w-full md:w-auto md:border-l border-outline-variant/30 md:pl-lg">
+                    <div className="flex items-center gap-xs text-on-surface">
+                      <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
+                      <span className="text-body-md font-medium">{apt.date} • {apt.time}</span>
+                    </div>
+                    <div className="flex items-center gap-xs text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[20px]">
+                        {apt.visitType === "online" ? "videocam" : "location_on"}
+                      </span>
+                      <span className="text-body-md">
+                        {apt.visitType === "online" ? "Remote Consultation" : clinicName(apt.clinicId)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status + actions */}
+                  <div className="flex flex-col items-end gap-sm shrink-0 w-full md:w-auto">
+                    <div className="flex gap-xs flex-wrap justify-end">
+                      {paymentMeta && (
+                        <span className={`inline-flex items-center gap-1 px-sm py-xs rounded-full text-caption font-bold ${paymentMeta.badgeClass}`}>
+                          <span className="material-symbols-outlined text-[14px]">{paymentMeta.icon}</span>
+                          {paymentMeta.label}
+                        </span>
+                      )}
+                      <span className={`inline-flex items-center px-sm py-xs rounded-full text-caption font-bold ${STATUS_BADGE[apt.status]}`}>
+                        {STATUS_LABEL[apt.status]}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-xs">
+                      <button
+                        onClick={() => goToDetails(apt._id)}
+                        className="px-lg py-xs bg-primary text-on-primary text-label-md rounded-lg hover:brightness-110 transition-all shadow-sm active:scale-95"
+                      >
+                        Verify Appointment
+                      </button>
+                      <button
+                        onClick={() => goToDetails(apt._id)}
+                        title="View Details"
+                        className="p-xs rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors"
+                      >
+                        <span className="material-symbols-outlined">visibility</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
-      )}
 
-      {/* Verification Result */}
-      {result && (
-        <>
-          {/* Success Banner */}
-          <div className="bg-green-50 border border-green-200 rounded-xl p-md flex items-center gap-md mb-gutter">
-            <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-200 shrink-0">
-              <span className="material-symbols-outlined text-white text-[28px]">check</span>
-            </div>
-            <div>
-              <h4 className="text-headline-md text-green-900">Appointment Found</h4>
-              <p className="text-body-md text-green-700">Reviewing details for {result.patientSnapshot.fullName}.</p>
-            </div>
-          </div>
-
-          {/* Patient Details */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-md overflow-hidden">
-            <div className="p-lg grid grid-cols-1 lg:grid-cols-3 gap-xl">
-              {/* Patient Identity */}
-              <div className="lg:col-span-1 border-r border-outline-variant/50 pr-lg">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-24 h-24 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-md border-4 border-surface-container shadow-sm text-headline-lg font-bold">
-                    {result.patientSnapshot.fullName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
-                  </div>
-                  <h3 className="text-headline-md text-on-surface">{result.patientSnapshot.fullName}</h3>
-                  <p className="text-body-md text-primary font-medium">{result.appointmentNumber}</p>
-                  <div className="mt-md space-y-sm w-full">
-                    {[
-                      ["Date", result.date],
-                      ["Time", result.time],
-                      ["Clinic", clinicName(result.clinicId)],
-                      ["Type", result.visitType === "online" ? "Online Consultation" : "In-Clinic Visit"],
-                      ["Status", STATUS_LABEL[result.status]],
-                      ["Fee", `Rs. ${result.feeSnapshotPkr.toLocaleString()}`],
-                    ].map(([label, val]) => (
-                      <div key={label} className="flex justify-between items-center text-caption py-xs border-b border-outline-variant/30 last:border-0">
-                        <span className="text-on-surface-variant uppercase tracking-wider">{label}</span>
-                        <span className="text-on-surface font-semibold">{val}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Journey */}
-              <div className="lg:col-span-2">
-                <h4 className="text-label-md text-on-surface-variant uppercase tracking-widest mb-md">Status History</h4>
-                <div className="space-y-sm mb-xl">
-                  {result.statusHistory.length === 0 ? (
-                    <p className="text-body-md text-on-surface-variant">No history recorded yet.</p>
-                  ) : (
-                    result.statusHistory.map((entry, i) => (
-                      <div key={i} className="flex items-center gap-sm p-sm bg-surface-container-low rounded-lg">
-                        <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[16px]">check</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-body-md font-semibold text-on-surface">{STATUS_LABEL[entry.status]}</p>
-                          <p className="text-caption text-on-surface-variant">
-                            {new Date(entry.changedAt).toLocaleString()} · {entry.changedBy}
-                            {entry.note ? ` · ${entry.note}` : ""}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {result.reason && (
-                  <div className="p-md bg-surface-container-low rounded-lg border border-outline-variant/30 mb-xl">
-                    <h5 className="text-label-md text-on-surface-variant mb-xs">Reason for Visit</h5>
-                    <p className="text-body-md text-on-surface font-medium">{result.reason}</p>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-sm">
-                  {result.status === "confirmed" && (
-                    <button
-                      disabled={busy}
-                      onClick={() => updateStatus("completed")}
-                      className="bg-primary text-on-primary text-label-md h-12 px-lg rounded-lg shadow-sm hover:brightness-110 flex items-center gap-xs transition-all disabled:opacity-60"
-                    >
-                      <span className="material-symbols-outlined">task_alt</span> Mark Completed
-                    </button>
-                  )}
-                  {result.status !== "cancelled" && result.status !== "completed" && result.status !== "rejected" && (
-                    <button
-                      disabled={busy}
-                      onClick={() => updateStatus("cancelled")}
-                      className="border border-error text-error text-label-md h-12 px-md rounded-lg hover:bg-error/5 transition-all flex items-center gap-xs disabled:opacity-60"
-                    >
-                      <span className="material-symbols-outlined">cancel</span> Cancel Appointment
-                    </button>
-                  )}
-                </div>
-              </div>
+        {filtered.length > 0 && (
+          <div className="bg-surface-container-low px-md py-sm flex items-center justify-between border-t border-outline-variant rounded-b-xl">
+            <p className="text-caption text-on-surface-variant">
+              Showing {pageItems.length} of {filtered.length} results
+            </p>
+            <div className="flex items-center gap-xs">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-xs hover:bg-surface-container-highest rounded-lg transition-colors text-on-surface-variant disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined">chevron_left</span>
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-caption font-label-md transition-colors ${
+                    p === page ? "bg-primary text-on-primary" : "hover:bg-surface-container-highest text-on-surface-variant"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-xs hover:bg-surface-container-highest rounded-lg transition-colors text-on-surface-variant disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined">chevron_right</span>
+              </button>
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export default function ReportsFilters({
     <div className="space-y-sm">
       <div className="flex flex-wrap items-center gap-sm">
         <div className="relative flex-1 min-w-[200px]">
-          <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-body-lg pointer-events-none">
+          <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 leading-none text-on-surface-variant text-[20px] pointer-events-none">
             search
           </span>
           <input

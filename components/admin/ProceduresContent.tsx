@@ -36,13 +36,6 @@ interface Clinic {
   city: string;
 }
 
-interface ClinicAssignment {
-  clinicId: Clinic | string;
-  priceOverridePkr?: number;
-  durationOverrideMinutes?: number;
-  isActive: boolean;
-}
-
 const EMPTY_FORM = {
   name: "",
   slug: "",
@@ -79,9 +72,6 @@ export default function ProceduresContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
-  const [assignId, setAssignId] = useState<string | null>(null);
-  const [assignments, setAssignments] = useState<ClinicAssignment[]>([]);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
   const loadProcedures = async () => {
     setLoading(true);
@@ -143,57 +133,6 @@ export default function ProceduresContent() {
     setErrors({});
     setSlugTouched(true);
     setModalOpen(true);
-  };
-
-  const openAssign = async (p: Procedure) => {
-    setAssignId(p._id);
-    setAssignmentsLoading(true);
-    try {
-      const res = await fetch(`/api/procedures/${p._id}/clinics`);
-      const data = await res.json();
-      if (res.ok) setAssignments(data.assignments ?? []);
-    } catch {
-      toast.error("Could not load clinic assignments");
-    } finally {
-      setAssignmentsLoading(false);
-    }
-  };
-
-  const clinicAssignment = (clinicId: string) =>
-    assignments.find((a) => (typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id) === clinicId);
-
-  const upsertClinicAssignment = async (
-    procedureId: string,
-    clinicId: string,
-    input: { priceOverridePkr?: number | null; durationOverrideMinutes?: number | null; isActive?: boolean }
-  ) => {
-    const existing = clinicAssignment(clinicId);
-    const res = await fetch(
-      existing ? `/api/procedures/${procedureId}/clinics/${clinicId}` : `/api/procedures/${procedureId}/clinics`,
-      {
-        method: existing ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(existing ? input : { clinicId, ...input }),
-      }
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error ?? "Could not update clinic assignment");
-      return;
-    }
-    setAssignments((prev) => {
-      const withoutThis = prev.filter((a) => (typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id) !== clinicId);
-      return [...withoutThis, data.assignment];
-    });
-  };
-
-  const removeClinicAssignment = async (procedureId: string, clinicId: string) => {
-    const res = await fetch(`/api/procedures/${procedureId}/clinics/${clinicId}`, { method: "DELETE" });
-    if (res.ok) {
-      setAssignments((prev) =>
-        prev.filter((a) => (typeof a.clinicId === "string" ? a.clinicId : a.clinicId._id) !== clinicId)
-      );
-    }
   };
 
   const handleImageUpload = async (procedureId: string, file: File) => {
@@ -352,7 +291,10 @@ export default function ProceduresContent() {
             <thead>
               <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
                 {["Name", "Location", "Price", "Original Price", "Discount", "Status", "Actions"].map((h, i, arr) => (
-                  <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
+                  <th
+                    key={h}
+                    className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""} ${h === "Name" ? "w-60" : ""}`}
+                  >
                     {h}
                   </th>
                 ))}
@@ -381,8 +323,8 @@ export default function ProceduresContent() {
                 }
                 return visible.map((p) => (
                   <tr key={p._id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-on-surface">
-                      {p.name}
+                    <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-on-surface w-60">
+                      <p className="max-w-60 truncate" title={p.name}>{p.name}</p>
                     </td>
                     <td className="px-md py-md text-body-md text-on-surface-variant max-w-[220px] truncate">
                       {p.location}
@@ -411,13 +353,6 @@ export default function ProceduresContent() {
                     </td>
                     <td className="px-md py-md text-right">
                       <div className="flex items-center justify-end gap-xs">
-                        <button
-                          onClick={() => openAssign(p)}
-                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                          title="Assign to Clinics"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">domain</span>
-                        </button>
                         <button
                           onClick={() => openEdit(p)}
                           className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
@@ -770,88 +705,6 @@ export default function ProceduresContent() {
         </div>
       )}
 
-      {/* Assign to Clinics modal */}
-      {assignId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
-          <div className="bg-surface rounded-2xl shadow-2xl max-w-lg w-full mx-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant/30 sticky top-0 bg-surface z-10">
-              <h3 className="text-headline-md font-bold text-on-surface">
-                Assign &ldquo;{procedures.find((p) => p._id === assignId)?.name}&rdquo; to Clinics
-              </h3>
-              <button
-                onClick={() => setAssignId(null)}
-                className="p-xs rounded-lg hover:bg-surface-container-high transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="p-lg space-y-md">
-              {assignmentsLoading ? (
-                <p className="text-body-md text-on-surface-variant text-center py-lg">Loading…</p>
-              ) : (
-                clinics.map((c) => {
-                  const a = clinicAssignment(c._id);
-                  const enabled = !!a;
-                  return (
-                    <div key={c._id} className="p-sm rounded-lg border border-outline-variant/30 space-y-xs">
-                      <label className="flex items-center gap-sm cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={enabled}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              upsertClinicAssignment(assignId, c._id, { isActive: true });
-                            } else {
-                              removeClinicAssignment(assignId, c._id);
-                            }
-                          }}
-                          className="w-4 h-4 accent-primary"
-                        />
-                        <span className="font-semibold text-on-surface">{clinicLocation(c)}</span>
-                      </label>
-                      {enabled && (
-                        <div className="grid grid-cols-2 gap-xs pl-lg">
-                          <input
-                            type="number"
-                            placeholder="Price override (PKR)"
-                            defaultValue={a?.priceOverridePkr ?? ""}
-                            onBlur={(e) =>
-                              upsertClinicAssignment(assignId, c._id, {
-                                priceOverridePkr: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Duration override (min)"
-                            defaultValue={a?.durationOverrideMinutes ?? ""}
-                            onBlur={(e) =>
-                              upsertClinicAssignment(assignId, c._id, {
-                                durationOverrideMinutes: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md"
-                          />
-                          <label className="col-span-2 flex items-center gap-sm cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={a?.isActive ?? true}
-                              onChange={(e) => upsertClinicAssignment(assignId, c._id, { isActive: e.target.checked })}
-                              className="w-4 h-4 accent-primary"
-                            />
-                            <span className="text-caption text-on-surface-variant">Active at this clinic</span>
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
