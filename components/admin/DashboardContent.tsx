@@ -62,6 +62,7 @@ const todayIso = today.toISOString().slice(0, 10);
 export default function DashboardContent({ appointments, payments }: DashboardContentProps) {
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [calYear, setCalYear] = useState(today.getFullYear());
+  const [selectedDate, setSelectedDate] = useState(todayIso);
 
   const cells = getCalendarCells(calYear, calMonth);
   const monthLabel = new Date(calYear, calMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -91,6 +92,21 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
         .sort((a, b) => (a.time > b.time ? 1 : -1)),
     [appointments]
   );
+
+  const selectedSchedule = useMemo(
+    () =>
+      appointments
+        .filter((a) => a.date === selectedDate && a.status !== "cancelled" && a.status !== "rejected")
+        .sort((a, b) => (a.time > b.time ? 1 : -1)),
+    [appointments, selectedDate]
+  );
+
+  const selectedDateLabel = new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   const kpis = useMemo(() => {
     const activeToday = todaysSchedule.filter((a) => a.status === "confirmed" || a.status === "completed").length;
@@ -156,18 +172,35 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
         <div className="lg:col-span-2 flex flex-col gap-xl">
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
             <div className="px-md py-sm border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-low">
-              <h3 className="text-headline-md font-semibold">Today&apos;s Schedule</h3>
-              <Link href="/admin/appointments" className="text-primary text-label-md hover:underline">
-                View All
-              </Link>
+              <div>
+                <h3 className="text-headline-md font-semibold">
+                  {selectedDate === todayIso ? "Today's Schedule" : "Schedule"}
+                </h3>
+                {selectedDate !== todayIso && (
+                  <p className="text-caption text-on-surface-variant">{selectedDateLabel}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-sm">
+                {selectedDate !== todayIso && (
+                  <button
+                    onClick={() => setSelectedDate(todayIso)}
+                    className="text-primary text-label-md hover:underline"
+                  >
+                    Back to Today
+                  </button>
+                )}
+                <Link href="/admin/appointments" className="text-primary text-label-md hover:underline">
+                  View All
+                </Link>
+              </div>
             </div>
             <div className="divide-y divide-outline-variant/20">
-              {todaysSchedule.length === 0 ? (
+              {selectedSchedule.length === 0 ? (
                 <p className="px-md py-lg text-center text-on-surface-variant text-body-md">
-                  No appointments scheduled for today.
+                  No appointments scheduled for {selectedDate === todayIso ? "today" : "this day"}.
                 </p>
               ) : (
-                todaysSchedule.map((item) => {
+                selectedSchedule.map((item) => {
                   const meta = STATUS_META[item.status];
                   return (
                     <div key={item._id} className="px-md py-sm flex items-center justify-between hover:bg-surface-container/50 transition-colors">
@@ -250,23 +283,33 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                   day === today.getDate() &&
                   calMonth === today.getMonth() &&
                   calYear === today.getFullYear();
+                const cellIso =
+                  day !== null
+                    ? `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                    : null;
+                const isSelected = cellIso === selectedDate;
                 const hasAppointments = day !== null && daysWithAppointments.has(day);
                 return (
-                  <div
+                  <button
                     key={i}
-                    className={`relative text-caption py-xs rounded-md ${
+                    type="button"
+                    disabled={day === null}
+                    onClick={() => cellIso && setSelectedDate(cellIso)}
+                    className={`relative text-caption py-xs rounded-md w-full ${
                       day === null
                         ? "opacity-0 pointer-events-none"
-                        : isToday
+                        : isSelected
                         ? "bg-primary text-on-primary font-bold"
+                        : isToday
+                        ? "ring-2 ring-primary text-on-surface font-bold"
                         : "hover:bg-primary/10 text-on-surface cursor-pointer"
                     }`}
                   >
                     {day}
-                    {hasAppointments && !isToday && (
+                    {hasAppointments && !isSelected && (
                       <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -279,8 +322,7 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
               {[
                 { icon: "qr_code_scanner", label: "Verify Appointment", href: "/admin/appointments/verify", color: "text-primary" },
                 { icon: "payments", label: "Review Payments", href: "/admin/payments", color: "text-secondary" },
-                { icon: "group", label: "Patient Directory", href: "/admin/patients", color: "text-tertiary" },
-                { icon: "chat", label: "Contact on WhatsApp", href: doctor.contact.whatsapp, color: "text-on-surface-variant", external: true },
+                { icon: "group", label: "Patient Directory", href: "/admin/patients", color: "text-tertiary", external: false },
               ].map(({ icon, label, href, color, external }) => (
                 <Link key={label} href={href} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="flex items-center gap-sm px-sm py-xs rounded-lg hover:bg-surface-container-high transition-colors group">

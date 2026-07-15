@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   STATUS_CONFIG,
@@ -30,6 +31,8 @@ function initials(name: string): string {
 }
 
 export default function MedicalRecordsContent() {
+  const searchParams = useSearchParams();
+  const linkedReportId = searchParams.get("id");
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<ReportStatus | "all">("all");
@@ -68,6 +71,14 @@ export default function MedicalRecordsContent() {
     const interval = setInterval(() => loadReports(true), 20000);
     return () => clearInterval(interval);
   }, []);
+
+  // Deep-link support: /admin/medical-records?id=<reportId> opens that report
+  // directly (e.g. from the Patient Details page's Uploaded Reports list).
+  useEffect(() => {
+    if (linkedReportId && reports.some((r) => r.id === linkedReportId)) {
+      setSelectedId(linkedReportId);
+    }
+  }, [linkedReportId, reports]);
 
   const counts = useMemo(() => {
     const base: Record<string, number> = { all: reports.length };

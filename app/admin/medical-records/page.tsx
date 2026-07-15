@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import MedicalRecordsContent from "@/components/admin/MedicalRecordsContent";
 
 export const metadata = {
@@ -5,5 +6,9 @@ export const metadata = {
 };
 
 export default function AdminMedicalRecordsPage() {
-  return <MedicalRecordsContent />;
+  return (
+    <Suspense>
+      <MedicalRecordsContent />
+    </Suspense>
+  );
 }

@@ -54,7 +54,7 @@ async function uploadFiles(files: File[]): Promise<MedicalRecordFileInput[]> {
 export type ReportApiShape = Report;
 
 /** Admin list/detail views also need to know which patient a record belongs to. */
-export type AdminReportApiShape = Report & { patientName: string };
+export type AdminReportApiShape = Report & { patientName: string; patientId: string };
 
 function toApiShape(doc: MedicalRecordDoc): ReportApiShape {
   return {
@@ -106,8 +106,12 @@ function toApiShape(doc: MedicalRecordDoc): ReportApiShape {
 }
 
 function toAdminApiShape(doc: MedicalRecordDoc): AdminReportApiShape {
-  const patient = doc.patientId as unknown as { name?: string } | null;
-  return { ...toApiShape(doc), patientName: patient?.name ?? "Unknown Patient" };
+  const patient = doc.patientId as unknown as { _id?: unknown; name?: string } | null;
+  return {
+    ...toApiShape(doc),
+    patientName: patient?.name ?? "Unknown Patient",
+    patientId: patient?._id ? String(patient._id) : "",
+  };
 }
 
 export interface CreateMedicalRecordParams {
