@@ -11,8 +11,8 @@ type FormState = {
   gender: string;
   age: string;
   visitType: string;
-  date: string;
-  time: string;
+  cnic: string;
+  city: string;
   notes: string;
 };
 
@@ -24,8 +24,8 @@ const initialForm: FormState = {
   gender: "Male",
   age: "",
   visitType: "New Consult",
-  date: "",
-  time: "",
+  cnic: "",
+  city: "",
   notes: "",
 };
 
@@ -36,8 +36,6 @@ export default function HeroBookingForm() {
   const router = useRouter();
   const setPatientInfo = useBookingStore((s) => s.setPatientInfo);
 
-  const today = new Date().toISOString().split("T")[0];
-
   const validate = (): boolean => {
     const e: Errors = {};
     if (!form.fullName.trim()) e.fullName = "Full name is required";
@@ -45,8 +43,9 @@ export default function HeroBookingForm() {
     else if (!/^[+\d][\d\s\-()]{6,}$/.test(form.phone)) e.phone = "Enter a valid phone number";
     if (!form.age.trim()) e.age = "Age is required";
     else if (Number(form.age) < 1 || Number(form.age) > 120) e.age = "Enter a valid age";
-    if (!form.date) e.date = "Select a date";
-    else if (form.date < today) e.date = "Date cannot be in the past";
+    if (!form.cnic.trim()) e.cnic = "CNIC is required";
+    else if (!/^\d{5}-\d{7}-\d{1}$/.test(form.cnic)) e.cnic = "Format: 00000-0000000-0";
+    if (!form.city.trim()) e.city = "City is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -70,6 +69,8 @@ export default function HeroBookingForm() {
       phone: form.phone,
       gender: form.gender as "Male" | "Female" | "Other",
       age: form.age,
+      cnic: form.cnic,
+      city: form.city,
       notes: form.notes,
     });
     setTimeout(() => {
@@ -160,30 +161,32 @@ export default function HeroBookingForm() {
             </select>
           </div>
 
-          {/* Date */}
+          {/* CNIC */}
           <div>
-            <label className="block text-caption font-bold mb-xs text-outline">Date</label>
+            <label className="block text-caption font-bold mb-xs text-outline">CNIC</label>
             <input
-              type="date"
-              name="date"
-              value={form.date}
+              type="text"
+              name="cnic"
+              value={form.cnic}
               onChange={handleChange}
-              min={today}
-              className={inputCls("date")}
+              placeholder="00000-0000000-0"
+              className={inputCls("cnic")}
             />
-            {errors.date && <p className="text-caption text-error mt-xs">{errors.date}</p>}
+            {errors.cnic && <p className="text-caption text-error mt-xs">{errors.cnic}</p>}
           </div>
 
-          {/* Time */}
+          {/* City */}
           <div>
-            <label className="block text-caption font-bold mb-xs text-outline">Preferred Time</label>
+            <label className="block text-caption font-bold mb-xs text-outline">City</label>
             <input
-              type="time"
-              name="time"
-              value={form.time}
+              type="text"
+              name="city"
+              value={form.city}
               onChange={handleChange}
-              className={inputCls("time")}
+              placeholder="e.g. Lahore"
+              className={inputCls("city")}
             />
+            {errors.city && <p className="text-caption text-error mt-xs">{errors.city}</p>}
           </div>
 
           {/* Notes */}

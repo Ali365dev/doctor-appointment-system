@@ -97,25 +97,33 @@ export async function createAppointment(params: CreateAppointmentParams): Promis
 
   const appointmentNumber = await generateAppointmentNumber();
 
-  const appointment = await createAppointmentRecord({
-    appointmentNumber,
-    patientId: params.patientId,
-    clinicId: params.clinicId,
-    visitType: params.visitType,
-    date: params.date,
-    time: params.time,
-    reason: params.reason,
-    patientSnapshot: params.patient,
-    feeSnapshotPkr: totalAmount,
-    appointmentType: params.appointmentType ?? "consultation",
-    procedureId,
-    procedureNameSnapshot,
-    durationMinutes,
-    totalAmount,
-    referralDoctor: params.referralDoctor,
-    medicalReportUrl: params.medicalReportUrl,
-    paymentMethod: params.paymentMethod,
-  });
+  let appointment;
+  try {
+    appointment = await createAppointmentRecord({
+      appointmentNumber,
+      patientId: params.patientId,
+      clinicId: params.clinicId,
+      visitType: params.visitType,
+      date: params.date,
+      time: params.time,
+      reason: params.reason,
+      patientSnapshot: params.patient,
+      feeSnapshotPkr: totalAmount,
+      appointmentType: params.appointmentType ?? "consultation",
+      procedureId,
+      procedureNameSnapshot,
+      durationMinutes,
+      totalAmount,
+      referralDoctor: params.referralDoctor,
+      medicalReportUrl: params.medicalReportUrl,
+      paymentMethod: params.paymentMethod,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "SLOT_ALREADY_BOOKED") {
+      throw new AppointmentServiceError("This time slot has already been booked", 409);
+    }
+    throw err;
+  }
 
   // Best-effort — a missing SMTP/WhatsApp config must never block booking creation.
   void sendNotification(

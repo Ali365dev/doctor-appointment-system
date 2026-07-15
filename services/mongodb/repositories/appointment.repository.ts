@@ -53,12 +53,19 @@ export async function findBookedTimesForClinicDate(clinicId: string, date: strin
 
 export async function createAppointment(input: CreateAppointmentInput): Promise<AppointmentDoc> {
   await connectDB();
-  const created = await Appointment.create({
-    ...input,
-    status: "pending_payment",
-    statusHistory: [{ status: "pending_payment", changedAt: new Date(), changedBy: "system" }],
-  });
-  return created.toObject() as AppointmentDoc;
+  try {
+    const created = await Appointment.create({
+      ...input,
+      status: "pending_payment",
+      statusHistory: [{ status: "pending_payment", changedAt: new Date(), changedBy: "system" }],
+    });
+    return created.toObject() as AppointmentDoc;
+  } catch (err) {
+    if (err instanceof Error && "code" in err && (err as { code?: number }).code === 11000) {
+      throw new Error("SLOT_ALREADY_BOOKED");
+    }
+    throw err;
+  }
 }
 
 export async function findAppointmentById(appointmentId: string): Promise<AppointmentDoc | null> {

@@ -84,14 +84,7 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
                     Book a Procedure
                   </Link>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-                  <Link
-                    href="/appointment"
-                    className="block border border-outline-variant text-on-surface px-lg py-sm rounded-xl text-label-md font-semibold hover:bg-surface-container transition-colors"
-                  >
-                    View Conditions
-                  </Link>
-                </motion.div>
+
               </div>
             </Reveal>
             <motion.div

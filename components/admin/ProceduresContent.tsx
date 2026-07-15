@@ -79,7 +79,6 @@ export default function ProceduresContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"active" | "hidden" | "archived">("active");
   const [assignId, setAssignId] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<ClinicAssignment[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
@@ -144,27 +143,6 @@ export default function ProceduresContent() {
     setErrors({});
     setSlugTouched(true);
     setModalOpen(true);
-  };
-
-  const toggleArchived = async (p: Procedure) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/procedures/${p._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isArchived: !p.isArchived }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not update procedure");
-        return;
-      }
-      setProcedures((prev) => prev.map((x) => (x._id === p._id ? { ...x, isArchived: !x.isArchived } : x)));
-    } catch {
-      toast.error("Network error");
-    } finally {
-      setBusy(false);
-    }
   };
 
   const openAssign = async (p: Procedure) => {
@@ -367,23 +345,6 @@ export default function ProceduresContent() {
         </button>
       </div>
 
-      {/* Status filter tabs */}
-      <div className="flex gap-xs mb-md">
-        {(["active", "hidden", "archived"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setStatusFilter(tab)}
-            className={`px-md py-xs rounded-full text-label-md font-semibold capitalize transition-colors ${
-              statusFilter === tab
-                ? "bg-primary text-on-primary"
-                : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div className="overflow-x-auto">
@@ -399,9 +360,7 @@ export default function ProceduresContent() {
             </thead>
             <tbody className="divide-y divide-outline-variant/20">
               {(() => {
-                const visible = procedures.filter((p) =>
-                  statusFilter === "archived" ? p.isArchived : !p.isArchived && (statusFilter === "active" ? p.isActive : !p.isActive)
-                );
+                const visible = procedures;
                 if (loading) {
                   return (
                     <tr>
@@ -415,7 +374,7 @@ export default function ProceduresContent() {
                   return (
                     <tr>
                       <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
-                        No {statusFilter} procedures.
+                        No procedures.
                       </td>
                     </tr>
                   );
@@ -458,16 +417,6 @@ export default function ProceduresContent() {
                           title="Assign to Clinics"
                         >
                           <span className="material-symbols-outlined text-[18px]">domain</span>
-                        </button>
-                        <button
-                          disabled={busy}
-                          onClick={() => toggleArchived(p)}
-                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                          title={p.isArchived ? "Unarchive" : "Archive"}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            {p.isArchived ? "unarchive" : "archive"}
-                          </span>
                         </button>
                         <button
                           onClick={() => openEdit(p)}

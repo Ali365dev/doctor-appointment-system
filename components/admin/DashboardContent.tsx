@@ -110,10 +110,10 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
     const totalPatients = new Set(appointments.map((a) => a.patientId).filter(Boolean)).size;
 
     return [
-      { label: "Today's Appointments", value: todaysSchedule.length, sub: `${activeToday} confirmed`, icon: "event", color: "bg-primary/10 text-primary" },
-      { label: "Pending Payments", value: pendingPayments.length, sub: `${urgentPayments} awaiting verification`, icon: "pending_actions", color: "bg-tertiary/10 text-tertiary" },
-      { label: "Revenue This Month", value: `Rs. ${monthlyRevenue.toLocaleString()}`, sub: "From verified payments", icon: "trending_up", color: "bg-secondary/10 text-secondary" },
-      { label: "Total Patients", value: totalPatients, sub: "Registered bookings", icon: "person_add", color: "bg-surface-container-high text-on-surface" },
+      { label: "Today's Appointments", value: todaysSchedule.length, sub: `${activeToday} confirmed`, icon: "event", color: "bg-primary/10 text-primary", href: "/admin/appointments" },
+      { label: "Pending Payments", value: pendingPayments.length, sub: `${urgentPayments} awaiting verification`, icon: "pending_actions", color: "bg-tertiary/10 text-tertiary", href: "/admin/payments" },
+      { label: "Revenue This Month", value: `Rs. ${monthlyRevenue.toLocaleString()}`, sub: "From verified payments", icon: "trending_up", color: "bg-secondary/10 text-secondary", href: "/admin/payments" },
+      { label: "Total Patients", value: totalPatients, sub: "Registered bookings", icon: "person_add", color: "bg-surface-container-high text-on-surface", href: "/admin/patients" },
     ];
   }, [todaysSchedule, payments, appointments]);
 
@@ -133,7 +133,11 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
         {kpis.map((k) => (
-          <div key={k.label} className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm flex flex-col gap-xs hover:border-primary/30 transition-colors">
+          <Link
+            key={k.label}
+            href={k.href}
+            className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm flex flex-col gap-xs hover:border-primary/30 hover:shadow-md transition-all"
+          >
             <div className="flex justify-between items-start">
               <span className="text-on-surface-variant text-label-md">{k.label}</span>
               <span className={`p-xs rounded-lg ${k.color}`}>
@@ -142,30 +146,8 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
             </div>
             <span className="text-headline-lg font-bold">{k.value}</span>
             <span className="text-caption text-secondary font-medium">{k.sub}</span>
-          </div>
+          </Link>
         ))}
-      </div>
-
-      {/* Locations summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-md mb-xl">
-        {doctor.practice_locations.map((loc, i) => {
-          const timingDays = Object.keys(loc.timings as Record<string, string>);
-          const hours = Object.values(loc.timings as Record<string, string>)[0];
-          return (
-            <div key={i} className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm hover:border-primary/30 transition-colors">
-              <div className="flex items-start justify-between mb-sm">
-                <div>
-                  <p className="text-label-md font-bold text-on-surface">{loc.name}</p>
-                  <p className="text-caption text-on-surface-variant mt-xs">{timingDays.length} days/week · {hours}</p>
-                </div>
-                <span className="text-primary font-bold text-label-md">Rs. {loc.fee_pkr.toLocaleString()}</span>
-              </div>
-              {loc.address && (
-                <p className="text-caption text-on-surface-variant truncate">{loc.address}</p>
-              )}
-            </div>
-          );
-        })}
       </div>
 
       {/* Main Grid */}

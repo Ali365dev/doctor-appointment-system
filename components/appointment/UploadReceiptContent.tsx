@@ -34,6 +34,7 @@ export default function UploadReceiptContent() {
   const searchParams = useSearchParams();
   const {
     selectedClinic,
+    selectedProcedure,
     selectedDate,
     selectedTime,
     appointmentId: storeAppointmentId,
@@ -76,7 +77,7 @@ export default function UploadReceiptContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId]);
 
-  const fee = selectedClinic?.fee_pkr ?? remoteSummary?.feeSnapshotPkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? remoteSummary?.feeSnapshotPkr ?? doctor.fee_summary.min_fee_pkr;
   const clinicLabel = selectedClinic?.name ?? remoteSummary?.clinicName ?? "—";
   const dateValue = selectedDate ?? remoteSummary?.date ?? null;
   const timeLabel = selectedTime ?? remoteSummary?.time ?? "—";

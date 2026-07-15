@@ -260,6 +260,7 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                 ) : (
                   <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Doctor</th>
                 )}
+                <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Patient</th>
                 <th className="px-md py-sm text-label-md text-on-surface-variant">Clinic</th>
                 <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Payment Type</th>
                 <th className="px-md py-sm text-label-md text-on-surface-variant whitespace-nowrap">Payment Status</th>
@@ -270,13 +271,13 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
             <tbody className="divide-y divide-outline-variant/10 text-body-md">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={8} className="px-md py-xl text-center text-on-surface-variant">
                     Loading appointments…
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
+                  <td colSpan={8} className="px-md py-xl text-center text-on-surface-variant">
                     No appointments found.
                   </td>
                 </tr>
@@ -305,6 +306,7 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                       ) : (
                         <td className="px-md py-md text-on-surface whitespace-nowrap">{doctor.name}</td>
                       )}
+                      <td className="px-md py-md text-on-surface whitespace-nowrap">{appt.patientSnapshot.fullName}</td>
                       <td className="px-md py-md text-on-surface">{clinicName(appt.clinicId)}</td>
                       <td className="px-md py-md text-on-surface whitespace-nowrap">
                         {payment ? PAYMENT_METHOD_LABEL[payment.method] : "—"}
