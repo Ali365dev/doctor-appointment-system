@@ -190,30 +190,165 @@ export default function SuccessContent() {
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 16;
+    const contentWidth = pageWidth - margin * 2;
 
-    doc.setFontSize(16);
-    doc.text("Appointment Confirmation", 14, 18);
+    const NAVY: [number, number, number] = [10, 36, 71];
+    const TEXT_DARK: [number, number, number] = [24, 28, 38];
+    const TEXT_MUTED: [number, number, number] = [110, 114, 130];
+    const BORDER: [number, number, number] = [222, 226, 234];
+    const BAND_BG: [number, number, number] = [244, 247, 250];
 
-    autoTable(doc, {
-      startY: 26,
-      body: [
-        ["Reference", refNumber],
-        ["Patient", patientName],
-        ["Doctor", doctor.name],
-        ...(confirmation?.procedureName ? [["Procedure", confirmation.procedureName]] : []),
-        ["Clinic", clinicName],
-        ["Date", formattedDate],
-        ["Time", confirmation?.time ?? "—"],
-        ["Fee", `Rs. ${fee.toLocaleString()}`],
-      ],
-      styles: { fontSize: 11 },
-      theme: "plain",
-      columnStyles: { 0: { fontStyle: "bold", cellWidth: 40 } },
-    });
+    const initials = doctor.name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "DR";
+    const generatedAt = new Date().toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
 
-    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-    doc.setFontSize(10);
-    doc.text("Present this at the clinic for check-in.", 14, finalY + 10);
+    // ---- Letterhead ----
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...NAVY);
+    doc.circle(margin + 8, 20, 8, "S");
+    doc.setTextColor(...NAVY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(initials, margin + 8, 21.5, { align: "center" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.text(doctor.name, margin + 20, 15);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text(doctor.designation, margin + 20, 20.5);
+    if (doctor.verification) doc.text(doctor.verification, margin + 20, 25);
+    doc.setFontSize(8);
+    doc.text(
+      [doctor.contactPhone, doctor.contactEmail].filter(Boolean).join("   ·   "),
+      margin + 20,
+      doctor.verification ? 29.5 : 25
+    );
+
+    doc.setDrawColor(...BORDER);
+    doc.line(margin, 34, pageWidth - margin, 34);
+
+    // ---- Title band ----
+    doc.setFillColor(...BAND_BG);
+    doc.rect(margin, 38, contentWidth, 9, "F");
+    doc.setTextColor(...NAVY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("APPOINTMENT CONFIRMATION", pageWidth / 2, 44, { align: "center" });
+
+    // ---- Meta row ----
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...TEXT_DARK);
+    doc.text(`Appointment No.: ${refNumber}`, margin, 53);
+    doc.text(`Generated: ${generatedAt}`, pageWidth - margin, 53, { align: "right" });
+
+    let y = 59;
+
+    function drawSection(title: string, rows: [string, string][]): void {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(...NAVY);
+      doc.text(title, margin, y);
+      doc.setDrawColor(...BORDER);
+      doc.line(margin, y + 2, pageWidth - margin, y + 2);
+
+      autoTable(doc, {
+        startY: y + 5,
+        body: rows,
+        theme: "plain",
+        styles: { fontSize: 9.5, textColor: TEXT_DARK, cellPadding: { top: 1.3, bottom: 1.3, left: 0, right: 2 } },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 45, textColor: TEXT_MUTED }, 1: { textColor: TEXT_DARK } },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+    }
+
+    drawSection("Patient Information", [
+      ["Patient Name", patientName],
+      ["Age / Gender", [patientInfo.age && `${patientInfo.age} Years`, patientInfo.gender].filter(Boolean).join(" / ") || "—"],
+      ["Phone", patientInfo.phone || "—"],
+      ["CNIC", patientInfo.cnic || "—"],
+    ]);
+
+    drawSection("Appointment Details", [
+      ["Doctor", doctor.name],
+      ["Clinic", clinicName],
+      ["Location", [doctor.city, doctor.country].filter(Boolean).join(", ") || "—"],
+      ["Date", formattedDate],
+      ["Time", confirmation?.time ?? "—"],
+      ["Procedure", confirmation?.procedureName ?? "Consultation"],
+      ["Consultation Fee", `Rs. ${fee.toLocaleString()}`],
+      ["Payment Status", paymentStatusBadge.label],
+    ]);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...NAVY);
+    doc.text("Instructions", margin, y);
+    doc.setDrawColor(...BORDER);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
+    y += 7;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...TEXT_DARK);
+    const instructions = [
+      "Please arrive 15 minutes before your appointment.",
+      "Bring previous reports and medications.",
+      "Wear a face mask if required.",
+      "Carry your original CNIC.",
+      "Late arrival may require rescheduling.",
+    ];
+    for (const line of instructions) {
+      doc.text(`•  ${line}`, margin, y);
+      y += 5.5;
+    }
+    y += 3;
+
+    drawSection("Emergency Contact", [
+      ["Phone", doctor.contactPhone || "—"],
+      ["Email", doctor.contactEmail || "—"],
+    ]);
+
+    // ---- Footer: QR + signature placeholders ----
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const footerY = Math.max(y + 6, pageHeight - 46);
+    doc.setDrawColor(...BORDER);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+
+    const boxSize = 22;
+    doc.setDrawColor(...BORDER);
+    doc.roundedRect(margin, footerY + 6, boxSize, boxSize, 1.5, 1.5, "S");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text("QR Code", margin + boxSize / 2, footerY + 6 + boxSize + 4, { align: "center" });
+
+    const sigX = pageWidth - margin - boxSize * 2.4;
+    doc.line(sigX, footerY + 6 + boxSize - 4, sigX + boxSize * 2.4, footerY + 6 + boxSize - 4);
+    doc.text("Doctor Signature", sigX + (boxSize * 2.4) / 2, footerY + 6 + boxSize + 4, { align: "center" });
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text(
+      "This document is electronically generated and does not require a physical signature.",
+      pageWidth / 2,
+      pageHeight - 14,
+      { align: "center" }
+    );
+
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...TEXT_MUTED);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+    }
 
     doc.save(`appointment-${refNumber}.pdf`);
   };

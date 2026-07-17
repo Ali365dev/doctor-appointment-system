@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import type { AppointmentStatus, AppointmentType, VisitType } from "@/types/appointment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { createLetterheadPdf } from "@/lib/pdf/letterhead";
 
 const PAGE_SIZE = 5;
 
@@ -182,6 +184,7 @@ function Field({ label, value, full }: { label: string; value?: string; full?: b
 /* ---------- main ---------- */
 
 export default function PatientDetailContent({ patientId }: { patientId: string }) {
+  const doctor = useDoctorProfile();
   const router = useRouter();
   const [patient, setPatient] = useState<PatientDetail | null>(null);
   const [reports, setReports] = useState<ReportSummary[]>([]);
@@ -219,14 +222,13 @@ export default function PatientDetailContent({ patientId }: { patientId: string 
 
   async function exportPDF() {
     if (!patient) return;
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text(`Appointment History — ${patient.name}`, 14, 14);
-    autoTable(doc, {
-      startY: 20,
-      head: [["Date", "Time", "Appt #", "Visit Type", "Location", "Fee", "Payment", "Status"]],
-      body: patient.appointments.map((a) => [
+    const { doc, headerHeight, renderTable, drawFooter } = await createLetterheadPdf(doctor, {
+      title: `Appointment History — ${patient.name}`,
+    });
+    renderTable({
+      startY: headerHeight + 6,
+      headers: ["Date", "Time", "Appt #", "Visit Type", "Location", "Fee", "Payment", "Status"],
+      rows: patient.appointments.map((a) => [
         a.date,
         a.time,
         a.appointmentNumber,
@@ -236,8 +238,9 @@ export default function PatientDetailContent({ patientId }: { patientId: string 
         a.payment?.status ?? "—",
         APPT_STATUS_LABEL[a.status],
       ]),
-      styles: { fontSize: 8 },
+      badgeColumns: ["Payment", "Status"],
     });
+    drawFooter();
     doc.save(`${patient.name.replace(/\s+/g, "_")}_appointments.pdf`);
   }
 

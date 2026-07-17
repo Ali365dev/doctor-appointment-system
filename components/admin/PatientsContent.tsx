@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { createLetterheadPdf } from "@/lib/pdf/letterhead";
 
 type PatientStatus = "Active" | "Follow-up" | "New";
 
@@ -56,6 +58,7 @@ function pageWindow(current: number, total: number): (number | "…")[] {
 }
 
 export default function PatientsContent() {
+  const doctor = useDoctorProfile();
   const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,25 +106,25 @@ export default function PatientsContent() {
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const exportPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("Patients Directory", 14, 14);
-    autoTable(doc, {
-      startY: 20,
-      head: [["Name", "Patient ID", "Age/Gender", "Phone", "Email", "Last Visit", "Appointments", "Status"]],
-      body: filtered.map((p) => [
+    const { doc, headerHeight, renderTable, drawFooter } = await createLetterheadPdf(doctor, {
+      title: "Patients Directory",
+    });
+    renderTable({
+      startY: headerHeight + 6,
+      headers: ["Name", "Patient ID", "Age/Gender", "Phone", "Email", "Last Visit", "Appointments", "Status"],
+      rows: filtered.map((p) => [
         p.name,
         p.id,
         `${p.age ? `${p.age}y` : "—"} / ${p.gender ?? "—"}`,
         p.phone,
         p.email ?? "—",
         p.lastVisit || "—",
-        String(p.totalVisits),
+        p.totalVisits,
         p.status,
       ]),
-      styles: { fontSize: 8 },
+      badgeColumns: ["Status"],
     });
+    drawFooter();
     doc.save("patients.pdf");
   };
 

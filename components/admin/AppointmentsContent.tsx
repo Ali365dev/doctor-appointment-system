@@ -7,6 +7,7 @@ import { APPOINTMENT_STATUSES, type AppointmentStatus, type AppointmentType, typ
 import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from "@/types/payment";
 import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { createLetterheadPdf } from "@/lib/pdf/letterhead";
 
 interface ApiPayment {
   _id: string;
@@ -360,14 +361,11 @@ export default function AppointmentsContent() {
   };
 
   const exportPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("Appointments", 14, 14);
-    autoTable(doc, {
-      startY: 20,
-      head: [["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"]],
-      body: filtered.map((a) => {
+    const { doc, headerHeight, renderTable, drawFooter } = await createLetterheadPdf(doctor, { title: "Appointments" });
+    renderTable({
+      startY: headerHeight + 6,
+      headers: ["Appointment #", "Patient", "Phone", "Date", "Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee (Rs.)"],
+      rows: filtered.map((a) => {
         const payment = getPayment(a);
         return [
           a.appointmentNumber,
@@ -384,8 +382,9 @@ export default function AppointmentsContent() {
           a.feeSnapshotPkr.toLocaleString(),
         ];
       }),
-      styles: { fontSize: 8 },
+      badgeColumns: ["Payment Status", "Status"],
     });
+    drawFooter();
     doc.save("appointments.pdf");
     setExportMenuOpen(false);
   };

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import type { AppointmentStatus, AppointmentType, VisitType } from "@/types/appointment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 /* ============================================================
    Types
@@ -25,7 +26,7 @@ interface ApiAppointment {
   date: string;
   time: string;
   patientId?: string;
-  patientSnapshot: { fullName: string };
+  patientSnapshot: { fullName: string; phone?: string };
   feeSnapshotPkr: number;
   paymentId?: ApiPayment | string;
   status: AppointmentStatus;
@@ -45,6 +46,8 @@ type PatientGroup = "Active" | "Follow-up" | "New";
 interface ApiPatient {
   id: string;
   name: string;
+  phone?: string;
+  email?: string;
   status: PatientGroup;
   createdAt: string;
 }
@@ -63,18 +66,29 @@ const PENDING_STATUSES: AppointmentStatus[] = ["pending_payment", "payment_submi
 const CANCELLED_STATUSES: AppointmentStatus[] = ["cancelled", "rejected", "no_show"];
 const PATIENT_GROUPS: PatientGroup[] = ["Active", "Follow-up", "New"];
 
-type Granularity = "daily" | "monthly" | "yearly";
-type ReportKey = "overall" | "procedure" | "location" | "patientCount" | "group" | "clinicSummary";
+type ReportKey = "overall" | "procedure" | "location" | "group" | "clinicSummary" | "patient";
 
 /** Data-driven tab list — add a new entry + a computeXxx() branch below to add a report type. */
 const REPORT_TABS: { key: ReportKey; label: string; icon: string }[] = [
   { key: "overall", label: "Overall Report", icon: "dashboard" },
   { key: "procedure", label: "Procedure / Service", icon: "medical_services" },
   { key: "location", label: "Location-wise", icon: "location_on" },
-  { key: "patientCount", label: "Patient Count", icon: "groups" },
   { key: "group", label: "Group Report", icon: "category" },
   { key: "clinicSummary", label: "Clinic Summary", icon: "storefront" },
+  { key: "patient", label: "Patient Report", icon: "person_search" },
 ];
+
+const STATUS_LABEL: Record<AppointmentStatus, string> = {
+  pending_payment: "Pending Payment",
+  payment_submitted: "Payment Submitted",
+  payment_verification: "Payment Verification",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  rejected: "Rejected",
+  rescheduled: "Rescheduled",
+  no_show: "No Show",
+};
 
 /* ============================================================
    Helpers
@@ -93,18 +107,6 @@ function serviceLabel(a: ApiAppointment): string {
 function isoDay(dateLike: string): string {
   return dateLike.slice(0, 10);
 }
-function bucketOf(dateIso: string, granularity: Granularity): { key: string; label: string } {
-  const d = new Date(dateIso);
-  if (granularity === "yearly") {
-    const y = String(d.getFullYear());
-    return { key: y, label: y };
-  }
-  if (granularity === "monthly") {
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return { key, label: d.toLocaleDateString("en-US", { month: "short", year: "numeric" }) };
-  }
-  return { key: isoDay(dateIso), label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) };
-}
 
 interface ReportTable {
   headers: string[];
@@ -122,6 +124,7 @@ interface ComputedReport {
   table: ReportTable;
   chart: ChartPoint[];
   summary?: SummaryCard[];
+  extraTables?: { title: string; table: ReportTable }[];
 }
 
 /* ============================================================
@@ -129,6 +132,7 @@ interface ComputedReport {
    ============================================================ */
 
 export default function ReportsContent() {
+  const doctor = useDoctorProfile();
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [clinics, setClinics] = useState<ApiClinic[]>([]);
   const [patients, setPatients] = useState<ApiPatient[]>([]);
@@ -139,10 +143,10 @@ export default function ReportsContent() {
 
   const [dateFrom, setDateFrom] = useState(monthAgoIso);
   const [dateTo, setDateTo] = useState(todayIso);
-  const [granularity, setGranularity] = useState<Granularity>("daily");
   const [clinicFilter, setClinicFilter] = useState("All");
   const [locationFilter, setLocationFilter] = useState("All");
-  const [groupFilter, setGroupFilter] = useState<"All" | PatientGroup>("All");
+  const [procedureFilter, setProcedureFilter] = useState("All");
+  const [patientFilter, setPatientFilter] = useState("All");
   const [activeReport, setActiveReport] = useState<ReportKey>("overall");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<number | null>(null);
@@ -175,10 +179,12 @@ export default function ReportsContent() {
   useEffect(() => {
     setSortKey(null);
     setSearch("");
-  }, [activeReport, dateFrom, dateTo, clinicFilter, locationFilter, groupFilter, granularity]);
+  }, [activeReport, dateFrom, dateTo, clinicFilter, locationFilter, procedureFilter, patientFilter]);
 
   const clinicMap = useMemo(() => new Map(clinics.map((c) => [c._id, c])), [clinics]);
+  const patientMap = useMemo(() => new Map(patients.map((p) => [p.id, p])), [patients]);
   const locations = useMemo(() => [...new Set(clinics.map((c) => c.city))].sort(), [clinics]);
+  const procedures = useMemo(() => [...new Set(appointments.map(serviceLabel))].sort(), [appointments]);
 
   const filteredAppointments = useMemo(
     () =>
@@ -188,21 +194,23 @@ export default function ReportsContent() {
         const clinic = clinicOf(a);
         if (clinicFilter !== "All" && clinic?.id !== clinicFilter) return false;
         if (locationFilter !== "All" && clinicMap.get(clinic?.id ?? "")?.city !== locationFilter) return false;
+        if (procedureFilter !== "All" && serviceLabel(a) !== procedureFilter) return false;
+        if (patientFilter !== "All" && a.patientId !== patientFilter) return false;
         return true;
       }),
-    [appointments, dateFrom, dateTo, clinicFilter, locationFilter, clinicMap]
+    [appointments, dateFrom, dateTo, clinicFilter, locationFilter, procedureFilter, patientFilter, clinicMap]
   );
 
   const filteredPatients = useMemo(
     () =>
       patients.filter((p) => {
-        if (groupFilter !== "All" && p.status !== groupFilter) return false;
         const day = isoDay(p.createdAt);
         if (dateFrom && day < dateFrom) return false;
         if (dateTo && day > dateTo) return false;
+        if (patientFilter !== "All" && p.id !== patientFilter) return false;
         return true;
       }),
-    [patients, groupFilter, dateFrom, dateTo]
+    [patients, dateFrom, dateTo, patientFilter]
   );
 
   // Earliest-ever appointment date per patient, from the FULL unfiltered set —
@@ -259,15 +267,52 @@ export default function ReportsContent() {
     const summary: SummaryCard[] = [
       { label: "Total Patients", value: patientIds.size },
       { label: "Total Appointments", value: filteredAppointments.length },
+      { label: "Confirmed", value: confirmed },
       { label: "Completed", value: completed },
       { label: "Pending", value: pending },
       { label: "Cancelled", value: cancelled },
-      { label: "Revenue", value: `Rs. ${revenue.toLocaleString()}` },
+      { label: "Revenue (Rs.)", value: revenue.toLocaleString() },
+      ...paymentSummary.map((g): SummaryCard => ({
+        label: `Payments — ${g.status.charAt(0).toUpperCase()}${g.status.slice(1)}`,
+        value: `${g.count} (Rs. ${g.amount.toLocaleString()})`,
+      })),
     ];
 
     const chart = paymentSummary.map((g) => ({ label: g.status, value: g.amount }));
-    return { table, chart, summary };
-  }, [filteredAppointments]);
+
+    const appointmentsTable: ReportTable = {
+      headers: ["Date", "Time", "Patient", "Phone", "Email", "Clinic", "Type", "Service", "Status", "Fee (Rs.)", "Payment"],
+      rows: [...filteredAppointments]
+        .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : b.date.localeCompare(a.date)))
+        .map((a) => [
+          a.date,
+          a.time,
+          a.patientSnapshot.fullName,
+          a.patientSnapshot.phone ?? patientMap.get(a.patientId ?? "")?.phone ?? "—",
+          patientMap.get(a.patientId ?? "")?.email ?? "—",
+          clinicOf(a)?.name ?? "—",
+          APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"],
+          serviceLabel(a),
+          STATUS_LABEL[a.status],
+          a.feeSnapshotPkr,
+          getPayment(a)?.status ?? "—",
+        ]),
+    };
+
+    const patientsTable: ReportTable = {
+      headers: ["Name", "Phone", "Email", "Group", "Registered On"],
+      rows: [...filteredPatients]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map((p) => [p.name, p.phone ?? "—", p.email ?? "—", p.status, isoDay(p.createdAt)]),
+    };
+
+    const extraTables = [
+      { title: "All Appointments", table: appointmentsTable },
+      { title: "All Patients", table: patientsTable },
+    ];
+
+    return { table, chart, summary, extraTables };
+  }, [filteredAppointments, filteredPatients, patientMap]);
 
   const procedureReport: ComputedReport = useMemo(() => {
     const map = new Map<string, { patients: Set<string>; appointments: number; revenue: number }>();
@@ -319,27 +364,6 @@ export default function ReportsContent() {
       chart: rows.map((r) => ({ label: r.city, value: r.appointments })),
     };
   }, [filteredAppointments, clinicMap]);
-
-  const patientCountReport: ComputedReport = useMemo(() => {
-    const buckets = new Map<string, { label: string; count: number }>();
-    for (const p of filteredPatients) {
-      const { key, label } = bucketOf(p.createdAt, granularity);
-      const entry = buckets.get(key) ?? { label, count: 0 };
-      entry.count += 1;
-      buckets.set(key, entry);
-    }
-    const rows = [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
-    const unitLabel = granularity === "yearly" ? "Year" : granularity === "monthly" ? "Month" : "Day";
-
-    return {
-      table: { headers: [unitLabel, "New Patients"], rows: rows.map((r) => [r.label, r.count]) },
-      chart: rows.map((r) => ({ label: r.label, value: r.count })),
-      summary: [
-        { label: "New Patients in Range", value: filteredPatients.length },
-        { label: "Buckets", value: rows.length },
-      ],
-    };
-  }, [filteredPatients, granularity]);
 
   const groupReport: ComputedReport = useMemo(() => {
     const rows = PATIENT_GROUPS.map((g) => {
@@ -403,13 +427,68 @@ export default function ReportsContent() {
     };
   }, [filteredAppointments, firstApptDateByPatient]);
 
+  const PATIENT_TABLE_HEADERS = ["Date", "Time", "Patient", "Phone", "Email", "Clinic", "Procedure / Service", "Type", "Status", "Fee (Rs.)"];
+
+  const patientReport: ComputedReport = useMemo(() => {
+    if (patientFilter === "All") {
+      return { table: { headers: PATIENT_TABLE_HEADERS, rows: [] }, chart: [] };
+    }
+    const patient = patientMap.get(patientFilter);
+    const apts = filteredAppointments
+      .filter((a) => a.patientId === patientFilter)
+      .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : b.date.localeCompare(a.date)));
+
+    const completed = apts.filter((a) => a.status === "completed").length;
+    const cancelled = apts.filter((a) => CANCELLED_STATUSES.includes(a.status)).length;
+    const revenue = apts.reduce((sum, a) => {
+      const p = getPayment(a);
+      return p?.status === "verified" ? sum + p.amountPkr : sum;
+    }, 0);
+
+    const serviceCounts = new Map<string, number>();
+    for (const a of apts) serviceCounts.set(serviceLabel(a), (serviceCounts.get(serviceLabel(a)) ?? 0) + 1);
+
+    const resolvedPhone =
+      (patient?.phone && patient.phone !== "—" ? patient.phone : undefined) ??
+      apts.find((a) => a.patientSnapshot.phone)?.patientSnapshot.phone ??
+      "—";
+    const resolvedEmail = patient?.email && patient.email !== "—" ? patient.email : "—";
+
+    return {
+      table: {
+        headers: PATIENT_TABLE_HEADERS,
+        rows: apts.map((a) => [
+          a.date,
+          a.time,
+          a.patientSnapshot.fullName,
+          a.patientSnapshot.phone && a.patientSnapshot.phone !== "—" ? a.patientSnapshot.phone : resolvedPhone,
+          resolvedEmail,
+          clinicOf(a)?.name ?? "—",
+          serviceLabel(a),
+          APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"],
+          STATUS_LABEL[a.status],
+          a.feeSnapshotPkr,
+        ]),
+      },
+      chart: [...serviceCounts.entries()].map(([label, value]) => ({ label, value })),
+      summary: [
+        { label: "Phone", value: resolvedPhone },
+        { label: "Email", value: resolvedEmail },
+        { label: "Total Appointments", value: apts.length },
+        { label: "Completed", value: completed },
+        { label: "Cancelled", value: cancelled },
+        { label: "Revenue", value: `Rs. ${revenue.toLocaleString()}` },
+      ],
+    };
+  }, [filteredAppointments, patientFilter, patientMap]);
+
   const reportByKey: Record<ReportKey, ComputedReport> = {
     overall,
     procedure: procedureReport,
     location: locationReport,
-    patientCount: patientCountReport,
     group: groupReport,
     clinicSummary: clinicSummaryReport,
+    patient: patientReport,
   };
   const active = reportByKey[activeReport];
 
@@ -446,7 +525,8 @@ export default function ReportsContent() {
     `${dateFrom || "Start"} to ${dateTo || "Today"}`,
     clinicFilter === "All" ? null : `Clinic: ${clinicMap.get(clinicFilter)?.name ?? clinicFilter}`,
     locationFilter === "All" ? null : `Location: ${locationFilter}`,
-    groupFilter === "All" ? null : `Group: ${groupFilter}`,
+    procedureFilter === "All" ? null : `Procedure: ${procedureFilter}`,
+    patientFilter === "All" ? null : `Patient: ${patientMap.get(patientFilter)?.name ?? patientFilter}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -461,11 +541,303 @@ export default function ReportsContent() {
       const { default: jsPDF } = await import("jspdf");
       const { default: autoTable } = await import("jspdf-autotable");
       const doc = new jsPDF({ orientation: "landscape" });
-      doc.setFontSize(14);
-      doc.text(activeLabel, 14, 14);
-      doc.setFontSize(9);
-      doc.text(filterSummary, 14, 20);
-      autoTable(doc, { startY: 26, head: [active.table.headers], body: sortedRows, styles: { fontSize: 8 } });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const contentWidth = pageWidth - margin * 2;
+      const HEADER_H = 32;
+
+      const NAVY: [number, number, number] = [10, 36, 71];
+      const NAVY_LIGHT: [number, number, number] = [24, 60, 105];
+      const TEXT_DARK: [number, number, number] = [24, 28, 38];
+      const TEXT_MUTED: [number, number, number] = [110, 114, 130];
+      const CARD_BORDER: [number, number, number] = [226, 230, 238];
+      const ROW_ALT: [number, number, number] = [244, 247, 250];
+
+      const generatedAt = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+      const initials = doctor.name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "DR";
+
+      function drawHeader() {
+        doc.setFillColor(...NAVY);
+        doc.rect(0, 0, pageWidth, HEADER_H, "F");
+        doc.setFillColor(...NAVY_LIGHT);
+        doc.triangle(pageWidth * 0.62, HEADER_H, pageWidth, HEADER_H, pageWidth, HEADER_H * 0.25, "F");
+
+        doc.setFillColor(255, 255, 255);
+        doc.circle(margin + 8, HEADER_H / 2, 8, "F");
+        doc.setTextColor(...NAVY);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(initials, margin + 8, HEADER_H / 2 + 1.5, { align: "center" });
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(15);
+        doc.text(doctor.name, margin + 20, HEADER_H / 2 - 4);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(doctor.designation, margin + 20, HEADER_H / 2 + 1.5);
+        doc.setFontSize(8);
+        doc.text([doctor.contactPhone, doctor.contactEmail].filter(Boolean).join("   ·   "), margin + 20, HEADER_H / 2 + 7);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(activeLabel, pageWidth - margin, HEADER_H / 2 - 3, { align: "right" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(`Generated: ${generatedAt}`, pageWidth - margin, HEADER_H / 2 + 4, { align: "right" });
+
+        doc.setTextColor(0, 0, 0);
+      }
+
+      function drawFooter() {
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          const pageHeight = doc.internal.pageSize.getHeight();
+          doc.setDrawColor(...CARD_BORDER);
+          doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.5);
+          doc.setTextColor(...TEXT_MUTED);
+          doc.text("Confidential — for internal clinical use only", margin, pageHeight - 7);
+          doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 7, { align: "right" });
+        }
+      }
+
+      type IconKind = "people" | "calendar" | "check" | "clipboard" | "hourglass" | "cross" | "dollar" | "wallet" | "shield" | "dot";
+
+      function cardMeta(label: string): { color: [number, number, number]; icon: IconKind } {
+        const l = label.toLowerCase();
+        if (l.includes("cancel") || l.includes("reject")) return { color: [239, 68, 68], icon: "cross" };
+        if (l.startsWith("payments") && l.includes("pending")) return { color: [249, 115, 22], icon: "wallet" };
+        if (l.includes("pending")) return { color: [249, 115, 22], icon: "hourglass" };
+        if (l.includes("verified")) return { color: [34, 197, 94], icon: "shield" };
+        if (l.includes("complete")) return { color: [20, 184, 166], icon: "clipboard" };
+        if (l.includes("confirm")) return { color: [59, 130, 246], icon: "check" };
+        if (l.includes("revenue")) return { color: [37, 99, 235], icon: "dollar" };
+        if (l.includes("appointment")) return { color: [34, 197, 94], icon: "calendar" };
+        if (l.includes("patient")) return { color: [59, 130, 246], icon: "people" };
+        return { color: [100, 116, 139], icon: "dot" };
+      }
+
+      function drawCardIcon(cx: number, cy: number, r: number, icon: IconKind) {
+        const s = r * 0.55;
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(255, 255, 255);
+        switch (icon) {
+          case "check":
+            doc.setLineWidth(0.7);
+            doc.line(cx - s * 0.7, cy, cx - s * 0.15, cy + s * 0.55);
+            doc.line(cx - s * 0.15, cy + s * 0.55, cx + s * 0.75, cy - s * 0.55);
+            break;
+          case "cross":
+            doc.setLineWidth(0.7);
+            doc.line(cx - s * 0.65, cy - s * 0.65, cx + s * 0.65, cy + s * 0.65);
+            doc.line(cx - s * 0.65, cy + s * 0.65, cx + s * 0.65, cy - s * 0.65);
+            break;
+          case "hourglass":
+            doc.triangle(cx - s * 0.8, cy - s * 0.9, cx + s * 0.8, cy - s * 0.9, cx, cy, "F");
+            doc.triangle(cx - s * 0.8, cy + s * 0.9, cx + s * 0.8, cy + s * 0.9, cx, cy, "F");
+            break;
+          case "people":
+            doc.circle(cx - s * 0.5, cy - s * 0.35, s * 0.4, "F");
+            doc.circle(cx + s * 0.45, cy - s * 0.25, s * 0.4, "F");
+            doc.triangle(cx - s * 1.0, cy + s * 0.9, cx, cy + s * 0.9, cx - s * 0.5, cy + s * 0.1, "F");
+            doc.triangle(cx - s * 0.05, cy + s * 0.9, cx + s * 0.95, cy + s * 0.9, cx + s * 0.45, cy + s * 0.2, "F");
+            break;
+          case "calendar":
+            doc.setLineWidth(0.5);
+            doc.roundedRect(cx - s * 0.9, cy - s * 0.8, s * 1.8, s * 1.6, 0.4, 0.4, "S");
+            doc.line(cx - s * 0.9, cy - s * 0.25, cx + s * 0.9, cy - s * 0.25);
+            break;
+          case "clipboard":
+            doc.setLineWidth(0.5);
+            doc.roundedRect(cx - s * 0.8, cy - s * 0.9, s * 1.6, s * 1.8, 0.4, 0.4, "S");
+            doc.line(cx - s * 0.45, cy - s * 0.1, cx + s * 0.45, cy - s * 0.1);
+            doc.line(cx - s * 0.45, cy + s * 0.35, cx + s * 0.45, cy + s * 0.35);
+            break;
+          case "dollar":
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(r * 2.1);
+            doc.text("$", cx, cy + r * 0.35, { align: "center" });
+            break;
+          case "wallet":
+            doc.setLineWidth(0.5);
+            doc.roundedRect(cx - s * 0.95, cy - s * 0.65, s * 1.9, s * 1.3, 0.4, 0.4, "S");
+            doc.circle(cx + s * 0.55, cy, s * 0.22, "F");
+            break;
+          case "shield":
+            doc.roundedRect(cx - s * 0.75, cy - s * 0.9, s * 1.5, s * 1.2, 0.3, 0.3, "F");
+            doc.triangle(cx - s * 0.75, cy + s * 0.25, cx + s * 0.75, cy + s * 0.25, cx, cy + s * 1.0, "F");
+            break;
+          default:
+            doc.circle(cx, cy, s * 0.4, "F");
+        }
+        doc.setTextColor(0, 0, 0);
+      }
+
+      function isWideCard(c: SummaryCard) {
+        return c.label.startsWith("Revenue") || c.label.startsWith("Payments") || String(c.value).length > 12;
+      }
+
+      function drawCard(c: SummaryCard, x: number, cy: number, w: number, h: number) {
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(...CARD_BORDER);
+        doc.roundedRect(x, cy, w, h, 2.5, 2.5, "FD");
+
+        const meta = cardMeta(c.label);
+        const iconCx = x + 7;
+        const iconCy = cy + 7;
+        doc.setFillColor(...meta.color);
+        doc.circle(iconCx, iconCy, 3.2, "F");
+        drawCardIcon(iconCx, iconCy, 3.2, meta.icon);
+
+        doc.setTextColor(...TEXT_MUTED);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+        doc.text(c.label, x + 13, cy + 8.2, { maxWidth: w - 16 });
+
+        doc.setTextColor(...TEXT_DARK);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11.5);
+        doc.text(String(c.value), x + 4, cy + h - 4, { maxWidth: w - 8 });
+      }
+
+      function drawSummaryCards(cards: SummaryCard[], startY: number): number {
+        if (cards.length === 0) return startY;
+        const compact = cards.filter((c) => !isWideCard(c));
+        const wide = cards.filter(isWideCard);
+        const gap = 4;
+        let y = startY;
+
+        if (compact.length > 0) {
+          const cols = Math.min(6, compact.length);
+          const cardW = (contentWidth - gap * (cols - 1)) / cols;
+          const cardH = 20;
+          compact.forEach((c, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            drawCard(c, margin + col * (cardW + gap), y + row * (cardH + gap), cardW, cardH);
+          });
+          y += Math.ceil(compact.length / cols) * (cardH + gap);
+        }
+
+        if (wide.length > 0) {
+          const cols = Math.min(3, wide.length);
+          const cardW = (contentWidth - gap * (cols - 1)) / cols;
+          const cardH = 20;
+          wide.forEach((c, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            drawCard(c, margin + col * (cardW + gap), y + row * (cardH + gap), cardW, cardH);
+          });
+          y += Math.ceil(wide.length / cols) * (cardH + gap);
+        }
+
+        return y + 4;
+      }
+
+      function pillColors(raw: string): { bg: [number, number, number]; text: [number, number, number] } | null {
+        const v = raw.trim().toLowerCase();
+        if (["confirmed", "verified"].includes(v)) return { bg: [220, 252, 231], text: [21, 128, 61] };
+        if (v === "completed") return { bg: [219, 234, 254], text: [30, 64, 175] };
+        if (["pending payment", "payment submitted", "payment verification", "pending", "submitted"].includes(v))
+          return { bg: [255, 237, 213], text: [194, 65, 12] };
+        if (["cancelled", "rejected", "no show", "failed"].includes(v)) return { bg: [254, 226, 226], text: [185, 28, 28] };
+        if (v === "rescheduled") return { bg: [237, 233, 254], text: [91, 33, 182] };
+        if (v === "refunded") return { bg: [229, 231, 235], text: [55, 65, 81] };
+        return null;
+      }
+
+      function renderTable(headers: string[], rows: (string | number)[][], startY: number, fontSize: number): number {
+        const badgeCols = new Set(headers.map((h, i) => (h === "Status" || h === "Payment" ? i : -1)).filter((i) => i >= 0));
+
+        autoTable(doc, {
+          startY,
+          head: [headers],
+          body: rows,
+          theme: "striped",
+          styles: { fontSize, cellPadding: 2.5, textColor: TEXT_DARK, lineColor: CARD_BORDER, lineWidth: 0.1 },
+          headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: ROW_ALT },
+          margin: { left: margin, right: margin, top: HEADER_H + 4 },
+          didParseCell: (data) => {
+            if (data.section === "body" && badgeCols.has(data.column.index)) {
+              data.cell.text = [""];
+            }
+          },
+          didDrawCell: (data) => {
+            if (data.section !== "body" || !badgeCols.has(data.column.index)) return;
+            const raw = String(data.cell.raw ?? "").trim();
+            if (!raw || raw === "—") return;
+            const style = pillColors(raw);
+            if (!style) return;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(Math.max(6, fontSize - 0.5));
+            const textW = doc.getTextWidth(raw);
+            const pillW = textW + 4.4;
+            const pillH = data.cell.height - 3;
+            const px = data.cell.x + (data.cell.width - pillW) / 2;
+            const py = data.cell.y + (data.cell.height - pillH) / 2;
+            doc.setFillColor(...style.bg);
+            doc.roundedRect(px, py, pillW, pillH, pillH / 2, pillH / 2, "F");
+            doc.setTextColor(...style.text);
+            doc.text(raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: "center" });
+            doc.setTextColor(...TEXT_DARK);
+          },
+          didDrawPage: drawHeader,
+        });
+
+        return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+      }
+
+      drawHeader();
+
+      doc.setTextColor(...NAVY);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text(activeLabel, margin, HEADER_H + 10);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...TEXT_MUTED);
+      doc.text(filterSummary, margin, HEADER_H + 16);
+      doc.setDrawColor(...CARD_BORDER);
+      doc.line(margin, HEADER_H + 19, pageWidth - margin, HEADER_H + 19);
+      doc.setTextColor(...TEXT_DARK);
+
+      let y = HEADER_H + 25;
+
+      if (active.summary && active.summary.length > 0) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...NAVY);
+        doc.text("Summary Overview", margin, y);
+        doc.setTextColor(...TEXT_DARK);
+        y += 5;
+        y = drawSummaryCards(active.summary, y);
+      }
+
+      const isMetricValueTable = active.table.headers.length === 2 && active.table.headers[0] === "Metric" && active.table.headers[1] === "Value";
+      if (!isMetricValueTable) {
+        y = renderTable(active.table.headers, sortedRows, y, 8);
+      }
+
+      for (const et of active.extraTables ?? []) {
+        let startY = y + 12;
+        if (startY > doc.internal.pageSize.getHeight() - 40) {
+          doc.addPage();
+          startY = HEADER_H + 12;
+        }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...NAVY);
+        doc.text(et.title, margin, startY);
+        doc.setTextColor(...TEXT_DARK);
+        y = renderTable(et.table.headers, et.table.rows, startY + 4, 7);
+      }
+
+      drawFooter();
       doc.save(`${activeReport}-report.pdf`);
     } finally {
       setExporting(false);
@@ -474,8 +846,16 @@ export default function ReportsContent() {
   }
 
   function exportCSV() {
-    const rows = [active.table.headers, ...sortedRows];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const sections: (string | number)[][] = [
+      active.table.headers,
+      ...sortedRows,
+    ];
+    for (const et of active.extraTables ?? []) {
+      sections.push([], [et.title], et.table.headers, ...et.table.rows);
+    }
+    const csv = sections
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -490,9 +870,15 @@ export default function ReportsContent() {
     setExporting(true);
     try {
       const XLSX = await import("xlsx");
-      const ws = XLSX.utils.aoa_to_sheet([active.table.headers, ...sortedRows]);
       const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet([active.table.headers, ...sortedRows]);
       XLSX.utils.book_append_sheet(wb, ws, activeLabel.slice(0, 28));
+
+      for (const et of active.extraTables ?? []) {
+        const ews = XLSX.utils.aoa_to_sheet([et.table.headers, ...et.table.rows]);
+        XLSX.utils.book_append_sheet(wb, ews, et.title.slice(0, 28));
+      }
+
       XLSX.writeFile(wb, `${activeReport}-report.xlsx`);
     } finally {
       setExporting(false);
@@ -505,8 +891,8 @@ export default function ReportsContent() {
     setDateTo(todayIso);
     setClinicFilter("All");
     setLocationFilter("All");
-    setGroupFilter("All");
-    setGranularity("daily");
+    setProcedureFilter("All");
+    setPatientFilter("All");
   }
 
   /* ---------- Render ---------- */
@@ -557,14 +943,6 @@ export default function ReportsContent() {
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md" />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-caption text-outline">Granularity</label>
-          <select value={granularity} onChange={(e) => setGranularity(e.target.value as Granularity)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md">
-            <option value="daily">Daily</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
           <label className="text-caption text-outline">Clinic</label>
           <select value={clinicFilter} onChange={(e) => setClinicFilter(e.target.value)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md min-w-40">
             <option value="All">All Clinics</option>
@@ -583,11 +961,20 @@ export default function ReportsContent() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-caption text-outline">Patient Group</label>
-          <select value={groupFilter} onChange={(e) => setGroupFilter(e.target.value as typeof groupFilter)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md">
-            <option value="All">All Groups</option>
-            {PATIENT_GROUPS.map((g) => (
-              <option key={g} value={g}>{g}</option>
+          <label className="text-caption text-outline">Procedure</label>
+          <select value={procedureFilter} onChange={(e) => setProcedureFilter(e.target.value)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md min-w-40">
+            <option value="All">All Procedures</option>
+            {procedures.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-caption text-outline">Patient</label>
+          <select value={patientFilter} onChange={(e) => setPatientFilter(e.target.value)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md min-w-48">
+            <option value="All">Select a patient…</option>
+            {[...patients].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
         </div>
@@ -625,7 +1012,13 @@ export default function ReportsContent() {
               {active.summary.map((s) => (
                 <div key={s.label} className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm">
                   <p className="text-caption font-semibold text-on-surface-variant uppercase tracking-wider">{s.label}</p>
-                  <p className="text-headline-md font-bold text-on-surface mt-1">{s.value}</p>
+                  <p
+                    className={`font-bold text-on-surface mt-1 break-all ${
+                      s.label === "Phone" || s.label === "Email" ? "text-body-lg" : "text-headline-md"
+                    }`}
+                  >
+                    {s.value}
+                  </p>
                 </div>
               ))}
             </div>
@@ -686,7 +1079,9 @@ export default function ReportsContent() {
                   {sortedRows.length === 0 ? (
                     <tr>
                       <td colSpan={active.table.headers.length} className="px-md py-xl text-center text-on-surface-variant">
-                        No data for the selected filters.
+                        {activeReport === "patient" && patientFilter === "All"
+                          ? "Select a patient above to view their report."
+                          : "No data for the selected filters."}
                       </td>
                     </tr>
                   ) : (
@@ -710,6 +1105,52 @@ export default function ReportsContent() {
               </div>
             )}
           </div>
+
+          {/* Extra data tables (e.g. full appointments / patients listing) */}
+          {active.extraTables?.map((et) => (
+            <div key={et.title} className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden mt-lg">
+              <div className="px-md py-sm border-b border-outline-variant/30">
+                <h3 className="font-bold text-on-surface">{et.title}</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-container-low/50 border-b border-outline-variant/30">
+                    <tr>
+                      {et.table.headers.map((h) => (
+                        <th key={h} className="px-md py-sm font-label-md text-label-md text-outline uppercase tracking-wider whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/20">
+                    {et.table.rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={et.table.headers.length} className="px-md py-xl text-center text-on-surface-variant">
+                          No data for the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      et.table.rows.map((row, i) => (
+                        <tr key={i} className="hover:bg-surface-container-low/30 transition-colors">
+                          {row.map((cell, j) => (
+                            <td key={j} className="px-md py-sm text-body-md whitespace-nowrap">
+                              {typeof cell === "number" ? cell.toLocaleString() : cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {et.table.rows.length > 0 && (
+                <div className="px-md py-sm bg-surface-container-low/30 border-t border-outline-variant/30">
+                  <p className="text-caption text-outline">{et.table.rows.length} rows</p>
+                </div>
+              )}
+            </div>
+          ))}
         </>
       )}
     </div>

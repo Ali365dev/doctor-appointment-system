@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "react-toastify";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { createLetterheadPdf } from "@/lib/pdf/letterhead";
 
 interface ApiPayment {
   _id: string;
@@ -51,6 +53,7 @@ function appointmentInfo(appointmentId: ApiPayment["appointmentId"]) {
 }
 
 export default function PaymentVerificationContent() {
+  const doctor = useDoctorProfile();
   const [rows, setRows] = useState<ApiPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [methodFilter, setMethodFilter] = useState("All");
@@ -205,21 +208,14 @@ export default function PaymentVerificationContent() {
   }
 
   async function exportPDF() {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
     const header = ["Patient", "Phone", "Appointment", "Method", "Ref/TXN", "Amount (PKR)", "Status", "Date"];
     const bodyRows = filtered.map((r) => {
       const info = appointmentInfo(r.appointmentId);
-      return [info.name, info.phone, info.number, METHOD_LABEL[r.method], r.transactionRef ?? "", r.amountPkr.toLocaleString(), r.status, r.createdAt?.slice(0, 10) ?? "—"];
+      return [info.name, info.phone, info.number, METHOD_LABEL[r.method], r.transactionRef ?? "—", r.amountPkr.toLocaleString(), r.status, r.createdAt?.slice(0, 10) ?? "—"];
     });
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("Payments", 14, 14);
-    autoTable(doc, {
-      startY: 20,
-      head: [header],
-      body: bodyRows,
-      styles: { fontSize: 8 },
-    });
+    const { doc, headerHeight, renderTable, drawFooter } = await createLetterheadPdf(doctor, { title: "Payments" });
+    renderTable({ startY: headerHeight + 6, headers: header, rows: bodyRows, badgeColumns: ["Status"] });
+    drawFooter();
     const label = dateFrom && dateTo ? `${dateFrom}_to_${dateTo}` : "all";
     doc.save(`payments_${label}.pdf`);
   }

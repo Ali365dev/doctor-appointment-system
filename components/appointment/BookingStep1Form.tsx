@@ -118,10 +118,17 @@ export default function BookingStep1Form() {
 
   const searchParams = searchParamsInit;
   const [selectedVisitType, setSelectedVisitType] = useState<"clinic" | "online">(() =>
-    searchParams.get("visitType") === "online" ? "online" : "clinic"
+    !procedureParam && searchParams.get("visitType") === "online" ? "online" : "clinic"
   );
   const [reason, setReason] = useState("");
   const router = useRouter();
+
+  // Procedures require an in-person visit — online consultation isn't an option for them.
+  const availableVisitTypes = procedureParam ? visitTypes.filter((vt) => vt.value !== "online") : visitTypes;
+
+  useEffect(() => {
+    if (procedureParam) setSelectedVisitType("clinic");
+  }, [procedureParam]);
 
   const visitTypeLabel = visitTypes.find((v) => v.value === selectedVisitType)?.label ?? null;
 
@@ -389,8 +396,8 @@ export default function BookingStep1Form() {
             <label className="text-[14px] font-semibold text-on-surface-variant uppercase tracking-wider mb-4 block">
               2. Choose Visit Type
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {visitTypes.map((vt) => (
+            <div className={`grid grid-cols-1 gap-4 ${availableVisitTypes.length > 1 ? "md:grid-cols-2" : ""}`}>
+              {availableVisitTypes.map((vt) => (
                 <label key={vt.value} className="relative group cursor-pointer">
                   <input
                     type="radio"
