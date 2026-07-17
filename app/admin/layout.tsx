@@ -6,6 +6,8 @@ import "../(public)/globals.css";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireRole } from "@/lib/auth/requireRole";
 import { findUserById } from "@/services/mongodb/repositories/user.repository";
+import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,6 +30,7 @@ export default async function AdminLayout({
   const user = doctorUser
     ? { name: doctorUser.name, avatar: doctorUser.avatar ?? undefined }
     : { name: "Doctor", avatar: undefined };
+  const profile = await getCmsProfile();
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
@@ -40,7 +43,9 @@ export default async function AdminLayout({
         />
       </head>
       <body className="min-h-full bg-surface text-on-surface overflow-x-hidden">
-        <AdminShell user={user}>{children}</AdminShell>
+        <DoctorProfileProvider profile={profile}>
+          <AdminShell user={user}>{children}</AdminShell>
+        </DoctorProfileProvider>
         <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>
     </html>

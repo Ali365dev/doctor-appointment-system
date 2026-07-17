@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor, buildWhatsappLink } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import type { AppointmentStatus } from "@/types/appointment";
 import type { PaymentStatus } from "@/types/payment";
 
@@ -96,6 +97,7 @@ interface Confirmation {
 }
 
 export default function SuccessContent() {
+  const doctor = useDoctorProfile();
   const { patientInfo, reset } = useBookingStore();
   const searchParams = useSearchParams();
   const paymentParam = searchParams.get("payment");
@@ -163,7 +165,7 @@ export default function SuccessContent() {
     };
   }, [method, sessionId, appointmentId]);
 
-  const fee = confirmation?.feeSnapshotPkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = confirmation?.feeSnapshotPkr ?? staticDoctor.fee_summary.min_fee_pkr;
   const clinicName = confirmation?.clinicName ?? "—";
   const patientName = confirmation?.patientName ?? patientInfo.fullName ?? "—";
   const refNumber = confirmation?.appointmentNumber ?? "—";
@@ -298,10 +300,10 @@ export default function SuccessContent() {
                 </span>
                 <p className="text-body-md text-on-primary-fixed-variant">
                   Verification usually takes <strong>5–30 minutes</strong> during working hours.
-                  Contact via <a href={doctor.contact.whatsapp} target="_blank" rel="noopener noreferrer"
+                  Contact via <a href={buildWhatsappLink(doctor.contactWhatsapp)} target="_blank" rel="noopener noreferrer"
                     className="text-primary underline">WhatsApp</a> or call{" "}
-                  <a href={`tel:${doctor.contact.helpline}`} className="text-primary underline">
-                    {doctor.contact.helpline}
+                  <a href={`tel:${doctor.contactPhone}`} className="text-primary underline">
+                    {doctor.contactPhone}
                   </a> for immediate assistance.
                 </p>
               </div>
@@ -352,7 +354,7 @@ export default function SuccessContent() {
             <div className="p-6 space-y-6">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                  <Image src={doctor.profile_image} alt={doctor.name} width={64} height={64}
+                  <Image src={doctor.profileImage} alt={doctor.name} width={64} height={64}
                     className="w-full h-full object-cover" unoptimized />
                 </div>
                 <div>
@@ -388,11 +390,11 @@ export default function SuccessContent() {
               </div>
             </div>
             <div className="p-6 bg-surface-container-low border-t border-outline-variant/20 flex gap-3">
-              <a href={doctor.contact.whatsapp} target="_blank" rel="noopener noreferrer"
+              <a href={buildWhatsappLink(doctor.contactWhatsapp)} target="_blank" rel="noopener noreferrer"
                 className="flex-1 bg-primary text-on-primary text-caption font-bold py-xs rounded-lg flex items-center justify-center gap-xs hover:opacity-90 transition-all">
                 <span className="material-symbols-outlined text-[16px]">chat</span> WhatsApp
               </a>
-              <a href={`tel:${doctor.contact.helpline}`}
+              <a href={`tel:${doctor.contactPhone}`}
                 className="flex-1 border border-primary text-primary text-caption font-bold py-xs rounded-lg flex items-center justify-center gap-xs hover:bg-primary/5 transition-all">
                 <span className="material-symbols-outlined text-[16px]">call</span> Call
               </a>

@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 const cities = ["Select City", "Lahore", "Karachi", "Islamabad", "Faisalabad", "Rawalpindi"];
 
 export default function BookingStep3Content() {
+  const doctor = useDoctorProfile();
   const router = useRouter();
   const {
     selectedClinic,
@@ -289,7 +291,7 @@ export default function BookingStep3Content() {
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-surface-container-high border-2 border-white shadow-sm">
-                  <Image src={doctor.profile_image} alt={doctor.name} width={64} height={64}
+                  <Image src={doctor.profileImage} alt={doctor.name} width={64} height={64}
                     className="w-full h-full object-cover" unoptimized />
                 </div>
                 <div>
@@ -326,7 +328,7 @@ export default function BookingStep3Content() {
               <div className="pt-6 border-t border-outline-variant/30 flex justify-between items-center">
                 <span className="text-body-lg font-semibold text-on-surface">Total Fee</span>
                 <span className="text-headline-md font-bold text-primary">
-                  Rs. {(selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr).toLocaleString()}
+                  Rs. {(selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? staticDoctor.fee_summary.min_fee_pkr).toLocaleString()}
                 </span>
               </div>
             </div>

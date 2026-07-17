@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { APPOINTMENT_STATUSES, type AppointmentStatus, type AppointmentType, type VisitType } from "@/types/appointment";
 import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from "@/types/payment";
 import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 interface ApiPayment {
   _id: string;
@@ -105,6 +105,7 @@ function clinicName(clinicId: ApiAppointment["clinicId"]): string {
 }
 
 export default function AppointmentsContent() {
+  const doctor = useDoctorProfile();
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [clinics, setClinics] = useState<{ _id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);

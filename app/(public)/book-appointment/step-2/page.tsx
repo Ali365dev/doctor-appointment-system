@@ -1,11 +1,14 @@
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep2Content from "@/components/appointment/BookingStep2Content";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
-export const metadata = {
-  title: `Book Appointment – Step 2 | ${doctor.name}`,
-  description: "Select your preferred date and time.",
-};
+export async function generateMetadata() {
+  const doctor = await getCmsProfile();
+  return {
+    title: `Book Appointment – Step 2 | ${doctor.name}`,
+    description: "Select your preferred date and time.",
+  };
+}
 
 export default function BookAppointmentStep2() {
   return (

@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import HeroBookingForm from "@/components/home/HeroBookingForm";
 import PracticeLocations from "@/components/home/PracticeLocations";
 import ReviewsCarousel from "@/components/common/ReviewsCarousel";
@@ -105,14 +106,16 @@ const getServiceDesc = (name: string) =>
   "";
 
 export default function HomePage() {
-  const { name, qualifications, experience_years, rating, profile_image, contact, education,
-    professional_memberships, services, conditions_treated, treatments_offered, about } = doctor;
+  const { name, experienceYears, profileImage, education, professionalMemberships, about, contactWhatsapp, contactPhone, specialization, verification } =
+    useDoctorProfile();
+  const { rating, services, conditions_treated, treatments_offered } = staticDoctor;
+  const qualifications = education.map((edu) => edu.name).join(", ");
 
   const firstName = name.split(" ")[0];
   const displayName = name;
-  const specializations = doctor.specialization.join(" & ");
-  const whatsappLink = contact.whatsapp;
-  const helpline = contact.helpline;
+  const specializations = specialization.join(" & ");
+  const whatsappLink = `https://api.whatsapp.com/send?phone=${contactWhatsapp.replace(/[^\d]/g, "")}`;
+  const helpline = contactPhone;
   const featuredConditions = conditions_treated.slice(0, 14);
   const moreConditionsCount = Math.max(0, conditions_treated.length - featuredConditions.length);
 
@@ -161,7 +164,7 @@ export default function HomePage() {
               >
                 verified
               </span>
-              {doctor.verification}
+              {verification}
             </motion.div>
 
             <h1 className="text-display font-bold leading-[1.1] tracking-[-0.02em] text-on-surface min-h-[1.1em]">
@@ -199,7 +202,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <p className="text-label-md font-semibold text-primary">
-                    <AnimatedCounter value={experience_years} suffix="+ Years" />
+                    <AnimatedCounter value={experienceYears} suffix="+ Years" />
                   </p>
                   <p className="text-caption text-on-surface-variant">Experience</p>
                 </div>
@@ -246,7 +249,7 @@ export default function HomePage() {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
                 <Image
-                  src={profile_image}
+                  src={profileImage}
                   alt={displayName}
                   width={96}
                   height={96}
@@ -322,7 +325,7 @@ export default function HomePage() {
               transition={{ duration: 0.4 }}
             >
               <Image
-                src={profile_image}
+                src={profileImage}
                 alt={`${displayName} Portrait`}
                 fill
                 className="object-cover"
@@ -351,7 +354,7 @@ export default function HomePage() {
               About {displayName}
             </h2>
             <p className="text-body-lg text-on-surface-variant leading-relaxed">
-              {about} — a leading specialist in gastroenterology and hepatology with {experience_years}+ years
+              {about} — a leading specialist in gastroenterology and hepatology with {experienceYears}+ years
               of clinical excellence. Committed to patient-centric care for digestive and liver disorders.
             </p>
 
@@ -362,9 +365,9 @@ export default function HomePage() {
                 <div>
                   <h4 className="text-label-md font-semibold text-on-surface">Academic Qualifications</h4>
                   <ul className="text-on-surface-variant text-body-md list-disc list-inside mt-xs space-y-xs">
-                    {education.map((edu) => (
-                      <li key={edu.degree}>
-                        {edu.degree}
+                    {education.map((edu, i) => (
+                      <li key={`${edu.name}-${i}`}>
+                        {edu.name}
                         {edu.institute ? ` — ${edu.institute}` : ""}
                         {edu.year ? ` (${edu.year})` : ""}
                       </li>
@@ -375,7 +378,7 @@ export default function HomePage() {
             )}
 
             {/* Memberships */}
-            {professional_memberships.length > 0 && (
+            {professionalMemberships.length > 0 && (
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-primary mt-1">workspace_premium</span>
                 <div>
@@ -383,7 +386,7 @@ export default function HomePage() {
                     Professional Memberships
                   </h4>
                   <ul className="text-on-surface-variant text-body-md list-disc list-inside mt-xs space-y-xs">
-                    {professional_memberships.map((m) => (
+                    {professionalMemberships.map((m) => (
                       <li key={m}>{m}</li>
                     ))}
                   </ul>

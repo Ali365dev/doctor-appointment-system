@@ -13,7 +13,6 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { doctor } from "@/lib/data";
 import type { AppointmentStatus, VisitType } from "@/types/appointment";
 import type { PaymentStatus } from "@/types/payment";
 

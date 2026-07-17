@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import LogoutButton from "@/components/auth/LogoutButton";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -25,6 +26,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const { name, logoUrl } = useDoctorProfile();
 
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +53,7 @@ export default function Header() {
     <header className="fixed top-0 left-0 w-full z-1030 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm">
       <div className="max-w-[1280px] mx-auto flex justify-between items-center px-gutter py-4">
         <Link href="/" className="flex items-center">
-          <img src="/dr_zaid_gul_logo_navbar.svg" alt="Dr. Zaid Gul" className="h-12 w-auto" />
+          <img src={logoUrl || "/dr_zaid_gul_logo_navbar.svg"} alt={name} className="h-12 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-lg">

@@ -9,7 +9,7 @@ import React, {
   memo,
 } from "react";
 import { useRouter } from "next/navigation";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import { useBookingStore } from "@/store/bookingStore";
 import type { WeeklySchedule } from "@/types/clinic";
 
@@ -148,6 +148,7 @@ const LocationCard = memo(function LocationCard({
 });
 
 export default function PracticeLocations() {
+  const doctor = useDoctorProfile();
   const [locations, setLocations] = useState<Loc[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);

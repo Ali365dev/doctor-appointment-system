@@ -3,38 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { doctor as staticDoctor } from "@/lib/data";
 import CTASection from "@/components/public/CTASection";
 import Reveal from "@/components/common/Reveal";
 import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
 import AnimatedCounter from "@/components/common/AnimatedCounter";
-
-const TIMELINE = [
-  {
-    role: "Senior Consultant Gastroenterologist",
-    place: "Faisal Hospital, Faisalabad",
-    period: "2021 — Present",
-    detail:
-      "Leading the GI endoscopy unit and managing complex hepatobiliary disease cases with state-of-the-art interventional procedures.",
-    side: "left",
-  },
-  {
-    role: "Fellow in Gastroenterology & Hepatology",
-    place: "Shaheed Zulfiqar Ali Bhutto Medical University",
-    period: "2018 — 2021",
-    detail:
-      "Completed post-graduate specialty training in clinical hepatology, interventional endoscopy, and inflammatory bowel disease management.",
-    side: "right",
-  },
-  {
-    role: "Medical Officer (Internal Medicine)",
-    place: "Independent Medical College, Faisalabad",
-    period: "2014 — 2018",
-    detail:
-      "Foundational clinical training encompassing general medicine, acute care management, and diagnostic gastroscopy.",
-    side: "left",
-  },
-];
 
 const MEMBERSHIP_CARDS = [
   {
@@ -67,9 +41,10 @@ const MEMBERSHIP_CARDS = [
 
 export default function AboutContent() {
   const {
-    name, qualifications, experience_years, rating, profile_image,
-    education, professional_memberships, about, specialization, verification,
-  } = doctor;
+    name, experienceYears, profileImage,
+    education, professionalMemberships, about, specialization, verification, professionalJourney,
+  } = useDoctorProfile();
+  const { rating } = staticDoctor;
 
   return (
     <main className="pt-24 overflow-x-hidden">
@@ -85,7 +60,7 @@ export default function AboutContent() {
               transition={{ duration: 0.4 }}
             >
               <Image
-                src={profile_image}
+                src={profileImage}
                 alt={name}
                 fill
                 className="object-cover object-top"
@@ -124,7 +99,7 @@ export default function AboutContent() {
             <RevealGroup className="grid grid-cols-2 md:grid-cols-3 gap-md pt-md">
               <motion.div variants={revealItem} className="space-y-1">
                 <span className="text-headline-md font-semibold text-primary">
-                  <AnimatedCounter value={experience_years} suffix="+ Years" />
+                  <AnimatedCounter value={experienceYears} suffix="+ Years" />
                 </span>
                 <p className="text-caption text-outline uppercase tracking-widest">
                   Clinical Experience
@@ -239,8 +214,8 @@ export default function AboutContent() {
                   Qualifications
                 </h3>
                 <ul className="space-y-md">
-                  {education.map((edu) => (
-                    <li key={edu.degree} className="flex gap-sm">
+                  {education.map((edu, i) => (
+                    <li key={`${edu.name}-${i}`} className="flex gap-sm">
                       <div className="h-10 w-10 shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
                         <span className="material-symbols-outlined text-primary">
                           school
@@ -248,11 +223,11 @@ export default function AboutContent() {
                       </div>
                       <div>
                         <p className="text-headline-md font-semibold text-on-surface leading-tight">
-                          {edu.degree}
+                          {edu.name}
                         </p>
-                        {edu.institute && (
+                        {(edu.institute || edu.location || edu.year) && (
                           <p className="text-caption text-outline">
-                            {edu.institute}
+                            {[edu.institute, edu.location].filter(Boolean).join(" · ")}
                             {edu.year ? ` · ${edu.year}` : ""}
                           </p>
                         )}
@@ -268,7 +243,7 @@ export default function AboutContent() {
                   Memberships
                 </h3>
                 <ul className="space-y-sm">
-                  {professional_memberships.map((m) => (
+                  {professionalMemberships.map((m) => (
                     <li key={m} className="flex gap-sm items-start">
                       <div className="h-8 w-8 shrink-0 bg-primary/10 rounded-lg flex items-center justify-center mt-0.5">
                         <span className="material-symbols-outlined text-primary text-[18px]">
@@ -297,41 +272,44 @@ export default function AboutContent() {
           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-outline-variant/50 hidden md:block" />
 
           <div className="space-y-xl">
-            {TIMELINE.map((item, i) => (
-              <Reveal
-                key={i}
-                delay={i * 150}
-                className={`flex flex-col md:flex-row items-center gap-md relative ${
-                  item.side === "right" ? "md:flex-row-reverse" : ""
-                }`}
-              >
-                <div
-                  className={`md:w-1/2 ${
-                    item.side === "left" ? "md:text-right md:pr-lg" : "md:pl-lg"
+            {professionalJourney.map((item, i) => {
+              const side = i % 2 === 0 ? "left" : "right";
+              return (
+                <Reveal
+                  key={i}
+                  delay={i * 150}
+                  className={`flex flex-col md:flex-row items-center gap-md relative ${
+                    side === "right" ? "md:flex-row-reverse" : ""
                   }`}
                 >
-                  <h4 className="text-headline-md font-semibold text-primary">
-                    {item.role}
-                  </h4>
-                  <p className="text-body-md font-semibold text-on-surface">
-                    {item.place}
-                  </p>
-                  <p className="text-on-surface-variant italic">{item.period}</p>
-                </div>
-                <motion.div
-                  className="h-4 w-4 rounded-full bg-primary ring-4 ring-primary-fixed z-10 hidden md:block shrink-0"
-                  animate={{ scale: [1, 1.25, 1] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
-                />
-                <div
-                  className={`md:w-1/2 text-on-surface-variant ${
-                    item.side === "left" ? "md:pl-lg" : "md:text-right md:pr-lg"
-                  }`}
-                >
-                  {item.detail}
-                </div>
-              </Reveal>
-            ))}
+                  <div
+                    className={`md:w-1/2 ${
+                      side === "left" ? "md:text-right md:pr-lg" : "md:pl-lg"
+                    }`}
+                  >
+                    <h4 className="text-headline-md font-semibold text-primary">
+                      {item.role}
+                    </h4>
+                    <p className="text-body-md font-semibold text-on-surface">
+                      {item.place}
+                    </p>
+                    <p className="text-on-surface-variant italic">{item.period}</p>
+                  </div>
+                  <motion.div
+                    className="h-4 w-4 rounded-full bg-primary ring-4 ring-primary-fixed z-10 hidden md:block shrink-0"
+                    animate={{ scale: [1, 1.25, 1] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+                  />
+                  <div
+                    className={`md:w-1/2 text-on-surface-variant ${
+                      side === "left" ? "md:pl-lg" : "md:text-right md:pr-lg"
+                    }`}
+                  >
+                    {item.detail}
+                  </div>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>

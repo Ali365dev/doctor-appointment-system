@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import Link from "next/link";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor, buildWhatsappLink } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 const quickLinks = [
   { href: "#about", label: "About Dr. Zaid Gul" },
@@ -39,20 +40,24 @@ const SocialSvg: Record<string, (props: { className?: string }) => JSX.Element> 
   ),
 };
 
-export default function Footer() {
-  const { name, contact, social, practice_locations, verification } = doctor;
+export default async function Footer() {
+  const { name, contactEmail, contactPhone, contactWhatsapp, social, verification } = await getCmsProfile();
+  const { practice_locations } = staticDoctor;
   const firstLocation = practice_locations[0];
-  const socialLinks = Object.entries(social ?? {}) as [keyof typeof social, { username: string; url: string }][];
+  const socialLinks = Object.entries(social ?? {}).filter(
+    ([platform, url]) => !!url && platform in SocialSvg
+  ) as [string, string][];
+  const whatsappHref = buildWhatsappLink(contactWhatsapp);
 
   const contactItems = [
-    ...(contact.helpline
-      ? [{ icon: "call", text: contact.helpline, href: `tel:${contact.helpline}` }]
+    ...(contactPhone
+      ? [{ icon: "call", text: contactPhone, href: `tel:${contactPhone}` }]
       : []),
-    ...(contact.whatsapp
-      ? [{ icon: "chat", text: "WhatsApp", href: contact.whatsapp }]
+    ...(contactWhatsapp
+      ? [{ icon: "chat", text: "WhatsApp", href: whatsappHref }]
       : []),
-    ...(contact.email
-      ? [{ icon: "mail", text: contact.email, href: `mailto:${contact.email}` }]
+    ...(contactEmail
+      ? [{ icon: "mail", text: contactEmail, href: `mailto:${contactEmail}` }]
       : []),
     ...(firstLocation?.address
       ? [{ icon: "location_on", text: firstLocation.address, href: firstLocation.map_link }]
@@ -73,7 +78,7 @@ export default function Footer() {
           {/* Quick action buttons */}
           <div className="flex flex-wrap gap-sm pt-sm">
             <a
-              href={contact.whatsapp}
+              href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-lg text-label-md font-semibold hover:opacity-90 transition-all"
@@ -82,19 +87,19 @@ export default function Footer() {
               WhatsApp
             </a>
             <a
-              href={`tel:${contact.helpline}`}
+              href={`tel:${contactPhone}`}
               className="flex items-center gap-xs px-md py-xs border border-primary text-primary rounded-lg text-label-md font-semibold hover:bg-primary/5 transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">call</span>
-              {contact.helpline}
+              {contactPhone}
             </a>
           </div>
 
           {/* Social links */}
           {socialLinks.length > 0 && (
             <div className="flex gap-sm pt-sm">
-              {socialLinks.map(([platform, { url }]) => {
-                const Icon = SocialSvg[platform as string];
+              {socialLinks.map(([platform, url]) => {
+                const Icon = SocialSvg[platform];
                 return (
                   <a
                     key={platform}

@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import UploadReceiptContent from "@/components/appointment/UploadReceiptContent";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
-export const metadata = {
-  title: `Upload Payment Receipt | ${doctor.name}`,
-  description: "Upload your payment receipt to complete your booking.",
-};
+export async function generateMetadata() {
+  const doctor = await getCmsProfile();
+  return {
+    title: `Upload Payment Receipt | ${doctor.name}`,
+    description: "Upload your payment receipt to complete your booking.",
+  };
+}
 
 export default function UploadReceiptPage() {
   return (

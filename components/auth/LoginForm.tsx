@@ -7,11 +7,12 @@ import PhoneLoginForm from "./PhoneLoginForm";
 import PasswordLoginForm from "./PasswordLoginForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import GoogleLoginButton from "./GoogleLoginButton";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 type Mode = "otp" | "password" | "forgot";
 
 export default function LoginForm() {
+  const doctor = useDoctorProfile();
   const [mode, setMode] = useState<Mode>("otp");
   const [phoneHandoff, setPhoneHandoff] = useState("");
   const searchParams = useSearchParams();

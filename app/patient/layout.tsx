@@ -7,6 +7,8 @@ import PatientSidebar from "@/components/patient/PatientSidebar";
 import PatientTopBar from "@/components/patient/PatientTopBar";
 import { requireRole } from "@/lib/auth/requireRole";
 import { findUserById } from "@/services/mongodb/repositories/user.repository";
+import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,6 +24,7 @@ export const metadata: Metadata = {
 export default async function PatientLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole("patient");
   const user = await findUserById(session.userId);
+  const profile = await getCmsProfile();
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
@@ -34,6 +37,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
         />
       </head>
       <body className="min-h-full bg-background text-on-background">
+        <DoctorProfileProvider profile={profile}>
         <div className="flex min-h-screen">
           <PatientSidebar />
           <main className="flex-1 md:ml-64 min-w-0 flex flex-col">
@@ -84,6 +88,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
             <span className="text-caption">Settings</span>
           </a>
         </nav>
+        </DoctorProfileProvider>
 
         <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { doctor } from "@/lib/data";
+import { buildWhatsappLink } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import Reveal from "@/components/common/Reveal";
 
 interface CTASectionProps {
@@ -24,7 +25,8 @@ export default function CTASection({
   secondaryHref,
   dark = false,
 }: CTASectionProps) {
-  const whatsapp = doctor.contact.whatsapp;
+  const doctor = useDoctorProfile();
+  const whatsapp = buildWhatsappLink(doctor.contactWhatsapp);
   const resolvedSecondary = secondaryHref ?? whatsapp;
 
   if (dark) {

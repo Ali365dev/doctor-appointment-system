@@ -6,7 +6,8 @@ import Image from "next/image";
 import { toast } from "react-toastify";
 import QRCode from "react-qr-code";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 const JAZZCASH_NUMBER = "03001234567";
 const EASYPAISA_NUMBER = "03457654321";
@@ -27,6 +28,7 @@ function WalletTab({
   accentBorder: string;
   fee: number;
 }) {
+  const doctor = useDoctorProfile();
   const [copied, setCopied] = useState(false);
   const router = useRouter();
   const setPaymentMethod = useBookingStore((s) => s.setPaymentMethod);
@@ -117,6 +119,7 @@ function WalletTab({
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function BookingStep5Content() {
+  const doctor = useDoctorProfile();
   const router = useRouter();
   const { selectedClinic, selectedProcedure, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
     useBookingStore();
@@ -132,7 +135,7 @@ export default function BookingStep5Content() {
     }
   }, [appointmentId, router]);
 
-  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? staticDoctor.fee_summary.min_fee_pkr;
 
   const formattedDate = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -209,8 +212,7 @@ export default function BookingStep5Content() {
       `Please confirm my appointment. Thank you.`
   );
 
-  const waNumber =
-    new URL(doctor.contact.whatsapp).searchParams.get("phone")?.replace(/\D/g, "") ?? "923326568897";
+  const waNumber = doctor.contactWhatsapp.replace(/\D/g, "") || "923326568897";
   const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
 
   const summaryRows = [
@@ -452,7 +454,7 @@ export default function BookingStep5Content() {
                 </a>
 
                 <p className="text-center text-caption text-outline">
-                  Opens WhatsApp with {doctor.contact.helpline}
+                  Opens WhatsApp with {doctor.contactPhone}
                 </p>
               </div>
             )}
@@ -481,7 +483,7 @@ export default function BookingStep5Content() {
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
                 <Image
-                  src={doctor.profile_image}
+                  src={doctor.profileImage}
                   alt={doctor.name}
                   width={56}
                   height={56}

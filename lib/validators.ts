@@ -338,3 +338,116 @@ export function validateClinicBody(body: unknown, partial = false): string | nul
 
   return null;
 }
+
+interface CmsEducationEntryBody {
+  name?: string;
+  institute?: string;
+  location?: string;
+  year?: number;
+}
+
+interface CmsJourneyEntryBody {
+  role?: string;
+  place?: string;
+  period?: string;
+  detail?: string;
+}
+
+interface CmsSocialLinksBody {
+  facebook?: string;
+  instagram?: string;
+  linkedin?: string;
+  x?: string;
+  youtube?: string;
+  website?: string;
+}
+
+interface CmsRequestBody {
+  name?: string;
+  designation?: string;
+  profileImage?: string;
+  logoUrl?: string;
+  verification?: string;
+  about?: string;
+  experienceYears?: number;
+  city?: string;
+  country?: string;
+  specialization?: string[];
+  professionalMemberships?: string[];
+  languagesSpoken?: string[];
+  education?: CmsEducationEntryBody[];
+  professionalJourney?: CmsJourneyEntryBody[];
+  contactEmail?: string;
+  contactPhone?: string;
+  contactWhatsapp?: string;
+  social?: CmsSocialLinksBody;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === "string");
+}
+
+function isValidUrlLike(value: string): boolean {
+  return /^https?:\/\/.+\..+/i.test(value);
+}
+
+/**
+ * Validates the raw request body for PATCH /api/cms.
+ * Returns an error message for the first invalid field found, or null if valid.
+ */
+export function validateCmsBody(body: unknown, partial = false): string | null {
+  if (!body || typeof body !== "object") return "Request body is required";
+  const b = body as CmsRequestBody;
+
+  if (!partial || b.name !== undefined) {
+    if (!b.name || !b.name.trim()) return "Name is required";
+  }
+  if (b.experienceYears !== undefined && (!Number.isFinite(b.experienceYears) || b.experienceYears < 0)) {
+    return "Experience years must be a non-negative number";
+  }
+  if (b.contactEmail !== undefined && b.contactEmail !== "" && !isValidEmail(b.contactEmail)) {
+    return "Enter a valid contact email";
+  }
+  if (b.contactPhone !== undefined && b.contactPhone !== "" && !isValidPhone(b.contactPhone)) {
+    return "Enter a valid contact phone number";
+  }
+  if (b.contactWhatsapp !== undefined && b.contactWhatsapp !== "" && !isValidPhone(b.contactWhatsapp)) {
+    return "Enter a valid WhatsApp number";
+  }
+  if (b.specialization !== undefined && !isStringArray(b.specialization)) return "specialization must be an array of strings";
+  if (b.professionalMemberships !== undefined && !isStringArray(b.professionalMemberships)) {
+    return "professionalMemberships must be an array of strings";
+  }
+  if (b.languagesSpoken !== undefined && !isStringArray(b.languagesSpoken)) return "languagesSpoken must be an array of strings";
+
+  if (b.education !== undefined) {
+    if (!Array.isArray(b.education)) return "education must be an array";
+    for (const entry of b.education) {
+      if (!entry || typeof entry !== "object" || !entry.name || !entry.name.trim()) {
+        return "Each education entry requires a name";
+      }
+    }
+  }
+
+  if (b.professionalJourney !== undefined) {
+    if (!Array.isArray(b.professionalJourney)) return "professionalJourney must be an array";
+    for (const entry of b.professionalJourney) {
+      if (!entry || typeof entry !== "object" || !entry.role || !entry.role.trim()) {
+        return "Each professional journey entry requires a role";
+      }
+    }
+  }
+
+  if (b.social !== undefined) {
+    if (!b.social || typeof b.social !== "object") return "social must be an object";
+    const urlFields: (keyof CmsSocialLinksBody)[] = ["facebook", "instagram", "linkedin", "youtube", "website"];
+    for (const field of urlFields) {
+      const value = b.social[field];
+      if (value !== undefined && value !== "" && !isValidUrlLike(value)) {
+        return `Enter a valid URL for ${field}`;
+      }
+    }
+  }
+
+  return null;
+}

@@ -1,20 +1,26 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../(public)/globals.css";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
+import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: `Login | ${doctor.name}`,
-  description: "Securely access your medical portal.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const doctor = await getCmsProfile();
+  return {
+    title: `Login | ${doctor.name}`,
+    description: "Securely access your medical portal.",
+  };
+}
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const profile = await getCmsProfile();
+
   return (
     <html lang="en">
       <head>
@@ -32,7 +38,7 @@ export default function AuthLayout({
       <body
         className={`${inter.className} min-h-screen bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden`}
       >
-        {children}
+        <DoctorProfileProvider profile={profile}>{children}</DoctorProfileProvider>
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 import "server-only";
 import { connectDB } from "@/services/mongodb";
 import { uploadMedicalReport, deleteUploadedAsset } from "@/services/cloudinary";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 import { findAppointmentById } from "@/services/mongodb/repositories/appointment.repository";
 import {
   createMedicalRecord as createMedicalRecordRecord,
@@ -56,7 +56,8 @@ export type ReportApiShape = Report;
 /** Admin list/detail views also need to know which patient a record belongs to. */
 export type AdminReportApiShape = Report & { patientName: string; patientId: string };
 
-function toApiShape(doc: MedicalRecordDoc): ReportApiShape {
+async function toApiShape(doc: MedicalRecordDoc): Promise<ReportApiShape> {
+  const doctor = await getCmsProfile();
   return {
     id: String(doc._id),
     title: doc.title,
@@ -68,7 +69,7 @@ function toApiShape(doc: MedicalRecordDoc): ReportApiShape {
     // Single-doctor practice — the doctor reviewing every submission is always
     // Dr. Zaid Gul, so show his identity immediately rather than a permanent
     // "Not yet assigned" placeholder with no real doctor-side UI to assign one.
-    doctor: { name: doctor.name, avatar: doctor.profile_image },
+    doctor: { name: doctor.name, avatar: doctor.profileImage },
     appointment:
       doc.appointmentId && doc.appointmentDateSnapshot && doc.appointmentClinicSnapshot
         ? { id: String(doc.appointmentId), date: doc.appointmentDateSnapshot, clinic: doc.appointmentClinicSnapshot }
@@ -105,10 +106,10 @@ function toApiShape(doc: MedicalRecordDoc): ReportApiShape {
   };
 }
 
-function toAdminApiShape(doc: MedicalRecordDoc): AdminReportApiShape {
+async function toAdminApiShape(doc: MedicalRecordDoc): Promise<AdminReportApiShape> {
   const patient = doc.patientId as unknown as { _id?: unknown; name?: string } | null;
   return {
-    ...toApiShape(doc),
+    ...(await toApiShape(doc)),
     patientName: patient?.name ?? "Unknown Patient",
     patientId: patient?._id ? String(patient._id) : "",
   };
@@ -161,7 +162,7 @@ export async function createMedicalRecord(params: CreateMedicalRecordParams): Pr
 export async function getMedicalRecordsForPatient(patientId: string): Promise<ReportApiShape[]> {
   await connectDB();
   const docs = await findMedicalRecordsByPatientId(patientId);
-  return docs.map(toApiShape);
+  return Promise.all(docs.map(toApiShape));
 }
 
 export async function getMedicalRecordById(id: string, patientId: string): Promise<ReportApiShape> {
@@ -263,7 +264,7 @@ export async function addMessageToReport(params: AddMessageParams): Promise<Repo
 export async function getAllMedicalRecordsForAdmin(): Promise<AdminReportApiShape[]> {
   await connectDB();
   const docs = await findAllMedicalRecords();
-  return docs.map(toAdminApiShape);
+  return Promise.all(docs.map(toAdminApiShape));
 }
 
 export async function getMedicalRecordForAdmin(id: string): Promise<AdminReportApiShape> {

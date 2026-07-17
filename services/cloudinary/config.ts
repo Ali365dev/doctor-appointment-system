@@ -31,6 +31,7 @@ export const CLOUDINARY_FOLDERS = {
   profileImages: "doctor-clinic/profile-images",
   receipts: "doctor-clinic/receipts",
   doctor: "doctor-clinic/doctor",
+  logo: "doctor-clinic/logo",
   clinics: "doctor-clinic/clinics",
   procedures: "doctor-clinic/procedures",
   medicalReports: "doctor-clinic/medical-reports",

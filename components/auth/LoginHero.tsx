@@ -1,7 +1,8 @@
 import Image from "next/image";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
-export default function LoginHero() {
+export default async function LoginHero() {
+  const doctor = await getCmsProfile();
   return (
     <section className="hidden lg:flex lg:w-1/2 relative bg-primary-container items-center justify-center p-16">
 

@@ -5,8 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import SmoothScroll from "@/components/common/SmoothScroll";
-import { doctor } from "@/lib/data";
+import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -14,16 +14,21 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: `${doctor.name} | Consultant Gastroenterologist`,
-  description: `Leading Consultant Gastroenterologist and Hepatologist with over ${doctor.experience_years}+ years of clinical excellence.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const doctor = await getCmsProfile();
+  return {
+    title: `${doctor.name} | Consultant Gastroenterologist`,
+    description: `Leading Consultant Gastroenterologist and Hepatologist with over ${doctor.experienceYears}+ years of clinical excellence.`,
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const profile = await getCmsProfile();
+
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <head>
@@ -33,10 +38,11 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <SmoothScroll />
-        <Header />
-        {children}
-        <Footer />
+        <DoctorProfileProvider profile={profile}>
+          <Header />
+          {children}
+          <Footer />
+        </DoctorProfileProvider>
         <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>
     </html>

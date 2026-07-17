@@ -1,11 +1,14 @@
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep5Content from "@/components/appointment/BookingStep5Content";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
-export const metadata = {
-  title: `Secure Payment – Step 5 | ${doctor.name}`,
-  description: "Complete your payment to confirm your appointment.",
-};
+export async function generateMetadata() {
+  const doctor = await getCmsProfile();
+  return {
+    title: `Secure Payment – Step 5 | ${doctor.name}`,
+    description: "Complete your payment to confirm your appointment.",
+  };
+}
 
 export default function BookAppointmentStep5() {
   return (

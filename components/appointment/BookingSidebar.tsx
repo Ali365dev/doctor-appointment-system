@@ -2,16 +2,18 @@
 
 import Image from "next/image";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 interface BookingSidebarProps {
   visitTypeLabel: string | null;
 }
 
 export default function BookingSidebar({ visitTypeLabel }: BookingSidebarProps) {
+  const doctor = useDoctorProfile();
   const { selectedClinic, selectedProcedure, selectedDate, selectedTime } = useBookingStore();
 
-  const effectiveFee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+  const effectiveFee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? staticDoctor.fee_summary.min_fee_pkr;
 
   const formattedDate = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -33,7 +35,7 @@ export default function BookingSidebar({ visitTypeLabel }: BookingSidebarProps) 
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-surface-container-high border border-white flex-shrink-0">
               <Image
-                src={doctor.profile_image}
+                src={doctor.profileImage}
                 alt={doctor.name}
                 width={48}
                 height={48}

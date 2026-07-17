@@ -39,6 +39,28 @@ export async function uploadReceiptImage(file: File): Promise<CloudinaryUploadRe
   return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.receipts, resourceType: isPdf ? "raw" : "image" });
 }
 
+/** Validates and uploads the doctor's CMS profile photo to the doctor folder. */
+export async function uploadDoctorPhoto(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed for the profile photo");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Profile photo must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.doctor, resourceType: "image" });
+}
+
+/** Validates and uploads the site logo to the logo folder. */
+export async function uploadDoctorLogo(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed for the logo");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Logo file must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.logo, resourceType: "image" });
+}
+
 /** Validates and uploads a clinic photo to the clinics folder. */
 export async function uploadClinicImage(file: File): Promise<CloudinaryUploadResult> {
   if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {

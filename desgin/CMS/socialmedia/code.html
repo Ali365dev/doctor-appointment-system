@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Social Media - Website CMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#ededf9",
+                        "inverse-surface": "#2e3039",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "inverse-primary": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-primary-fixed": "#00174b",
+                        "tertiary": "#943700",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e7e7f3",
+                        "secondary-fixed-dim": "#89ceff",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "tertiary-container": "#bc4800",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#d9d9e5",
+                        "on-surface": "#191b23",
+                        "surface-variant": "#e1e2ed",
+                        "on-secondary-fixed": "#001e2f",
+                        "tertiary-fixed": "#ffdbcd",
+                        "outline": "#737686",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "error": "#ba1a1a",
+                        "on-background": "#191b23",
+                        "outline-variant": "#c3c6d7",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#faf8ff",
+                        "surface": "#faf8ff",
+                        "surface-tint": "#0053db",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "secondary": "#006591",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-container": "#ffede6",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-container": "#004666",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#39b8fd",
+                        "primary": "#004ac6",
+                        "surface-container-highest": "#e1e2ed",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f3f3fe",
+                        "secondary-fixed": "#c9e6ff",
+                        "on-primary-container": "#eeefff",
+                        "inverse-on-surface": "#f0f0fb",
+                        "background": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "1.5rem",
+                        "xs": "0.5rem",
+                        "container-max": "1280px",
+                        "base": "4px",
+                        "xl": "4rem",
+                        "lg": "2.5rem",
+                        "gutter": "24px",
+                        "sm": "1rem"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"],
+                        "caption": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf8ff; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-header {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        input:focus {
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- SideNavBar -->
+<aside class="bg-surface-container-lowest dark:bg-inverse-surface h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex flex-col p-md z-50">
+<div class="mb-xl px-xs">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">DoctorPortal</h1>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">calendar_today</span> Appointments
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">groups</span> Patients
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">payments</span> Payments
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">chat</span> Messages
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">star</span> Reviews
+            </a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-2 text-primary dark:text-inverse-primary font-bold bg-primary-container/10 dark:bg-primary-container/20 rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">web</span> Website CMS
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+            </a>
+</nav>
+<div class="mt-auto pt-md border-t border-outline-variant">
+<div class="flex items-center gap-3 px-xs">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a male specialist doctor in a clean white medical coat, smiling warmly. The lighting is soft and studio-quality, creating a trustworthy and clinical authority appearance. The background is a blurred high-end medical clinic with soft blue and white tones, matching the modern healthcare design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdgpzzAUDnfrPqGNQMnfbEzitwljMiCA_ykUzrlb-6errRR0GdEkyZqCZB93w6HkdoFvd3IvFdt8StwhmN-xO5xHDsKkDikjQtjCM8RIGjMnIAb3BX29WOG2KJzEvVONUjyL3zKkFE5gLrVJide0rhZ5i0VC5lU-jrIaJwz2Eat_YkZ8NKGXpvQdyJ6sWqtVmNXXwj1b1VsorUIp31ltSrfIvqmeY8xQ49nLPeeLScZZNY3Ov5q1Mibh5r8WBs8Gwqts482F07AH8"/>
+</div>
+<div class="overflow-hidden">
+<p class="font-label-md text-on-surface truncate">Dr. Specialist</p>
+<p class="text-caption text-on-surface-variant truncate">Clinical Authority</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="glass-header bg-surface/70 dark:bg-inverse-surface/70 sticky top-0 ml-64 h-16 px-lg flex justify-between items-center z-40 w-[calc(100%-16rem)]">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full text-body-md focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Search CMS settings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 p-lg max-w-[1200px] mx-auto">
+<!-- Tab Navigation -->
+<div class="mb-lg border-b border-outline-variant overflow-x-auto">
+<nav class="flex gap-8 min-w-max">
+<a class="pb-4 px-1 text-label-md text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" href="#">General Info</a>
+<a class="pb-4 px-1 text-label-md text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" href="#">Clinical Profile</a>
+<a class="pb-4 px-1 text-label-md text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" href="#">Services &amp; Procedures</a>
+<a class="pb-4 px-1 text-label-md text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" href="#">Practice Locations</a>
+<a class="pb-4 px-1 text-label-md text-primary font-bold border-b-2 border-primary whitespace-nowrap" href="#">Social Media</a>
+</nav>
+</div>
+<!-- Section Header -->
+<div class="mb-xl">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">Social Media Presence</h2>
+<p class="text-body-lg text-on-surface-variant max-w-2xl">Connect your practice's social profiles to automatically display them in your website's footer and contact sections.</p>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter items-start">
+<!-- Forms Section -->
+<div class="xl:col-span-8 space-y-gutter">
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-sm">
+<div class="space-y-6">
+<!-- Facebook -->
+<div class="space-y-2">
+<label class="block text-label-md text-on-surface font-bold uppercase tracking-wider">Facebook URL</label>
+<div class="flex items-center bg-surface-bright border border-outline-variant rounded-lg group focus-within:border-primary transition-all">
+<div class="px-4 border-r border-outline-variant text-on-surface-variant">
+<span class="material-symbols-outlined pt-1">face_nod</span>
+</div>
+<input class="w-full bg-transparent border-none py-3 px-4 text-body-md focus:ring-0 outline-none" placeholder="https://facebook.com/dr.specialist" type="url" value="https://facebook.com/drspecialistclinic"/>
+</div>
+</div>
+<!-- Instagram -->
+<div class="space-y-2">
+<label class="block text-label-md text-on-surface font-bold uppercase tracking-wider">Instagram URL</label>
+<div class="flex items-center bg-surface-bright border border-outline-variant rounded-lg group focus-within:border-primary transition-all">
+<div class="px-4 border-r border-outline-variant text-on-surface-variant">
+<span class="material-symbols-outlined pt-1">photo_camera</span>
+</div>
+<input class="w-full bg-transparent border-none py-3 px-4 text-body-md focus:ring-0 outline-none" placeholder="https://instagram.com/dr.specialist" type="url" value="https://instagram.com/the_doctor_portal"/>
+</div>
+</div>
+<!-- YouTube -->
+<div class="space-y-2">
+<label class="block text-label-md text-on-surface font-bold uppercase tracking-wider">YouTube Channel</label>
+<div class="flex items-center bg-surface-bright border border-outline-variant rounded-lg group focus-within:border-primary transition-all">
+<div class="px-4 border-r border-outline-variant text-on-surface-variant">
+<span class="material-symbols-outlined pt-1">play_circle</span>
+</div>
+<input class="w-full bg-transparent border-none py-3 px-4 text-body-md focus:ring-0 outline-none" placeholder="https://youtube.com/c/dr.specialist" type="url" value="https://youtube.com/c/MedicalAuthority"/>
+</div>
+</div>
+<!-- LinkedIn -->
+<div class="space-y-2">
+<label class="block text-label-md text-on-surface font-bold uppercase tracking-wider">LinkedIn Profile</label>
+<div class="flex items-center bg-surface-bright border border-outline-variant rounded-lg group focus-within:border-primary transition-all">
+<div class="px-4 border-r border-outline-variant text-on-surface-variant">
+<span class="material-symbols-outlined pt-1">work</span>
+</div>
+<input class="w-full bg-transparent border-none py-3 px-4 text-body-md focus:ring-0 outline-none" placeholder="https://linkedin.com/in/dr.specialist" type="url" value="https://linkedin.com/in/specialist-authority"/>
+</div>
+</div>
+<!-- X (Twitter) -->
+<div class="space-y-2">
+<label class="block text-label-md text-on-surface font-bold uppercase tracking-wider">X (Twitter) Handle</label>
+<div class="flex items-center bg-surface-bright border border-outline-variant rounded-lg group focus-within:border-primary transition-all">
+<div class="px-4 border-r border-outline-variant text-on-surface-variant">
+<span class="material-symbols-outlined pt-1">close</span>
+</div>
+<input class="w-full bg-transparent border-none py-3 px-4 text-body-md focus:ring-0 outline-none" placeholder="@dr_specialist" type="text" value="@drspecialist_md"/>
+</div>
+</div>
+</div>
+<div class="mt-xl flex justify-end gap-4">
+<button class="px-6 py-2 rounded-lg border border-outline-variant text-primary font-bold hover:bg-surface-container transition-colors">Discard Changes</button>
+<button class="px-8 py-2 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 shadow-md transition-all">Save Changes</button>
+</div>
+</div>
+</div>
+<!-- Preview Section -->
+<div class="xl:col-span-4 sticky top-24">
+<div class="bg-inverse-surface rounded-xl p-md border border-outline shadow-xl overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-md text-surface-container-high/60 uppercase tracking-widest text-[10px] font-bold">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                            Live Website Footer Preview
+                        </div>
+<div class="space-y-8">
+<div>
+<h3 class="text-surface font-bold font-headline-md mb-2">Dr. Specialist</h3>
+<p class="text-surface-variant/70 text-caption leading-relaxed">
+                                    Dedicated to providing advanced clinical solutions with a focus on patient outcomes and modern medical research.
+                                </p>
+</div>
+<div>
+<p class="text-surface-container-high font-label-md mb-4">Connect with us</p>
+<div class="flex flex-wrap gap-4" id="footer-preview">
+<!-- Preview Icons -->
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-xl">face_nod</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-xl">photo_camera</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-xl">play_circle</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-xl">work</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-xl">close</span>
+</div>
+</div>
+</div>
+<div class="pt-8 border-t border-white/10">
+<p class="text-surface-variant/40 text-[10px]">© 2024 Specialist Clinical Practice. All rights reserved.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Info Box -->
+<div class="mt-gutter p-md bg-secondary-container/10 border border-secondary-container/20 rounded-xl">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-secondary">info</span>
+<div>
+<p class="text-label-md text-secondary font-bold mb-1">SEO Impact</p>
+<p class="text-caption text-on-surface-variant leading-relaxed">Connecting your social profiles helps search engines verify your business and can improve your local search ranking.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple micro-interaction for input fields
+        const inputs = document.querySelectorAll('input[type="url"], input[type="text"]');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('shadow-md');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('shadow-md');
+            });
+        });
+
+        // Toggle Preview highlighting when inputting
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                const previewIcons = document.querySelectorAll('#footer-preview > div');
+                if(input.value.trim() !== '') {
+                    previewIcons[index].style.opacity = '1';
+                    previewIcons[index].style.transform = 'scale(1.1)';
+                } else {
+                    previewIcons[index].style.opacity = '0.3';
+                    previewIcons[index].style.transform = 'scale(0.9)';
+                }
+                setTimeout(() => {
+                    previewIcons[index].style.transform = 'scale(1)';
+                }, 200);
+            });
+        });
+    </script>
+</body></html>

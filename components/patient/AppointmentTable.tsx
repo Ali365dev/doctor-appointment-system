@@ -12,7 +12,7 @@ import {
   PAYMENT_STATUS_BADGE,
   PAYMENT_METHOD_LABEL,
 } from "@/lib/appointmentDisplay";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 interface ApiPayment {
   _id: string;
@@ -62,13 +62,13 @@ function getPayment(apt: ApiAppointment): ApiPayment | null {
   return apt.paymentId && typeof apt.paymentId === "object" ? apt.paymentId : null;
 }
 
-function printSlip(apt: ApiAppointment, payment: ApiPayment | null) {
+function printSlip(apt: ApiAppointment, payment: ApiPayment | null, doctorName: string) {
   const win = window.open("", "_blank", "width=480,height=640");
   if (!win) return;
   const rows = [
     ["Appointment #", apt.appointmentNumber],
     ["Patient", apt.patientSnapshot.fullName],
-    ["Doctor", doctor.name],
+    ["Doctor", doctorName],
     ["Clinic", clinicName(apt.clinicId)],
     ["Date", apt.date],
     ["Time", apt.time],
@@ -101,6 +101,7 @@ function printSlip(apt: ApiAppointment, payment: ApiPayment | null) {
 type Props = { limit?: number; showSearch?: boolean; onlyProcedures?: boolean };
 
 export default function AppointmentTable({ limit, showSearch = false, onlyProcedures = false }: Props) {
+  const doctor = useDoctorProfile();
   const router = useRouter();
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -474,7 +475,7 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
 
             <div className="mt-lg flex flex-wrap gap-sm">
               <button
-                onClick={() => printSlip(detail, detailPayment)}
+                onClick={() => printSlip(detail, detailPayment, doctor.name)}
                 className="flex-1 py-sm rounded-lg border border-outline-variant text-on-surface font-bold hover:bg-surface-container-high transition-colors flex items-center justify-center gap-xs"
               >
                 <span className="material-symbols-outlined text-[18px]">print</span>

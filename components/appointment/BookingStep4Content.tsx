@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor, buildWhatsappLink } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 export default function BookingStep4Content() {
+  const doctor = useDoctorProfile();
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
@@ -86,7 +88,7 @@ export default function BookingStep4Content() {
       })
     : "—";
 
-  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? staticDoctor.fee_summary.min_fee_pkr;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -110,7 +112,7 @@ export default function BookingStep4Content() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex items-start gap-4">
               <Image
-                src={doctor.profile_image}
+                src={doctor.profileImage}
                 alt={doctor.name}
                 width={64}
                 height={64}
@@ -256,7 +258,7 @@ export default function BookingStep4Content() {
         <div className="mt-6 p-6 rounded-xl border border-dashed border-outline-variant text-center">
           <p className="text-caption text-outline">Need assistance with your booking?</p>
           <a
-            href={doctor.contact.whatsapp}
+            href={buildWhatsappLink(doctor.contactWhatsapp)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block mt-2 text-[14px] font-semibold text-primary hover:underline"

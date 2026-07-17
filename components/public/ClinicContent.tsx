@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import ClinicCard from "@/components/public/ClinicCard";
 import Reveal from "@/components/common/Reveal";
 import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
@@ -65,6 +65,7 @@ const CONSOLIDATED_MAP =
   "https://maps.google.com/maps?q=31.41,73.10&z=13&ie=UTF8&iwloc=&output=embed";
 
 export default function ClinicContent() {
+  const doctor = useDoctorProfile();
   const [locations, setLocations] = useState<Loc[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -197,10 +198,10 @@ export default function ClinicContent() {
           </div>
           <div className="flex gap-sm shrink-0">
             <a
-              href={`tel:${doctor.contact.helpline}`}
+              href={`tel:${doctor.contactPhone}`}
               className="bg-white text-primary px-lg py-sm rounded-xl text-label-md font-semibold hover:bg-surface-bright transition-colors shadow-lg"
             >
-              Call {doctor.contact.helpline}
+              Call {doctor.contactPhone}
             </a>
           </div>
         </Reveal>

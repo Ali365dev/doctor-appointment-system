@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { buildWhatsappLink } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import type { Procedure as ProcedureCardData } from "@/components/public/ProcedureCard";
 
 interface ClinicOption {
@@ -41,6 +42,7 @@ export default function ProcedureDetailContent({
   clinics: ClinicOption[];
   related: ProcedureCardData[];
 }) {
+  const doctor = useDoctorProfile();
   const router = useRouter();
   const setClinic = useBookingStore((s) => s.setClinic);
   const setProcedure = useBookingStore((s) => s.setProcedure);
@@ -122,7 +124,7 @@ export default function ProcedureDetailContent({
                 Book Procedure
               </button>
               <a
-                href={doctor.contact.whatsapp}
+                href={buildWhatsappLink(doctor.contactWhatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-white border border-outline-variant text-on-surface px-md py-xs rounded-lg text-label-md font-semibold flex items-center gap-1 hover:bg-surface-container-low transition-all"
@@ -148,7 +150,7 @@ export default function ProcedureDetailContent({
               <div className="absolute bottom-sm left-sm right-sm bg-white/70 backdrop-blur-md p-sm rounded-lg border border-white/20">
                 <div className="flex items-center gap-sm">
                   <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-lg">
-                    <Image src={doctor.profile_image} alt={doctor.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
+                    <Image src={doctor.profileImage} alt={doctor.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
                   </div>
                   <div>
                     <div className="text-on-surface font-bold text-caption">{doctor.name}</div>
@@ -357,7 +359,7 @@ export default function ProcedureDetailContent({
                       Book Procedure
                     </button>
                     <a
-                      href={`tel:${doctor.contact.helpline}`}
+                      href={`tel:${doctor.contactPhone}`}
                       className="w-full bg-surface-variant/30 border border-outline-variant/30 text-on-surface py-xs rounded-lg text-label-md font-bold flex items-center justify-center gap-1 hover:bg-surface-variant transition-all"
                     >
                       <span className="material-symbols-outlined text-green-600 text-[18px]">call</span>
@@ -442,10 +444,10 @@ export default function ProcedureDetailContent({
                   Book Your Appointment
                 </button>
                 <a
-                  href={`tel:${doctor.contact.helpline}`}
+                  href={`tel:${doctor.contactPhone}`}
                   className="bg-primary-container border border-on-primary/20 text-on-primary px-lg py-xs rounded-lg font-bold text-label-md hover:bg-primary-container/80 transition-all"
                 >
-                  Call Now: {doctor.contact.helpline}
+                  Call Now: {doctor.contactPhone}
                 </a>
               </div>
             </div>

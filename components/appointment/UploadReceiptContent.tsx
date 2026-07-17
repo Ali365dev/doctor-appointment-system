@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import { uploadWithProgress } from "@/lib/uploadWithProgress";
 
 type UploadState = "idle" | "uploading" | "done" | "error";
@@ -23,6 +24,7 @@ interface AppointmentSummary {
 }
 
 export default function UploadReceiptContent() {
+  const doctor = useDoctorProfile();
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [fileName, setFileName] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function UploadReceiptContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId]);
 
-  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? remoteSummary?.feeSnapshotPkr ?? doctor.fee_summary.min_fee_pkr;
+  const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? remoteSummary?.feeSnapshotPkr ?? staticDoctor.fee_summary.min_fee_pkr;
   const clinicLabel = selectedClinic?.name ?? remoteSummary?.clinicName ?? "—";
   const procedureName = selectedProcedure?.name ?? remoteSummary?.procedureName ?? null;
   const dateValue = selectedDate ?? remoteSummary?.date ?? null;
@@ -332,7 +334,7 @@ export default function UploadReceiptContent() {
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 rounded-xl bg-surface-container shadow-inner overflow-hidden shrink-0">
                 <Image
-                  src={doctor.profile_image}
+                  src={doctor.profileImage}
                   alt={doctor.name}
                   width={64}
                   height={64}

@@ -1,14 +1,19 @@
 import { Suspense } from "react";
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep1Form from "@/components/appointment/BookingStep1Form";
-import { doctor } from "@/lib/data";
+import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
-export const metadata = {
-  title: `Book Appointment – Step 1 | ${doctor.name}`,
-  description: "Select your appointment type and preferred visit method.",
-};
+export async function generateMetadata() {
+  const doctor = await getCmsProfile();
+  return {
+    title: `Book Appointment – Step 1 | ${doctor.name}`,
+    description: "Select your appointment type and preferred visit method.",
+  };
+}
 
-export default function BookAppointmentStep1() {
+export default async function BookAppointmentStep1() {
+  const doctor = await getCmsProfile();
+
   return (
     <main className="grow pt-32 pb-20 px-8 lg:px-20 max-w-[1280px] mx-auto w-full">
       <BookingStepper currentStep={1} />

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { doctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
 const contacts = [
   {
@@ -37,6 +37,7 @@ const contacts = [
 const patientSrc = "https://lh3.googleusercontent.com/aida-public/AB6AXuCLo6mjfP-GYH5cDNqhGoSW4PaXt9nQRta7a3ObKyVxYJR-0qXl0fWN1_xh-e-Q2gI-s96I9ixGfpHgpYyZaPH-nUhGviYcATeCgvJ2vy6xrdImWCJy98bMioKJVG7o-_Es75bMah_931PFXkWB0fphD6NYtaWbnyIA4UnuF_Its8FhDmZ6ZXzoom_xhOF35tIaJdzSVyuBDCSKLItHpFFVoFbt2ekwd1T1S5aYOGWXBWeHYsmAWTu9exjeAz_OyQXAUiUwN4KFzpw";
 
 export default function MessagingContent() {
+  const doctor = useDoctorProfile();
   const [message, setMessage] = useState("");
 
   return (

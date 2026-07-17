@@ -5,7 +5,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useBookingStore } from "@/store/bookingStore";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor, buildWhatsappLink } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import Reveal from "@/components/common/Reveal";
 import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
 
@@ -86,12 +87,13 @@ const SERVICE_ICONS: Record<string, string> = {
 };
 
 export default function ConditionsSearch({ conditions, services }: Props) {
+  const doctor = useDoctorProfile();
   const [query, setQuery] = useState("");
   const router = useRouter();
   const setClinic = useBookingStore((s) => s.setClinic);
 
   const handleBook = useCallback(() => {
-    const loc = doctor.practice_locations[0];
+    const loc = staticDoctor.practice_locations[0];
     setClinic({
       id: "loc-0",
       name: loc.name,
@@ -350,7 +352,7 @@ export default function ConditionsSearch({ conditions, services }: Props) {
                   </Link>
                 </motion.div>
                 <motion.a
-                  href={doctor.contact.whatsapp}
+                  href={buildWhatsappLink(doctor.contactWhatsapp)}
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.05 }}

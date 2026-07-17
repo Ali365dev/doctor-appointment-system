@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { doctor } from "@/lib/data";
+import { buildWhatsappLink } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import ProcedureCard, { type Procedure } from "@/components/public/ProcedureCard";
 import CTASection from "@/components/public/CTASection";
 import Reveal from "@/components/common/Reveal";
@@ -54,6 +55,7 @@ const HERO_IMG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD8Fl9bfESyniMxUDMxazH5L5msPPi4PznZ2TzyyUg_pNYKZMY-R57isUNVA5Q9khwloJZY0KzdJHYYre6wsjbKwPpUt2pWRGb63nvLUv095thZFZiilpxMVeUSZP520ZWck58M7G22JiwDG8GIey9sRd0VwrfxesVpyp1qUKL8bC3IEErtQtL03m10SJLs0S9qlqel0N4jR3WstiS8zq9dmTuEWefr0O7FgBtm9JU4enmB9WSmwm4ZLYAniLKu1hFwkpHxFoq7e-Y";
 
 export default function ServicesContent({ procedures }: { procedures: Procedure[] }) {
+  const doctor = useDoctorProfile();
   // Most specialized (highest price) shown first
   const sorted = [...procedures].sort((a, b) => b.pricePkr - a.pricePkr);
 
@@ -200,7 +202,7 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
         subtitle="Get priority booking and a detailed consultation session with Dr. Zaid Gul."
         primaryLabel="Book Online"
         secondaryLabel="Download Guide (PDF)"
-        secondaryHref={doctor.contact.whatsapp}
+        secondaryHref={buildWhatsappLink(doctor.contactWhatsapp)}
       />
     </main>
   );

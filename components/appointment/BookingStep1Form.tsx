@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { doctor } from "@/lib/data";
+import { doctor as staticDoctor } from "@/lib/data";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import { useBookingStore } from "@/store/bookingStore";
 import BookingSidebar from "./BookingSidebar";
 import type { WeeklySchedule } from "@/types/clinic";
@@ -43,6 +44,7 @@ function formatTimings(timings: Record<string, string>): string {
 }
 
 export default function BookingStep1Form() {
+  const doctor = useDoctorProfile();
   const setClinic = useBookingStore((s) => s.setClinic);
   const setVisitType = useBookingStore((s) => s.setVisitType);
   const setReason_ = useBookingStore((s) => s.setReason);
@@ -157,7 +159,7 @@ export default function BookingStep1Form() {
         <section className="bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/30 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] flex flex-col md:flex-row gap-8">
           <div className="w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0">
             <Image
-              src={doctor.profile_image}
+              src={doctor.profileImage}
               alt={doctor.name}
               width={128}
               height={128}
@@ -180,7 +182,7 @@ export default function BookingStep1Form() {
                       star
                     </span>
                     <span className="ml-1 text-[14px] font-bold text-on-surface">
-                      {doctor.rating.score}
+                      {staticDoctor.rating.score}
                     </span>
                   </div>
                 </div>
@@ -190,7 +192,7 @@ export default function BookingStep1Form() {
                 <p className="text-on-surface-variant font-medium">
                   {doctor.specialization.join(" & ")}
                 </p>
-                <p className="text-caption text-on-surface-variant mt-xs">{doctor.qualifications}</p>
+                <p className="text-caption text-on-surface-variant mt-xs">{doctor.education.map((edu) => edu.name).join(", ")}</p>
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-outline uppercase font-bold tracking-widest block">
@@ -206,14 +208,14 @@ export default function BookingStep1Form() {
                 <span className="material-symbols-outlined text-primary">history_edu</span>
                 <div>
                   <span className="block text-caption text-outline">Experience</span>
-                  <span className="text-[14px] font-bold">{doctor.experience_years}+ Years</span>
+                  <span className="text-[14px] font-bold">{doctor.experienceYears}+ Years</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-outline-variant/20">
                 <span className="material-symbols-outlined text-primary">schedule</span>
                 <div>
                   <span className="block text-caption text-outline">Wait Time</span>
-                  <span className="text-[14px] font-bold">{doctor.wait_time}</span>
+                  <span className="text-[14px] font-bold">{staticDoctor.wait_time}</span>
                 </div>
               </div>
             </div>
