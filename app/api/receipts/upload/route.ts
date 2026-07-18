@@ -6,8 +6,8 @@ import { AppointmentServiceError } from "@/services/api/appointment";
 
 /**
  * Shared receipt-upload endpoint used by the single /book-appointment/upload-receipt
- * page for both JazzCash and Easypaisa manual payments. Uploads the file to
- * Cloudinary, then creates the Payment record via the same
+ * page for JazzCash, Easypaisa, and Bank Transfer manual payments. Uploads the
+ * file to Cloudinary, then creates the Payment record via the same
  * createPaymentForAppointment() used everywhere else — no separate payment logic.
  */
 export async function POST(req: NextRequest) {
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
     if (!isValidObjectId(appointmentId)) {
       return NextResponse.json({ error: "A valid appointmentId is required" }, { status: 400 });
     }
-    if (!isValidPaymentMethod(method) || method === "stripe" || method === "reception") {
-      return NextResponse.json({ error: "method must be jazzcash or easypaisa" }, { status: 400 });
+    if (!isValidPaymentMethod(method) || method === "reception") {
+      return NextResponse.json({ error: "method must be jazzcash, easypaisa, or bank" }, { status: 400 });
     }
     if (!(file instanceof File) || file.size === 0) {
       return NextResponse.json({ error: "A receipt file is required" }, { status: 400 });

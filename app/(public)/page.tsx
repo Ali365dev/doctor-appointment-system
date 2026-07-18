@@ -19,50 +19,6 @@ const MotionLink = motion.create(Link);
 const CTA_BG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuATKh7hiy8TZrlatl7coiegFfTo9HoAC_1jitGOsiq5J1XrA4zgq0Df73ZwzgcXbLWSPgM0tWxJeO3K9C6bbchiiQAwLcvyrseEcx5z8zk2tuQT3lGRUttFCqj04J2nYFojMNsGTKNvtGq0MDY84W8UvOJVGBsv1cjWhAdyp6BF0qaZ8XdI5eQgSZ9g5fDUur3abZI9gvJ_J7AjgWQSjKVdt3kUL97F-Dh5DuWf5Pif9UT5HkHhIaDaSJLiIpcnmELrjWu7W6bhHIc";
 
-const CLINIC_IMAGES = {
-  consultation: "https://images.unsplash.com/photo-1551190822-a9333d879b1f?q=80&w=1000&auto=format&fit=crop",
-  team: "https://images.unsplash.com/photo-1666214280391-8ff5bd3c0bf0?q=80&w=1000&auto=format&fit=crop",
-  facility: "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?q=80&w=1000&auto=format&fit=crop",
-};
-
-const WHY_CHOOSE_FEATURES = [
-  {
-    icon: "school",
-    title: "Expert Gastroenterologist",
-    desc: "UK-trained specialist with advanced fellowships and years of international clinical experience.",
-    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop",
-  },
-  {
-    icon: "biotech",
-    title: "Modern Diagnostics",
-    desc: "Utilizing high-definition endoscopy and state-of-the-art imaging for precise diagnostic accuracy.",
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=800&auto=format&fit=crop",
-  },
-  {
-    icon: "person",
-    title: "Personalized Treatment",
-    desc: "Bespoke treatment plans tailored to each patient's unique clinical profile and lifestyle.",
-    image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=800&auto=format&fit=crop",
-  },
-  {
-    icon: "verified",
-    title: "Evidence-Based",
-    desc: "Following international clinical guidelines (BSG, AGA, EASL) for the safest medical care.",
-    image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=800&auto=format&fit=crop",
-  },
-  {
-    icon: "favorite",
-    title: "Compassionate Care",
-    desc: "A patient-first approach centered on dignity, respect, and clear communication.",
-    image: "https://images.unsplash.com/photo-1516841273335-e39b37888115?q=80&w=800&auto=format&fit=crop",
-  },
-  {
-    icon: "support_agent",
-    title: "Follow-up Support",
-    desc: "Comprehensive post-procedure care and ongoing support throughout the recovery journey.",
-    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?q=80&w=800&auto=format&fit=crop",
-  },
-];
 
 const SERVICE_ICONS: Record<string, string> = {
   Biopsy: "biotech",
@@ -106,8 +62,23 @@ const getServiceDesc = (name: string) =>
   "";
 
 export default function HomePage() {
-  const { name, experienceYears, profileImage, education, professionalMemberships, about, contactWhatsapp, contactPhone, specialization, verification } =
-    useDoctorProfile();
+  const {
+    name,
+    experienceYears,
+    profileImage,
+    education,
+    professionalMemberships,
+    about,
+    contactWhatsapp,
+    contactPhone,
+    specialization,
+    verification,
+    whyChooseSubtitle,
+    whyChooseFeatures,
+    careGalleryTitle,
+    careGallerySubtitle,
+    careGalleryImages,
+  } = useDoctorProfile();
   const { rating, services, conditions_treated, treatments_offered } = staticDoctor;
   const qualifications = education.map((edu) => edu.name).join(", ");
 
@@ -404,12 +375,12 @@ export default function HomePage() {
             Why Choose {displayName}?
           </h2>
           <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
-            Setting new benchmarks in gastrointestinal health through expertise and empathy.
+            {whyChooseSubtitle || "Setting new benchmarks in gastrointestinal health through expertise and empathy."}
           </p>
         </Reveal>
 
         <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
-          {WHY_CHOOSE_FEATURES.map((f) => (
+          {whyChooseFeatures.map((f) => (
             <motion.div
               key={f.title}
               variants={revealItem}
@@ -438,29 +409,25 @@ export default function HomePage() {
       <section className="py-xl px-gutter max-w-[1280px] mx-auto">
         <Reveal className="text-center mb-xl">
           <h2 className="text-headline-lg font-bold leading-[1.2] tracking-[-0.02em] text-on-surface">
-            Care You Can See
+            {careGalleryTitle || "Care You Can See"}
           </h2>
           <p className="text-on-surface-variant mt-xs max-w-xl mx-auto">
-            A calm, modern environment designed around patient comfort.
+            {careGallerySubtitle || "A calm, modern environment designed around patient comfort."}
           </p>
         </Reveal>
 
         <div className="grid grid-cols-2 gap-md h-105 md:h-120">
-          {[
-            { src: CLINIC_IMAGES.consultation, alt: "Consultation in progress", label: "Personalized Consultations", span: "col-span-1 row-span-2", delay: 0 },
-            { src: CLINIC_IMAGES.team, alt: "Care team", label: "Experienced Care Team", span: "", delay: 0.25 },
-            { src: CLINIC_IMAGES.facility, alt: "Clinic facility", label: "Modern Facilities", span: "", delay: 0.5 },
-          ].map((img) => (
+          {careGalleryImages.map((img, i) => (
             <motion.div
-              key={img.alt}
-              className={`relative rounded-3xl overflow-hidden shadow-md group ${img.span}`}
+              key={img.image}
+              className={`relative rounded-3xl overflow-hidden shadow-md group ${i === 0 ? "col-span-1 row-span-2" : ""}`}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, amount: 0, margin: "0px 0px -10% 0px" }}
-              transition={{ duration: 0.7, delay: img.delay }}
+              transition={{ duration: 0.7, delay: i * 0.25 }}
               whileHover={{ scale: 1.02 }}
             >
-              <Image src={img.src} alt={img.alt} fill className="object-cover" unoptimized />
+              <Image src={img.image} alt={img.label || "Clinic photo"} fill className="object-cover" unoptimized />
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <motion.p
                 className="absolute bottom-4 left-4 text-white font-semibold text-label-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300"
@@ -495,14 +462,7 @@ export default function HomePage() {
                 {c}
               </motion.span>
             ))}
-            {moreConditionsCount > 0 && (
-              <motion.span
-                variants={revealItem}
-                className="px-md py-xs rounded-full bg-primary/10 text-label-md font-semibold text-primary"
-              >
-                +{moreConditionsCount} more
-              </motion.span>
-            )}
+         
           </RevealGroup>
         </section>
       )}

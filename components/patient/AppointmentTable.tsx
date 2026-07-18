@@ -21,7 +21,6 @@ interface ApiPayment {
   amountPkr: number;
   transactionRef?: string;
   receiptUrl?: string;
-  stripePaymentIntentId?: string;
   rejectionReason?: string;
 }
 
@@ -129,8 +128,8 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
     (async () => {
       await loadAppointments();
     })();
-    // Lightweight polling so payment/admin updates made elsewhere (Stripe
-    // redirect, admin approval) show up here without a manual refresh.
+    // Lightweight polling so payment/admin updates made elsewhere
+    // (admin approval) show up here without a manual refresh.
     const interval = setInterval(loadAppointments, 20000);
     return () => clearInterval(interval);
   }, [loadAppointments]);
@@ -162,31 +161,6 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
       toast.success("Appointment cancelled");
     } catch {
       toast.error("Network error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function retryStripePayment(apt: ApiAppointment) {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: apt.feeSnapshotPkr,
-          description: `Consultation – ${clinicName(apt.clinicId)} · ${apt.date}`,
-          appointmentId: apt._id,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) {
-        toast.error(data.error ?? "Could not start payment. Try again.");
-        return;
-      }
-      window.open(data.url, "_self");
-    } catch {
-      toast.error("Network error. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -288,10 +262,9 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                   const payment = getPayment(appt);
                   const paymentStatus = payment ? toPatientPaymentStatus(payment.status) : "Pending";
                   const canCancel = patientStatus === "Pending" || patientStatus === "Confirmed";
-                  const canRetryStripe = payment?.method === "stripe" && payment.status === "failed";
                   const canReupload =
                     payment &&
-                    (payment.method === "jazzcash" || payment.method === "easypaisa") &&
+                    (payment.method === "jazzcash" || payment.method === "easypaisa" || payment.method === "bank") &&
                     payment.status === "rejected";
 
                   return (
@@ -331,16 +304,6 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                           >
                             <span className="material-symbols-outlined text-[20px]">visibility</span>
                           </button>
-                          {canRetryStripe && (
-                            <button
-                              disabled={busy}
-                              onClick={() => retryStripePayment(appt)}
-                              className="text-primary hover:bg-primary/10 p-xs rounded transition-colors"
-                              title="Retry Payment"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">refresh</span>
-                            </button>
-                          )}
                           {canReupload && (
                             <button
                               onClick={() => router.push(`/book-appointment/upload-receipt?appointmentId=${appt._id}&method=${payment!.method}`)}
@@ -439,8 +402,8 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                 ["Payment Type", detailPayment ? PAYMENT_METHOD_LABEL[detailPayment.method] : "—"],
                 ["Payment Status", detailPayment ? toPatientPaymentStatus(detailPayment.status) : "Pending"],
                 ["Appointment Status", toPatientAppointmentStatus(detail.status)],
-                ...(detailPayment?.stripePaymentIntentId
-                  ? [["Stripe Transaction ID", detailPayment.stripePaymentIntentId]]
+                ...(detailPayment?.transactionRef
+                  ? [["Transaction Reference", detailPayment.transactionRef]]
                   : []),
                 ...(detailPayment?.rejectionReason ? [["Rejection Reason", detailPayment.rejectionReason]] : []),
               ].map(([label, value]) => (

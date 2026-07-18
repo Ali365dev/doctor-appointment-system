@@ -86,7 +86,7 @@ export function validateCreateAppointmentBody(body: unknown): string | null {
   if (patient.email && !isValidEmail(patient.email)) return "Patient email is invalid";
 
   if (b.paymentMethod !== undefined && !isValidPaymentMethod(b.paymentMethod)) {
-    return "paymentMethod must be one of stripe, jazzcash, easypaisa, reception";
+    return "paymentMethod must be one of bank, jazzcash, easypaisa, reception";
   }
   if (b.appointmentType !== undefined && !isValidAppointmentType(b.appointmentType)) {
     return "appointmentType must be one of consultation, procedure, follow_up";
@@ -362,6 +362,26 @@ interface CmsSocialLinksBody {
   website?: string;
 }
 
+interface CmsWhyChooseFeatureBody {
+  icon?: string;
+  title?: string;
+  desc?: string;
+  image?: string;
+  imagePublicId?: string;
+}
+
+interface CmsGalleryImageBody {
+  image?: string;
+  imagePublicId?: string;
+  label?: string;
+}
+
+interface CmsSpecializedServiceBody {
+  icon?: string;
+  title?: string;
+  desc?: string;
+}
+
 interface CmsRequestBody {
   name?: string;
   designation?: string;
@@ -381,6 +401,14 @@ interface CmsRequestBody {
   contactPhone?: string;
   contactWhatsapp?: string;
   social?: CmsSocialLinksBody;
+  whyChooseSubtitle?: string;
+  whyChooseFeatures?: CmsWhyChooseFeatureBody[];
+  careGalleryTitle?: string;
+  careGallerySubtitle?: string;
+  careGalleryImages?: CmsGalleryImageBody[];
+  servicesTitle?: string;
+  servicesSubtitle?: string;
+  specializedServices?: CmsSpecializedServiceBody[];
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -446,6 +474,65 @@ export function validateCmsBody(body: unknown, partial = false): string | null {
       if (value !== undefined && value !== "" && !isValidUrlLike(value)) {
         return `Enter a valid URL for ${field}`;
       }
+    }
+  }
+
+  if (b.whyChooseFeatures !== undefined) {
+    if (!Array.isArray(b.whyChooseFeatures)) return "whyChooseFeatures must be an array";
+    for (const entry of b.whyChooseFeatures) {
+      if (!entry || typeof entry !== "object" || !entry.title || !entry.title.trim()) {
+        return "Each Why Choose feature requires a title";
+      }
+    }
+  }
+
+  if (b.careGalleryImages !== undefined) {
+    if (!Array.isArray(b.careGalleryImages)) return "careGalleryImages must be an array";
+    for (const entry of b.careGalleryImages) {
+      if (!entry || typeof entry !== "object" || !entry.image || !entry.image.trim()) {
+        return "Each gallery image requires an uploaded image";
+      }
+    }
+  }
+
+  if (b.specializedServices !== undefined) {
+    if (!Array.isArray(b.specializedServices)) return "specializedServices must be an array";
+    for (const entry of b.specializedServices) {
+      if (!entry || typeof entry !== "object" || !entry.title || !entry.title.trim()) {
+        return "Each specialized service requires a title";
+      }
+    }
+  }
+
+  return null;
+}
+
+interface PaymentSettingsRequestBody {
+  jazzcashNumber?: unknown;
+  jazzcashAccountTitle?: unknown;
+  easypaisaNumber?: unknown;
+  easypaisaAccountTitle?: unknown;
+  bankName?: unknown;
+  bankAccountNumber?: unknown;
+  bankAccountTitle?: unknown;
+}
+
+export function validatePaymentSettingsBody(body: unknown): string | null {
+  if (!body || typeof body !== "object") return "Request body is required";
+  const b = body as PaymentSettingsRequestBody;
+
+  const stringFields: (keyof PaymentSettingsRequestBody)[] = [
+    "jazzcashNumber",
+    "jazzcashAccountTitle",
+    "easypaisaNumber",
+    "easypaisaAccountTitle",
+    "bankName",
+    "bankAccountNumber",
+    "bankAccountTitle",
+  ];
+  for (const field of stringFields) {
+    if (b[field] !== undefined && typeof b[field] !== "string") {
+      return `${field} must be a string`;
     }
   }
 

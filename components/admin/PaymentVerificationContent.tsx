@@ -14,21 +14,20 @@ interface ApiPayment {
   status: PaymentStatus;
   transactionRef?: string;
   receiptUrl?: string;
-  stripePaymentIntentId?: string;
   createdAt: string;
 }
 
 const METHOD_DOT: Record<PaymentMethod, string> = {
   jazzcash: "bg-[#f64c1c]",
   easypaisa: "bg-[#1db04e]",
-  stripe: "bg-primary",
+  bank: "bg-primary",
   reception: "bg-amber-500",
 };
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
   jazzcash: "JazzCash",
   easypaisa: "Easypaisa",
-  stripe: "Stripe",
+  bank: "Bank Transfer",
   reception: "Reception",
 };
 
@@ -64,7 +63,6 @@ export default function PaymentVerificationContent() {
   const [verifyTarget, setVerifyTarget] = useState<ApiPayment | null>(null);
   const [notes, setNotes] = useState("");
   const [approving, setApproving] = useState(false);
-  const [refundingId, setRefundingId] = useState<string | null>(null);
   const [deletingReceipt, setDeletingReceipt] = useState(false);
 
   const loadPayments = async (silent = false) => {
@@ -85,8 +83,8 @@ export default function PaymentVerificationContent() {
     (async () => {
       await loadPayments();
     })();
-    // Polls so newly-submitted receipts and Stripe confirmations show up
-    // without the admin needing to manually refresh.
+    // Polls so newly-submitted receipts show up without the admin needing
+    // to manually refresh.
     const interval = setInterval(() => loadPayments(true), 20000);
     return () => clearInterval(interval);
   }, []);
@@ -109,14 +107,14 @@ export default function PaymentVerificationContent() {
     Pending: rows.filter((r) => r.status === "pending" || r.status === "submitted").length,
     Verified: rows.filter((r) => r.status === "verified").length,
     Rejected: rows.filter((r) => r.status === "rejected").length,
-    Stripe: rows.filter((r) => r.method === "stripe").length,
+    Bank: rows.filter((r) => r.method === "bank").length,
   };
 
   const summaryCards = [
     { icon: "pending_actions", color: "text-primary bg-primary/10", label: "Pending", key: "Pending" },
     { icon: "verified", color: "text-secondary bg-secondary/10", label: "Verified", key: "Verified" },
     { icon: "cancel", color: "text-error bg-error/10", label: "Rejected", key: "Rejected" },
-    { icon: "sync_alt", color: "text-on-surface-variant bg-surface-variant", label: "Stripe (Auto)", key: "Stripe" },
+    { icon: "account_balance", color: "text-on-surface-variant bg-surface-variant", label: "Bank Transfer", key: "Bank" },
   ];
 
   async function handleApprove() {
@@ -169,24 +167,6 @@ export default function PaymentVerificationContent() {
     }
   }
 
-  async function handleRefund(paymentId: string) {
-    setRefundingId(paymentId);
-    try {
-      const res = await fetch(`/api/payments/${paymentId}/refund`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not process refund");
-        return;
-      }
-      setRows((prev) => prev.map((r) => (r._id === paymentId ? { ...r, status: "refunded" } : r)));
-      toast.success("Payment refunded");
-    } catch {
-      toast.error("Network error");
-    } finally {
-      setRefundingId(null);
-    }
-  }
-
   async function handleDeleteReceipt() {
     if (!verifyTarget) return;
     setDeletingReceipt(true);
@@ -224,8 +204,7 @@ export default function PaymentVerificationContent() {
   const isImageReceipt = verifyTarget?.receiptUrl && !/\.pdf($|\?)/i.test(verifyTarget.receiptUrl);
   const canVerifyTarget =
     !!verifyTarget &&
-    ((verifyTarget.status === "submitted" && verifyTarget.method !== "stripe") ||
-      (verifyTarget.status === "pending" && verifyTarget.method === "reception"));
+    (verifyTarget.status === "submitted" || (verifyTarget.status === "pending" && verifyTarget.method === "reception"));
 
   return (
     <div className="px-gutter py-lg overflow-y-auto h-[calc(100vh-72px)]">
@@ -279,7 +258,7 @@ export default function PaymentVerificationContent() {
           onChange={(e) => setMethodFilter(e.target.value)}
           className="px-sm py-xs bg-surface-container-low border border-outline-variant/50 rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary transition-all"
         >
-          {["All", "jazzcash", "easypaisa", "stripe", "reception"].map((m) => (
+          {["All", "jazzcash", "easypaisa", "bank", "reception"].map((m) => (
             <option key={m} value={m}>{m === "All" ? "All Methods" : METHOD_LABEL[m as PaymentMethod]}</option>
           ))}
         </select>
@@ -350,9 +329,7 @@ export default function PaymentVerificationContent() {
             ) : filtered.map((row) => {
               const info = appointmentInfo(row.appointmentId);
               const canVerify =
-                (row.status === "submitted" && row.method !== "stripe") ||
-                (row.status === "pending" && row.method === "reception");
-              const canRefund = row.status === "verified" && row.method === "stripe";
+                row.status === "submitted" || (row.status === "pending" && row.method === "reception");
               return (
                 <tr
                   key={row._id}
@@ -390,21 +367,12 @@ export default function PaymentVerificationContent() {
                           <span className="material-symbols-outlined text-[16px]">verified</span>
                           {row.method === "reception" ? "Mark as Paid" : "Verify"}
                         </button>
-                      ) : canRefund ? (
-                        <button
-                          disabled={refundingId === row._id}
-                          onClick={() => handleRefund(row._id)}
-                          className="flex items-center gap-xs border border-error text-error text-label-md font-semibold px-sm py-xs rounded-lg hover:bg-error/5 transition-all disabled:opacity-60"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">undo</span>
-                          {refundingId === row._id ? "Refunding…" : "Refund"}
-                        </button>
                       ) : (
                         <span className={`text-label-md font-semibold ${row.status === "verified" ? "text-green-600" : row.status === "rejected" || row.status === "failed" ? "text-error" : "text-on-surface-variant"}`}>
                           {row.status === "pending" ? "Awaiting Payment" : row.status}
                         </span>
                       )}
-                      {!canVerify && row.method !== "stripe" && row.method !== "reception" && row.receiptUrl && (
+                      {!canVerify && row.method !== "reception" && row.receiptUrl && (
                         <button
                           onClick={() => { setVerifyTarget(row); setNotes(""); }}
                           className="p-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"

@@ -291,26 +291,6 @@ export default function AppointmentVerificationDetailContent({ appointmentId }: 
     }
   }
 
-  async function refundPayment() {
-    const payment = appointment ? getPayment(appointment) : null;
-    if (!payment) return;
-    setPaymentActionBusy(true);
-    try {
-      const res = await fetch(`/api/payments/${payment._id}/refund`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not process refund");
-        return;
-      }
-      toast.success("Payment refunded");
-      await load();
-    } catch {
-      toast.error("Network error");
-    } finally {
-      setPaymentActionBusy(false);
-    }
-  }
-
   if (loading) {
     return <div className="px-gutter py-lg max-w-[1400px] mx-auto text-body-md text-on-surface-variant">Loading appointment…</div>;
   }
@@ -328,8 +308,7 @@ export default function AppointmentVerificationDetailContent({ appointmentId }: 
 
   const payment = getPayment(appointment);
   const canVerifyPayment =
-    !!payment && ((payment.status === "submitted" && payment.method !== "stripe") || (payment.status === "pending" && payment.method === "reception"));
-  const canRefund = payment?.status === "verified";
+    !!payment && (payment.status === "submitted" || (payment.status === "pending" && payment.method === "reception"));
   const timeline = buildTimeline(appointment, payment);
 
   return (
@@ -468,35 +447,22 @@ export default function AppointmentVerificationDetailContent({ appointmentId }: 
                   {payment.rejectionReason && (
                     <p className="text-caption text-error">Rejection reason: {payment.rejectionReason}</p>
                   )}
-                  {(canVerifyPayment || canRefund) && (
+                  {canVerifyPayment && (
                     <div className="flex gap-xs">
-                      {canVerifyPayment && (
-                        <>
-                          <button
-                            disabled={paymentActionBusy}
-                            onClick={() => verifyPayment(true)}
-                            className="flex-1 py-xs px-md rounded-lg bg-primary text-on-primary font-semibold hover:brightness-110 transition-all disabled:opacity-60"
-                          >
-                            Verify
-                          </button>
-                          <button
-                            disabled={paymentActionBusy}
-                            onClick={() => verifyPayment(false)}
-                            className="flex-1 py-xs px-md rounded-lg border border-error text-error font-semibold hover:bg-error/5 transition-all disabled:opacity-60"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {canRefund && (
-                        <button
-                          disabled={paymentActionBusy}
-                          onClick={refundPayment}
-                          className="flex-1 py-xs px-md rounded-lg border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high transition-all disabled:opacity-60"
-                        >
-                          Refund
-                        </button>
-                      )}
+                      <button
+                        disabled={paymentActionBusy}
+                        onClick={() => verifyPayment(true)}
+                        className="flex-1 py-xs px-md rounded-lg bg-primary text-on-primary font-semibold hover:brightness-110 transition-all disabled:opacity-60"
+                      >
+                        Verify
+                      </button>
+                      <button
+                        disabled={paymentActionBusy}
+                        onClick={() => verifyPayment(false)}
+                        className="flex-1 py-xs px-md rounded-lg border border-error text-error font-semibold hover:bg-error/5 transition-all disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
                     </div>
                   )}
                 </div>

@@ -49,7 +49,7 @@ export default function UploadReceiptContent() {
   // dashboard (a rejected payment retry) rather than the live booking flow —
   // the Zustand store may be empty in that case.
   const appointmentId = storeAppointmentId ?? searchParams.get("appointmentId");
-  const paymentMethod = storePaymentMethod ?? (searchParams.get("method") as "jazzcash" | "easypaisa" | null);
+  const paymentMethod = storePaymentMethod ?? (searchParams.get("method") as "bank" | "jazzcash" | "easypaisa" | null);
 
   const [remoteSummary, setRemoteSummary] = useState<AppointmentSummary | null>(null);
 
@@ -111,7 +111,7 @@ export default function UploadReceiptContent() {
       toast.error(validationError);
       return;
     }
-    if (!appointmentId || !paymentMethod || (paymentMethod !== "jazzcash" && paymentMethod !== "easypaisa")) {
+    if (!appointmentId || !paymentMethod || (paymentMethod !== "jazzcash" && paymentMethod !== "easypaisa" && paymentMethod !== "bank")) {
       toast.error("Missing booking details — please restart the payment step.");
       return;
     }

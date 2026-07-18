@@ -6,7 +6,7 @@ import type { AppointmentStatus, AppointmentType, PatientSnapshot, VisitType } f
 import type { PaymentMethod } from "@/types/payment";
 
 const PAYMENT_POPULATE_FIELDS =
-  "method status amountPkr transactionRef receiptUrl receiptUploadedAt stripePaymentIntentId rejectionReason verifiedAt refundedAt";
+  "method status amountPkr transactionRef receiptUrl receiptUploadedAt rejectionReason verifiedAt refundedAt";
 
 export interface CreateAppointmentInput {
   appointmentNumber: string;

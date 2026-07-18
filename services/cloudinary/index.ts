@@ -96,6 +96,39 @@ export async function uploadMedicalReport(file: File): Promise<CloudinaryUploadR
   return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.medicalReports, resourceType: isPdf ? "raw" : "image" });
 }
 
+/** Validates and uploads a payment method's QR code image to the payment-qr folder. */
+export async function uploadPaymentQr(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed for QR codes");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("QR code image must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.paymentQr, resourceType: "image" });
+}
+
+/** Validates and uploads a "Why Choose Us" feature image to the why-choose folder. */
+export async function uploadWhyChooseImage(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Image must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.whyChoose, resourceType: "image" });
+}
+
+/** Validates and uploads a "Care You Can See" gallery image to the care-gallery folder. */
+export async function uploadCareGalleryImage(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Image must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.careGallery, resourceType: "image" });
+}
+
 /** Deletes a previously-uploaded profile photo, receipt, clinic, procedure, or medical report file from Cloudinary. */
 export async function deleteUploadedAsset(publicId: string, resourceType: "image" | "raw" = "image"): Promise<void> {
   return deleteFromCloudinary(publicId, resourceType);

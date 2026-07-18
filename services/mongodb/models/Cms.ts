@@ -32,6 +32,35 @@ const socialLinksSchema = new Schema(
   { _id: false }
 );
 
+const whyChooseFeatureSchema = new Schema(
+  {
+    icon: { type: String, default: "" },
+    title: { type: String, required: true },
+    desc: { type: String, default: "" },
+    image: { type: String, default: "" },
+    imagePublicId: { type: String },
+  },
+  { _id: false }
+);
+
+const careGalleryImageSchema = new Schema(
+  {
+    image: { type: String, required: true },
+    imagePublicId: { type: String },
+    label: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const specializedServiceSchema = new Schema(
+  {
+    icon: { type: String, default: "" },
+    title: { type: String, required: true },
+    desc: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
 const cmsSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -54,6 +83,14 @@ const cmsSchema = new Schema(
     contactPhone: { type: String, default: "" },
     contactWhatsapp: { type: String, default: "" },
     social: { type: socialLinksSchema, default: () => ({}) },
+    whyChooseSubtitle: { type: String, default: "" },
+    whyChooseFeatures: { type: [whyChooseFeatureSchema], default: [] },
+    careGalleryTitle: { type: String, default: "" },
+    careGallerySubtitle: { type: String, default: "" },
+    careGalleryImages: { type: [careGalleryImageSchema], default: [] },
+    servicesTitle: { type: String, default: "" },
+    servicesSubtitle: { type: String, default: "" },
+    specializedServices: { type: [specializedServiceSchema], default: [] },
   },
   { timestamps: true }
 );

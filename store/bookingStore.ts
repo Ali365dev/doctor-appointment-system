@@ -43,7 +43,7 @@ interface BookingState {
   receiptUploaded: boolean;
   appointmentId: string | null;
   appointmentNumber: string | null;
-  paymentMethod: "stripe" | "jazzcash" | "easypaisa" | "reception" | null;
+  paymentMethod: "bank" | "jazzcash" | "easypaisa" | "reception" | null;
 
   setClinic: (clinic: SelectedClinic) => void;
   setProcedure: (procedure: ProcedureSnapshot) => void;
@@ -57,7 +57,7 @@ interface BookingState {
   setMedicalReportUrl: (value: string) => void;
   setReceiptUploaded: (uploaded: boolean) => void;
   setAppointment: (appointmentId: string, appointmentNumber: string) => void;
-  setPaymentMethod: (method: "stripe" | "jazzcash" | "easypaisa" | "reception") => void;
+  setPaymentMethod: (method: "bank" | "jazzcash" | "easypaisa" | "reception") => void;
   clearAppointment: () => void;
   reset: () => void;
 }

@@ -26,6 +26,26 @@ export interface CmsSocialLinks {
   website?: string;
 }
 
+export interface CmsWhyChooseFeature {
+  icon: string;
+  title: string;
+  desc?: string;
+  image: string;
+  imagePublicId?: string;
+}
+
+export interface CmsGalleryImage {
+  image: string;
+  imagePublicId?: string;
+  label?: string;
+}
+
+export interface CmsSpecializedService {
+  icon: string;
+  title: string;
+  desc?: string;
+}
+
 export interface CmsInput {
   name?: string;
   designation?: string;
@@ -47,6 +67,14 @@ export interface CmsInput {
   contactPhone?: string;
   contactWhatsapp?: string;
   social?: CmsSocialLinks;
+  whyChooseSubtitle?: string;
+  whyChooseFeatures?: CmsWhyChooseFeature[];
+  careGalleryTitle?: string;
+  careGallerySubtitle?: string;
+  careGalleryImages?: CmsGalleryImage[];
+  servicesTitle?: string;
+  servicesSubtitle?: string;
+  specializedServices?: CmsSpecializedService[];
 }
 
 export interface CmsProfile {
@@ -71,6 +99,14 @@ export interface CmsProfile {
   contactPhone: string;
   contactWhatsapp: string;
   social: CmsSocialLinks;
+  whyChooseSubtitle: string;
+  whyChooseFeatures: CmsWhyChooseFeature[];
+  careGalleryTitle: string;
+  careGallerySubtitle: string;
+  careGalleryImages: CmsGalleryImage[];
+  servicesTitle: string;
+  servicesSubtitle: string;
+  specializedServices: CmsSpecializedService[];
   createdAt: string;
   updatedAt: string;
 }
@@ -104,6 +140,96 @@ const DEFAULT_JOURNEY: CmsJourneyEntry[] = [
       "Foundational clinical training encompassing general medicine, acute care management, and diagnostic gastroscopy.",
   },
 ];
+
+const DEFAULT_WHY_CHOOSE_FEATURES: CmsWhyChooseFeature[] = [
+  {
+    icon: "school",
+    title: "Expert Gastroenterologist",
+    desc: "UK-trained specialist with advanced fellowships and years of international clinical experience.",
+    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "biotech",
+    title: "Modern Diagnostics",
+    desc: "Utilizing high-definition endoscopy and state-of-the-art imaging for precise diagnostic accuracy.",
+    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "person",
+    title: "Personalized Treatment",
+    desc: "Bespoke treatment plans tailored to each patient's unique clinical profile and lifestyle.",
+    image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "verified",
+    title: "Evidence-Based",
+    desc: "Following international clinical guidelines (BSG, AGA, EASL) for the safest medical care.",
+    image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "favorite",
+    title: "Compassionate Care",
+    desc: "A patient-first approach centered on dignity, respect, and clear communication.",
+    image: "https://images.unsplash.com/photo-1516841273335-e39b37888115?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "support_agent",
+    title: "Follow-up Support",
+    desc: "Comprehensive post-procedure care and ongoing support throughout the recovery journey.",
+    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?q=80&w=800&auto=format&fit=crop",
+  },
+];
+
+const DEFAULT_CARE_GALLERY_IMAGES: CmsGalleryImage[] = [
+  {
+    image: "https://images.unsplash.com/photo-1551190822-a9333d879b1f?q=80&w=1000&auto=format&fit=crop",
+    label: "Personalized Consultations",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1666214280391-8ff5bd3c0bf0?q=80&w=1000&auto=format&fit=crop",
+    label: "Experienced Care Team",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?q=80&w=1000&auto=format&fit=crop",
+    label: "Modern Facilities",
+  },
+];
+
+const SERVICE_ICONS: Record<string, string> = {
+  Biopsy: "biotech",
+  Colonoscopy: "visibility",
+  "Constipation Treatment": "healing",
+  "Diarrhea Treatment": "medication",
+  "Digital Rectal Examination": "monitor_heart",
+  Endoscopist: "stethoscope",
+  Endoscopy: "search",
+  Gastroscopy: "emergency",
+  "Hepatitis A Treatment": "vaccines",
+  "Hepatitis B Treatment": "vaccines",
+  "Hepatitis C Treatment": "vaccines",
+  Oesophagoscopy: "vital_signs",
+};
+
+const SERVICE_DESCRIPTIONS: Record<string, string> = {
+  Biopsy: "Tissue sample collection for accurate diagnosis.",
+  Colonoscopy: "Examination of the colon to detect digestive disorders.",
+  "Constipation Treatment": "Diagnosis and treatment for chronic constipation.",
+  "Diarrhea Treatment": "Effective care for acute and chronic diarrhea.",
+  "Digital Rectal Examination": "Physical examination to assess rectal health.",
+  Endoscopist: "Specialist consultation for gastrointestinal diseases.",
+  Endoscopy: "Minimally invasive procedure to examine the digestive tract.",
+  Gastroscopy: "Examination of the stomach and upper digestive system.",
+  "Hepatitis A Treatment": "Medical management of Hepatitis A infection.",
+  "Hepatitis B Treatment": "Comprehensive treatment for Hepatitis B.",
+  "Hepatitis C Treatment": "Advanced treatment for Hepatitis C infection.",
+  Oesophagoscopy: "Examination of the esophagus using an endoscope.",
+};
+
+const DEFAULT_SPECIALIZED_SERVICES: CmsSpecializedService[] = (doctor.services ?? []).map((name: string) => ({
+  icon: SERVICE_ICONS[name] ?? "medical_services",
+  title: name,
+  desc: SERVICE_DESCRIPTIONS[name] ?? "",
+}));
 
 function extractWhatsappPhone(waUrl: string): string {
   const match = waUrl.match(/phone=(\+?\d+)/);
@@ -142,6 +268,15 @@ function buildSeed(): CmsInput {
       youtube: doctor.social.youtube?.url ?? "",
       website: doctor.profile_url,
     },
+    whyChooseSubtitle: "Setting new benchmarks in gastrointestinal health through expertise and empathy.",
+    whyChooseFeatures: DEFAULT_WHY_CHOOSE_FEATURES,
+    careGalleryTitle: "Care You Can See",
+    careGallerySubtitle: "A calm, modern environment designed around patient comfort.",
+    careGalleryImages: DEFAULT_CARE_GALLERY_IMAGES,
+    servicesTitle: "Specialized Services",
+    servicesSubtitle:
+      "Comprehensive care for all digestive health issues using state-of-the-art diagnostic and therapeutic techniques.",
+    specializedServices: DEFAULT_SPECIALIZED_SERVICES,
   };
 }
 
@@ -149,6 +284,40 @@ async function loadCmsProfile(): Promise<CmsProfile> {
   await connectDB();
   const existing = await Cms.findOne({}).lean();
   if (existing) {
+    // Backfills homepage-section fields for CMS docs created before they existed.
+    const needsWhyChooseBackfill = !existing.whyChooseFeatures || existing.whyChooseFeatures.length === 0;
+    const needsServicesBackfill = !existing.specializedServices || existing.specializedServices.length === 0;
+    if (needsWhyChooseBackfill || needsServicesBackfill) {
+      const seed = buildSeed();
+      const backfilled = await Cms.findOneAndUpdate(
+        {},
+        {
+          $set: {
+            ...(needsWhyChooseBackfill
+              ? {
+                  whyChooseSubtitle: existing.whyChooseSubtitle || seed.whyChooseSubtitle,
+                  whyChooseFeatures: seed.whyChooseFeatures,
+                  careGalleryTitle: existing.careGalleryTitle || seed.careGalleryTitle,
+                  careGallerySubtitle: existing.careGallerySubtitle || seed.careGallerySubtitle,
+                  careGalleryImages:
+                    existing.careGalleryImages && existing.careGalleryImages.length > 0
+                      ? existing.careGalleryImages
+                      : seed.careGalleryImages,
+                }
+              : {}),
+            ...(needsServicesBackfill
+              ? {
+                  servicesTitle: existing.servicesTitle || seed.servicesTitle,
+                  servicesSubtitle: existing.servicesSubtitle || seed.servicesSubtitle,
+                  specializedServices: seed.specializedServices,
+                }
+              : {}),
+          },
+        },
+        { new: true }
+      ).lean();
+      return serialize(backfilled);
+    }
     return serialize(existing);
   }
 

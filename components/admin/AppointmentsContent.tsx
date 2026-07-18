@@ -46,7 +46,7 @@ const APPOINTMENT_TYPE_LABEL: Record<AppointmentType, string> = {
 
 // Labels/colors per the admin spec: Pending=Orange, Confirmed=Green, Rejected=Red, Refunded=Purple.
 // "submitted"/"failed" aren't in the spec's 4-item dropdown but are real states the
-// system can be in (receipt awaiting review / Stripe failure) — kept visible, not hidden.
+// system can be in (receipt awaiting review / payment failure) — kept visible, not hidden.
 const PAYMENT_STATUS_META: Record<PaymentStatus, { label: string; badgeClass: string }> = {
   pending: { label: "Pending", badgeClass: "bg-orange-100 text-orange-700" },
   submitted: { label: "Submitted", badgeClass: "bg-amber-100 text-amber-700" },
@@ -220,23 +220,20 @@ export default function AppointmentsContent() {
   }
 
   // Routes a Payment Status change through the endpoint that matches the
-  // business rule for that method: manual receipts (JazzCash/Easypaisa)
+  // business rule for that method: manual receipts (JazzCash/Easypaisa/Bank)
   // approve/reject via /verify (which also cascades the appointment status);
-  // Stripe refunds always go through /refund; everything else (including a
-  // manual admin override on a Stripe payment, or resetting to "pending") is
-  // a plain status set via /status, which never touches the appointment.
+  // everything else (including resetting to "pending" or marking "refunded")
+  // is a plain status set via /status, which never touches the appointment.
   async function savePaymentStatus(payment: ApiPayment, newStatus: PaymentStatus, opts?: { silent?: boolean }): Promise<boolean> {
     try {
       let res: Response;
-      if (newStatus === "refunded") {
-        res = await fetch(`/api/payments/${payment._id}/refund`, { method: "POST" });
-      } else if (payment.method !== "stripe" && newStatus === "verified") {
+      if (newStatus === "verified") {
         res = await fetch(`/api/payments/${payment._id}/verify`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ approve: true }),
         });
-      } else if (payment.method !== "stripe" && newStatus === "rejected") {
+      } else if (newStatus === "rejected") {
         res = await fetch(`/api/payments/${payment._id}/verify`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

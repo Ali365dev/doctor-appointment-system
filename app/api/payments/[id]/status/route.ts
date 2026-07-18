@@ -7,9 +7,9 @@ import { PAYMENT_STATUSES } from "@/types/payment";
 /**
  * Generic payment-status setter for the admin Appointment Details panel.
  * Does not cascade to the appointment's status — admins manage both
- * independently. Approve/reject flows for manual receipts and Stripe
- * refunds should keep using /verify and /refund respectively, since those
- * intentionally cascade to the appointment status.
+ * independently. Approve/reject flows for manual receipts should keep
+ * using /verify instead, since that intentionally cascades to the
+ * appointment status.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

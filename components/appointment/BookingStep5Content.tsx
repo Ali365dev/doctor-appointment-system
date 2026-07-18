@@ -9,24 +9,27 @@ import { useBookingStore } from "@/store/bookingStore";
 import { doctor as staticDoctor } from "@/lib/data";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
-const JAZZCASH_NUMBER = "03001234567";
-const EASYPAISA_NUMBER = "03457654321";
+type Tab = "bank" | "jazzcash" | "easypaisa" | "reception" | "whatsapp";
 
-type Tab = "stripe" | "jazzcash" | "easypaisa" | "reception" | "whatsapp";
-
-// ── Wallet tab (JazzCash / Easypaisa) ─────────────────────────────────────────
+// ── Wallet tab (Bank / JazzCash / Easypaisa) ─────────────────────────────────
 function WalletTab({
   label,
   method,
   number,
+  accountTitle,
   accentBorder,
   fee,
+  extraField,
+  qrImageUrl,
 }: {
   label: string;
-  method: "jazzcash" | "easypaisa";
+  method: "bank" | "jazzcash" | "easypaisa";
   number: string;
+  accountTitle: string;
   accentBorder: string;
   fee: number;
+  extraField?: { label: string; value: string };
+  qrImageUrl?: string;
 }) {
   const doctor = useDoctorProfile();
   const [copied, setCopied] = useState(false);
@@ -44,6 +47,7 @@ function WalletTab({
     router.push("/book-appointment/upload-receipt");
   };
 
+  const isBank = method === "bank";
   const qrValue = `${label}:${number}?amount=${fee}`;
 
   return (
@@ -56,16 +60,38 @@ function WalletTab({
         <div className={`flex flex-col sm:flex-row gap-6 p-5 rounded-xl border ${accentBorder} bg-surface-container-lowest`}>
           {/* QR */}
           <div className="p-3 bg-white rounded-xl shadow-sm border border-outline-variant/20 self-start shrink-0">
-            <QRCode value={qrValue} size={136} fgColor="#1c1b1f" bgColor="#ffffff" />
+            {qrImageUrl ? (
+              <Image src={qrImageUrl} alt={`${label} QR code`} width={136} height={136} className="object-contain" unoptimized />
+            ) : (
+              <QRCode value={qrValue} size={136} fgColor="#1c1b1f" bgColor="#ffffff" />
+            )}
             <p className="text-caption text-center text-outline mt-2">Scan with {label}</p>
           </div>
 
           {/* Number + instructions */}
           <div className="flex-1 space-y-3">
             <p className="text-body-md text-on-surface-variant">
-              Open <strong>{label}</strong> app → tap <strong>Send Money</strong> or{" "}
-              <strong>Scan QR</strong> → enter the amount <strong>Rs. {fee.toLocaleString()}</strong>.
+              {isBank ? (
+                <>
+                  Transfer via your bank app or branch → enter the account number below → send{" "}
+                  <strong>Rs. {fee.toLocaleString()}</strong>.
+                </>
+              ) : (
+                <>
+                  Open <strong>{label}</strong> app → tap <strong>Send Money</strong> or{" "}
+                  <strong>Scan QR</strong> → enter the amount <strong>Rs. {fee.toLocaleString()}</strong>.
+                </>
+              )}
             </p>
+
+            {extraField && (
+              <div>
+                <p className="text-caption text-outline uppercase tracking-wider font-semibold">
+                  {extraField.label}
+                </p>
+                <p className="text-body-md font-semibold text-on-surface mt-0.5">{extraField.value}</p>
+              </div>
+            )}
 
             <div className="space-y-1">
               <p className="text-caption text-outline uppercase tracking-wider font-semibold">
@@ -90,7 +116,7 @@ function WalletTab({
               <p className="text-caption text-outline uppercase tracking-wider font-semibold">
                 Account Title
               </p>
-              <p className="text-body-md font-semibold text-on-surface mt-0.5">{doctor.name}</p>
+              <p className="text-body-md font-semibold text-on-surface mt-0.5">{accountTitle || doctor.name}</p>
             </div>
           </div>
         </div>
@@ -123,10 +149,20 @@ export default function BookingStep5Content() {
   const router = useRouter();
   const { selectedClinic, selectedProcedure, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
     useBookingStore();
-  const [activeTab, setActiveTab] = useState<Tab>("stripe");
-  const [stripeLoading, setStripeLoading] = useState(false);
-  const [stripeError, setStripeError] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("bank");
   const [receptionLoading, setReceptionLoading] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState({
+    jazzcashNumber: "",
+    jazzcashAccountTitle: "",
+    jazzcashQrUrl: undefined as string | undefined,
+    easypaisaNumber: "",
+    easypaisaAccountTitle: "",
+    easypaisaQrUrl: undefined as string | undefined,
+    bankName: "",
+    bankAccountNumber: "",
+    bankAccountTitle: "",
+    bankQrUrl: undefined as string | undefined,
+  });
 
   // Payment requires an appointment to already exist (created at the end of Step 4).
   useEffect(() => {
@@ -134,6 +170,18 @@ export default function BookingStep5Content() {
       router.replace("/book-appointment/step-4");
     }
   }, [appointmentId, router]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/payment-settings");
+        const data = await res.json();
+        if (res.ok) setPaymentSettings(data.settings);
+      } catch {
+        // Non-fatal — wallet tabs just show blank numbers until this loads/retries.
+      }
+    })();
+  }, []);
 
   const fee = selectedProcedure?.pricePkr ?? selectedClinic?.fee_pkr ?? staticDoctor.fee_summary.min_fee_pkr;
 
@@ -144,34 +192,6 @@ export default function BookingStep5Content() {
         year: "numeric",
       })
     : "—";
-
-  // ── Stripe Checkout redirect ──
-  const handleStripeCheckout = async () => {
-    if (!appointmentId) return;
-    setStripeLoading(true);
-    setStripeError("");
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: fee,
-          description: `${selectedProcedure?.name ?? "Consultation"} – ${selectedClinic?.name ?? "Clinic"} · ${formattedDate}`,
-          appointmentId,
-        }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setStripeError(data.error ?? "Could not start payment. Try again.");
-        setStripeLoading(false);
-      }
-    } catch {
-      setStripeError("Network error. Please try again.");
-      setStripeLoading(false);
-    }
-  };
 
   // ── Pay at Reception ──
   const handleReceptionConfirm = async () => {
@@ -224,7 +244,7 @@ export default function BookingStep5Content() {
   ];
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: "stripe", label: "Card (Stripe)", icon: "credit_card" },
+    { id: "bank", label: "Bank Transfer", icon: "account_balance" },
     { id: "jazzcash", label: "JazzCash", icon: "account_balance_wallet" },
     { id: "easypaisa", label: "Easypaisa", icon: "account_balance_wallet" },
     { id: "reception", label: "Pay at Reception", icon: "storefront" },
@@ -269,77 +289,18 @@ export default function BookingStep5Content() {
 
           {/* Tab body */}
           <div className="p-6 md:p-8">
-            {/* ── Stripe ── */}
-            {activeTab === "stripe" && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <span
-                    className="material-symbols-outlined text-blue-600 text-[22px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    verified_user
-                  </span>
-                  <p className="text-caption text-blue-700">
-                    You&apos;ll be redirected to <strong>Stripe&apos;s secure checkout</strong>. Payment is verified{" "}
-                    <strong>instantly</strong> upon completion — no receipt upload required.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-xl border border-outline-variant/30 bg-surface-container-low space-y-3">
-                  <p className="text-caption text-outline uppercase tracking-wider font-semibold">
-                    You are paying
-                  </p>
-                  <p className="text-[28px] font-bold text-primary">
-                    Rs. {fee.toLocaleString()}
-                  </p>
-                  <p className="text-body-md text-on-surface-variant">
-                    {selectedProcedure?.name ?? "Consultation"} with {doctor.name}
-                    {selectedClinic?.name ? ` · ${selectedClinic.name}` : ""}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {["Visa", "Mastercard", "Amex", "UnionPay"].map((b) => (
-                    <span
-                      key={b}
-                      className="px-3 py-1 bg-surface-container-low rounded border border-outline-variant/30 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant"
-                    >
-                      {b}
-                    </span>
-                  ))}
-                </div>
-
-                {stripeError && (
-                  <p className="text-caption text-error flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px]">error</span>
-                    {stripeError}
-                  </p>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleStripeCheckout}
-                  disabled={stripeLoading}
-                  className="w-full py-4 rounded-xl bg-primary text-on-primary text-[14px] font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {stripeLoading ? (
-                    <>
-                      <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                      Redirecting to Stripe…
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-[18px]">lock</span>
-                      Pay Rs. {fee.toLocaleString()} with Stripe
-                    </>
-                  )}
-                </button>
-
-                <div className="flex items-center gap-2 justify-center text-caption text-outline">
-                  <span className="material-symbols-outlined text-[14px]">lock</span>
-                  Secured by Stripe · 256-bit SSL · PCI DSS compliant
-                </div>
-              </div>
+            {/* ── Bank Transfer ── */}
+            {activeTab === "bank" && (
+              <WalletTab
+                label={paymentSettings.bankName ? `${paymentSettings.bankName} Bank` : "Bank"}
+                method="bank"
+                number={paymentSettings.bankAccountNumber}
+                accountTitle={paymentSettings.bankAccountTitle}
+                accentBorder="border-blue-100"
+                fee={fee}
+                extraField={{ label: "Bank Name", value: paymentSettings.bankName }}
+                qrImageUrl={paymentSettings.bankQrUrl}
+              />
             )}
 
             {/* ── JazzCash ── */}
@@ -347,9 +308,11 @@ export default function BookingStep5Content() {
               <WalletTab
                 label="JazzCash"
                 method="jazzcash"
-                number={JAZZCASH_NUMBER}
+                number={paymentSettings.jazzcashNumber}
+                accountTitle={paymentSettings.jazzcashAccountTitle}
                 accentBorder="border-red-100"
                 fee={fee}
+                qrImageUrl={paymentSettings.jazzcashQrUrl}
               />
             )}
 
@@ -358,9 +321,11 @@ export default function BookingStep5Content() {
               <WalletTab
                 label="Easypaisa"
                 method="easypaisa"
-                number={EASYPAISA_NUMBER}
+                number={paymentSettings.easypaisaNumber}
+                accountTitle={paymentSettings.easypaisaAccountTitle}
                 accentBorder="border-green-100"
                 fee={fee}
+                qrImageUrl={paymentSettings.easypaisaQrUrl}
               />
             )}
 

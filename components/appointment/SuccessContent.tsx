@@ -10,7 +10,7 @@ import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import type { AppointmentStatus } from "@/types/appointment";
 import type { PaymentStatus } from "@/types/payment";
 
-type PaymentMethod = "stripe" | "jazzcash" | "easypaisa" | "reception" | "receipt";
+type PaymentMethod = "bank" | "jazzcash" | "easypaisa" | "reception" | "receipt";
 
 const HERO_CONFIG: Record<PaymentMethod, {
   heroClass: string;
@@ -20,13 +20,13 @@ const HERO_CONFIG: Record<PaymentMethod, {
   title: string;
   description: (doctorName: string) => string;
 }> = {
-  stripe: {
-    heroClass: "bg-green-50 border-green-200",
-    iconGlowClass: "bg-green-100 shadow-[0_0_40px_rgba(22,163,74,0.2)]",
-    iconBgClass: "bg-green-600",
-    icon: "verified",
-    title: "Payment Confirmed!",
-    description: (name) => `Your card payment was processed instantly by Stripe. Your appointment with ${name} is confirmed.`,
+  bank: {
+    heroClass: "bg-surface-container-low border-outline-variant/30",
+    iconGlowClass: "bg-primary/10 shadow-[0_0_40px_rgba(0,74,198,0.15)]",
+    iconBgClass: "bg-primary",
+    icon: "check",
+    title: "Payment Submitted Successfully",
+    description: (name) => `Your bank transfer receipt has been received. ${name}'s team will verify and confirm your appointment shortly.`,
   },
   jazzcash: {
     heroClass: "bg-surface-container-low border-outline-variant/30",
@@ -102,10 +102,9 @@ export default function SuccessContent() {
   const searchParams = useSearchParams();
   const paymentParam = searchParams.get("payment");
   const appointmentId = searchParams.get("appointmentId");
-  const sessionId = searchParams.get("session_id");
 
   const method: PaymentMethod =
-    paymentParam === "stripe" || paymentParam === "jazzcash" || paymentParam === "easypaisa" || paymentParam === "reception"
+    paymentParam === "bank" || paymentParam === "jazzcash" || paymentParam === "easypaisa" || paymentParam === "reception"
       ? paymentParam
       : "receipt";
   const hero = HERO_CONFIG[method];
@@ -123,38 +122,9 @@ export default function SuccessContent() {
       return res.ok ? data.confirmation : null;
     };
 
-    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
     (async () => {
       try {
-        let paid = false;
-
-        // Stripe redirects here before our server has confirmed the session —
-        // this call is what actually flips payment/appointment to verified/confirmed.
-        if (method === "stripe" && sessionId) {
-          const verifyRes = await fetch(`/api/verify-stripe-session?session_id=${encodeURIComponent(sessionId)}`);
-          const verifyData = await verifyRes.json();
-          paid = verifyRes.ok && verifyData.paid === true;
-        }
-
-        let result = await fetchConfirmation();
-
-        // The Stripe verification write and this read can briefly race (e.g. on
-        // eventually-consistent replica reads) — if we know the session is paid
-        // but the appointment/payment doc hasn't caught up yet, poll briefly
-        // rather than showing a stale "Pending" status on a paid booking.
-        if (paid && result && (result.status !== "confirmed" || result.paymentStatus !== "verified")) {
-          for (let attempt = 0; attempt < 5 && !cancelled; attempt++) {
-            await sleep(700);
-            const retried = await fetchConfirmation();
-            if (retried && retried.status === "confirmed" && retried.paymentStatus === "verified") {
-              result = retried;
-              break;
-            }
-            if (retried) result = retried;
-          }
-        }
-
+        const result = await fetchConfirmation();
         if (!cancelled) setConfirmation(result);
       } finally {
         if (!cancelled) setLoading(false);
@@ -163,7 +133,7 @@ export default function SuccessContent() {
     return () => {
       cancelled = true;
     };
-  }, [method, sessionId, appointmentId]);
+  }, [appointmentId]);
 
   const fee = confirmation?.feeSnapshotPkr ?? staticDoctor.fee_summary.min_fee_pkr;
   const clinicName = confirmation?.clinicName ?? "—";
@@ -183,7 +153,6 @@ export default function SuccessContent() {
     ? PAYMENT_STATUS_CONFIG[confirmation.paymentStatus]
     : { label: method === "reception" ? "Pay at Reception" : "Processing…", icon: "schedule", className: "bg-surface-container-highest text-on-surface-variant" };
 
-  const isStripe = method === "stripe";
   const isReception = method === "reception";
 
   const handleDownload = async () => {
@@ -369,7 +338,7 @@ export default function SuccessContent() {
               </div>
             </div>
             <div>
-              <h1 className={`text-headline-lg font-bold mb-2 ${isStripe ? "text-green-700" : isReception ? "text-amber-700" : "text-primary"}`}>
+              <h1 className={`text-headline-lg font-bold mb-2 ${isReception ? "text-amber-700" : "text-primary"}`}>
                 {hero.title}
               </h1>
               <p className="text-body-lg text-on-surface-variant max-w-2xl">
@@ -382,7 +351,7 @@ export default function SuccessContent() {
           <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-10 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-headline-md font-semibold text-on-surface">
-                {isStripe ? "Payment Details" : isReception ? "Booking Details" : "Verification Progress"}
+                {isReception ? "Booking Details" : "Verification Progress"}
               </h2>
               <span className="text-[14px] font-semibold text-outline">
                 {loading ? "Loading…" : `Ref: ${refNumber}`}
@@ -408,17 +377,7 @@ export default function SuccessContent() {
                 </span>
               </div>
             </div>
-            {isStripe ? (
-              <div className="flex gap-6 bg-green-50 p-6 rounded-lg border border-green-200">
-                <span className="material-symbols-outlined text-green-600 shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  verified_user
-                </span>
-                <p className="text-body-md text-green-800">
-                  Your payment was <strong>instantly verified</strong> by Stripe. No further action is
-                  required. You will receive a confirmation on WhatsApp shortly.
-                </p>
-              </div>
-            ) : isReception ? (
+            {isReception ? (
               <div className="flex gap-6 bg-amber-50 p-6 rounded-lg border border-amber-200">
                 <span className="material-symbols-outlined text-amber-600 shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
                   storefront

@@ -64,6 +64,36 @@ function buildEmbedUrl(loc: Loc): string {
 const CONSOLIDATED_MAP =
   "https://maps.google.com/maps?q=31.41,73.10&z=13&ie=UTF8&iwloc=&output=embed";
 
+function LocationMapWidget({ loc }: { loc: Loc }) {
+  return (
+    <div className="h-full rounded-xl p-1 shadow-sm overflow-hidden min-h-75 bg-white/70 backdrop-blur-xl border border-gray-200/50">
+      <div className="w-full h-full rounded-lg bg-surface-container overflow-hidden relative min-h-75">
+        <iframe
+          src={buildEmbedUrl(loc)}
+          className="absolute inset-0 w-full h-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`Map — ${loc.name}`}
+        />
+        <div className="absolute bottom-4 left-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md p-sm rounded-lg border border-outline-variant/30 pointer-events-none">
+          <p className="text-label-md font-semibold text-on-surface truncate">{loc.name}</p>
+          {loc.map_link && (
+            <a
+              href={loc.map_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary text-caption font-semibold flex items-center gap-1 mt-1 pointer-events-auto"
+            >
+              Get Directions
+              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClinicContent() {
   const doctor = useDoctorProfile();
   const [locations, setLocations] = useState<Loc[]>([]);
@@ -88,8 +118,6 @@ export default function ClinicContent() {
       cancelled = true;
     };
   }, []);
-
-  const [loc0, loc1, loc2] = locations;
 
   return (
     <main className="pt-24 min-h-screen">
@@ -117,60 +145,18 @@ export default function ClinicContent() {
         ) : locations.length === 0 ? (
           <p className="text-center text-on-surface-variant py-xl">No clinics available right now.</p>
         ) : (
-          <RevealGroup className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
-            {/* Location 1 – Featured */}
-            {loc0 && (
-              <motion.div variants={revealItem} className="lg:col-span-8 flex flex-col gap-gutter">
-                <ClinicCard loc={loc0} index={0} variant="featured" />
-              </motion.div>
-            )}
-
-            {/* Map Widget for Location 1 */}
-            {loc0 && (
-              <motion.div
-                variants={revealItem}
-                className="lg:col-span-4 rounded-xl p-1 shadow-sm overflow-hidden min-h-75 bg-white/70 backdrop-blur-xl border border-gray-200/50"
-              >
-                <div className="w-full h-full rounded-lg bg-surface-container overflow-hidden relative min-h-75">
-                  <iframe
-                    src={buildEmbedUrl(loc0)}
-                    className="absolute inset-0 w-full h-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title={`Map — ${loc0.name}`}
-                  />
-                  <div className="absolute bottom-4 left-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md p-sm rounded-lg border border-outline-variant/30 pointer-events-none">
-                    <p className="text-label-md font-semibold text-on-surface truncate">
-                      {loc0.name}
-                    </p>
-                    {loc0.map_link && (
-                      <a
-                        href={loc0.map_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary text-caption font-semibold flex items-center gap-1 mt-1 pointer-events-auto"
-                      >
-                        Get Directions
-                        <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Locations 2 & 3 */}
-            {loc1 && (
-              <motion.div variants={revealItem} className="lg:col-span-6">
-                <ClinicCard loc={loc1} index={1} variant="standard" shift="Evening Shift" />
-              </motion.div>
-            )}
-            {loc2 && (
-              <motion.div variants={revealItem} className="lg:col-span-6">
-                <ClinicCard loc={loc2} index={2} variant="standard" shift="Night Shift" />
-              </motion.div>
-            )}
-          </RevealGroup>
+          <div className="flex flex-col gap-gutter">
+            {locations.map((loc, i) => (
+              <RevealGroup key={loc.id} className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+                <motion.div variants={revealItem} className="lg:col-span-8 flex flex-col gap-gutter">
+                  <ClinicCard loc={loc} index={i} variant="featured" />
+                </motion.div>
+                <motion.div variants={revealItem} className="lg:col-span-4">
+                  <LocationMapWidget loc={loc} />
+                </motion.div>
+              </RevealGroup>
+            ))}
+          </div>
         )}
       </section>
 

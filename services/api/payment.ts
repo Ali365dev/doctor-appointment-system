@@ -6,8 +6,6 @@ import {
   findPaymentByAppointmentId,
   findAllPayments,
   updatePaymentStatus,
-  updatePaymentIntentId,
-  markPaymentRefunded,
   clearPaymentReceipt,
 } from "@/services/mongodb/repositories/payment.repository";
 import {
@@ -38,19 +36,18 @@ export class PaymentServiceError extends Error {
 export interface CreatePaymentParams {
   appointmentId: string;
   method: PaymentMethod;
-  stripeSessionId?: string;
   transactionRef?: string;
   receiptUrl?: string;
   receiptPublicId?: string;
 }
 
+const MANUAL_RECEIPT_METHODS: PaymentMethod[] = ["jazzcash", "easypaisa", "bank"];
+
 /**
  * Creates the Payment record for an appointment and moves the appointment
  * into the right status for its payment method:
  *  - reception: no payment needed up front -> confirmed immediately, payment stays "pending"
- *  - stripe: payment is created "pending" and only flips to confirmed via server-side
- *    verification (checkout-session retrieval or webhook), never on the client's say-so
- *  - jazzcash/easypaisa: receipt-based, goes to "submitted" -> awaits admin verification
+ *  - jazzcash/easypaisa/bank: receipt-based, goes to "submitted" -> awaits admin verification
  */
 export async function createPaymentForAppointment(params: CreatePaymentParams): Promise<PaymentDoc> {
   await connectDB();
@@ -67,15 +64,13 @@ export async function createPaymentForAppointment(params: CreatePaymentParams): 
     }
   }
 
-  const initialStatus: PaymentStatus =
-    params.method === "jazzcash" || params.method === "easypaisa" ? "submitted" : "pending";
+  const initialStatus: PaymentStatus = MANUAL_RECEIPT_METHODS.includes(params.method) ? "submitted" : "pending";
 
   const payment = await createPaymentRecord({
     appointmentId: params.appointmentId,
     method: params.method,
     amountPkr: appointment.feeSnapshotPkr,
     status: initialStatus,
-    stripeSessionId: params.stripeSessionId,
     transactionRef: params.transactionRef,
     receiptUrl: params.receiptUrl,
     receiptPublicId: params.receiptPublicId,
@@ -86,10 +81,9 @@ export async function createPaymentForAppointment(params: CreatePaymentParams): 
 
   if (params.method === "reception") {
     await changeAppointmentStatus(params.appointmentId, "confirmed", "system", "Pay at reception — confirmed without upfront payment");
-  } else if (params.method === "jazzcash" || params.method === "easypaisa") {
+  } else if (MANUAL_RECEIPT_METHODS.includes(params.method)) {
     await changeAppointmentStatus(params.appointmentId, "payment_verification", "system", "Manual receipt submitted, awaiting admin verification");
   }
-  // stripe: appointment stays in "pending_payment" until verifyStripePayment() confirms it.
 
   return payment;
 }
@@ -126,9 +120,6 @@ export async function verifyManualPayment(
   const payment = await findPaymentById(paymentId);
   if (!payment) {
     throw new PaymentServiceError("Payment not found", 404);
-  }
-  if (payment.method === "stripe") {
-    throw new PaymentServiceError("Stripe payments are verified automatically, not manually", 400);
   }
 
   const updated = await updatePaymentStatus(
@@ -184,75 +175,10 @@ export async function deletePaymentReceipt(paymentId: string): Promise<PaymentDo
 }
 
 /**
- * Stores the Stripe PaymentIntent ID once a Checkout Session completes, so
- * it can be shown to the patient/admin and used later for a refund.
- */
-export async function attachStripePaymentIntent(paymentId: string, paymentIntentId: string): Promise<void> {
-  await connectDB();
-  await updatePaymentIntentId(paymentId, paymentIntentId);
-}
-
-/**
- * Admin-triggered Stripe refund. Only verified Stripe payments can be
- * refunded; the actual refund call happens in the API route (where the
- * Stripe SDK client lives) — this just persists the resulting state.
- */
-export async function markPaymentAsRefunded(paymentId: string, refundedBy: string): Promise<PaymentDoc> {
-  await connectDB();
-  const payment = await findPaymentById(paymentId);
-  if (!payment) {
-    throw new PaymentServiceError("Payment not found", 404);
-  }
-  const updated = await markPaymentRefunded(paymentId);
-  if (!updated) {
-    throw new PaymentServiceError("Payment not found", 404);
-  }
-  await changeAppointmentStatus(String(payment.appointmentId), "cancelled", refundedBy, "Payment refunded by admin");
-  return updated;
-}
-
-/**
- * Server-side Stripe confirmation. Only this function may move a Stripe
- * payment/appointment into a paid/confirmed state — the client redirect
- * URL param is never trusted on its own.
- */
-export async function markStripePaymentVerified(paymentId: string): Promise<PaymentDoc> {
-  await connectDB();
-  const payment = await findPaymentById(paymentId);
-  if (!payment) {
-    throw new PaymentServiceError("Payment not found", 404);
-  }
-  const updated = await updatePaymentStatus(paymentId, "verified", "system");
-  if (!updated) {
-    throw new PaymentServiceError("Payment not found", 404);
-  }
-  const appointment = await changeAppointmentStatus(String(payment.appointmentId), "confirmed", "system", "Stripe payment verified");
-
-  void sendNotification(
-    { email: appointment.patientSnapshot.email, phone: appointment.patientSnapshot.phone },
-    {
-      subject: "Payment Confirmation",
-      text: `Hi ${appointment.patientSnapshot.fullName}, your card payment for appointment ${appointment.appointmentNumber} has been confirmed.`,
-    }
-  );
-
-  return updated;
-}
-
-export async function markStripePaymentFailed(paymentId: string): Promise<PaymentDoc> {
-  await connectDB();
-  const updated = await updatePaymentStatus(paymentId, "failed", "system");
-  if (!updated) {
-    throw new PaymentServiceError("Payment not found", 404);
-  }
-  return updated;
-}
-
-/**
- * Generic admin-set payment status — unlike verifyManualPayment/markPaymentAsRefunded,
- * this does NOT cascade to the appointment's status; the admin manages each
- * independently from the Appointment Details panel (e.g. correcting a Stripe
- * payment's status by hand, or resetting a payment back to "pending").
+ * Generic admin-set payment status — unlike verifyManualPayment, this does
+ * NOT cascade to the appointment's status; the admin manages each
+ * independently from the Appointment Details panel (e.g. marking a payment
+ * "refunded" by hand, or resetting a payment back to "pending").
  */
 export async function setPaymentStatus(paymentId: string, status: PaymentStatus, changedBy: string): Promise<PaymentDoc> {
   await connectDB();

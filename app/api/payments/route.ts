@@ -32,12 +32,6 @@ export async function POST(req: NextRequest) {
     if (!isValidPaymentMethod(method)) {
       return NextResponse.json({ error: "A valid payment method is required" }, { status: 400 });
     }
-    if (method === "stripe") {
-      return NextResponse.json(
-        { error: "Stripe payments are created via /api/create-checkout-session, not this endpoint" },
-        { status: 400 }
-      );
-    }
 
     const payment = await createPaymentForAppointment({
       appointmentId,

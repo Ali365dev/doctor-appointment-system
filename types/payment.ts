@@ -9,6 +9,6 @@ export const PAYMENT_STATUSES = [
 
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-export const PAYMENT_METHODS = ["stripe", "jazzcash", "easypaisa", "reception"] as const;
+export const PAYMENT_METHODS = ["bank", "jazzcash", "easypaisa", "reception"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];

@@ -57,7 +57,7 @@ export const PAYMENT_STATUS_BADGE: Record<PatientPaymentStatus, string> = {
 };
 
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
-  stripe: "Stripe",
+  bank: "Bank Transfer (UBL)",
   jazzcash: "JazzCash",
   easypaisa: "Easypaisa",
   reception: "Pay at Reception",

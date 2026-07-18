@@ -7,9 +7,7 @@ const paymentSchema = new Schema(
     method: { type: String, enum: PAYMENT_METHODS, required: true },
     amountPkr: { type: Number, required: true },
     status: { type: String, enum: PAYMENT_STATUSES, required: true, default: "pending" },
-    stripeSessionId: { type: String, unique: true, sparse: true },
-    stripePaymentIntentId: { type: String, sparse: true },
-    transactionRef: { type: String }, // wallet TXN id entered/quoted by patient
+    transactionRef: { type: String }, // wallet/bank TXN id entered/quoted by patient
     receiptUrl: { type: String },
     receiptPublicId: { type: String }, // Cloudinary public ID, needed to delete the asset on replace
     receiptUploadedAt: { type: Date },

@@ -4,11 +4,63 @@ import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useDoctorProfile, useSetDoctorProfile } from "@/lib/context/DoctorProfileContext";
-import type { CmsEducationEntry, CmsJourneyEntry } from "@/services/mongodb/repositories/cms.repository";
+import type { CmsEducationEntry, CmsJourneyEntry, CmsWhyChooseFeature, CmsGalleryImage, CmsSpecializedService } from "@/services/mongodb/repositories/cms.repository";
+
+/** Curated set of doctor/medical-themed Material Symbols icons for feature & service cards. */
+const ICON_OPTIONS = [
+  "medical_services", "stethoscope", "local_hospital", "health_and_safety", "biotech", "vaccines",
+  "monitor_heart", "ecg_heart", "bloodtype", "healing", "medication", "medical_information",
+  "personal_injury", "psychology", "visibility", "search", "emergency", "vital_signs",
+  "school", "person", "verified", "favorite", "support_agent", "groups",
+  "spa", "self_improvement", "fitness_center", "restaurant", "water_drop", "air",
+  "sick", "coronavirus", "thermostat", "accessibility_new", "elderly", "pregnant_woman",
+  "child_care", "wc", "science", "diversity_3",
+];
+
+function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-xs bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+      >
+        <span className="material-symbols-outlined text-on-surface-variant text-[20px]">{value || "medical_services"}</span>
+        <span className="text-on-surface-variant truncate flex-1 text-left">{value || "Select icon"}</span>
+        <span className="material-symbols-outlined text-outline text-[18px]">expand_more</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute z-20 mt-xs w-64 max-h-56 overflow-y-auto bg-surface border border-outline-variant rounded-lg shadow-lg p-xs grid grid-cols-6 gap-1">
+            {ICON_OPTIONS.map((icon) => (
+              <button
+                key={icon}
+                type="button"
+                onClick={() => {
+                  onChange(icon);
+                  setOpen(false);
+                }}
+                title={icon}
+                className={`p-xs rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors ${
+                  value === icon ? "bg-primary/15 text-primary" : "text-on-surface-variant"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]">{icon}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 const tabs = [
   { id: "general", label: "General Info" },
   { id: "clinical", label: "Clinical Profile" },
+  { id: "homepage", label: "Homepage Sections" },
   { id: "social", label: "Social Media" },
 ] as const;
 
@@ -45,6 +97,8 @@ export default function CmsContent() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [newCertification, setNewCertification] = useState("");
+  const [uploadingWhyChooseIndex, setUploadingWhyChooseIndex] = useState<number | null>(null);
+  const [uploadingGalleryIndex, setUploadingGalleryIndex] = useState<number | null>(null);
 
   function buildFormState() {
     return {
@@ -67,6 +121,14 @@ export default function CmsContent() {
         youtube: doctorProfile.social?.youtube ?? "",
         website: doctorProfile.social?.website ?? "",
       },
+      whyChooseSubtitle: doctorProfile.whyChooseSubtitle,
+      whyChooseFeatures: doctorProfile.whyChooseFeatures,
+      careGalleryTitle: doctorProfile.careGalleryTitle,
+      careGallerySubtitle: doctorProfile.careGallerySubtitle,
+      careGalleryImages: doctorProfile.careGalleryImages,
+      servicesTitle: doctorProfile.servicesTitle,
+      servicesSubtitle: doctorProfile.servicesSubtitle,
+      specializedServices: doctorProfile.specializedServices,
     };
   }
 
@@ -127,6 +189,112 @@ export default function CmsContent() {
     setForm((prev) => ({ ...prev, professionalJourney: prev.professionalJourney.filter((_, i) => i !== index) }));
   }
 
+  function updateWhyChooseFeature(index: number, patch: Partial<CmsWhyChooseFeature>) {
+    setForm((prev) => ({
+      ...prev,
+      whyChooseFeatures: prev.whyChooseFeatures.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addWhyChooseFeature() {
+    setForm((prev) => ({
+      ...prev,
+      whyChooseFeatures: [...prev.whyChooseFeatures, { icon: "star", title: "", desc: "", image: "" }],
+    }));
+  }
+
+  function removeWhyChooseFeature(index: number) {
+    setForm((prev) => ({ ...prev, whyChooseFeatures: prev.whyChooseFeatures.filter((_, i) => i !== index) }));
+  }
+
+  async function handleWhyChooseImageChange(index: number, file: File) {
+    setUploadingWhyChooseIndex(index);
+    try {
+      const formData = new FormData();
+      formData.append("index", String(index));
+      formData.append("file", file);
+      const res = await fetch("/api/cms/why-choose-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload image");
+        return;
+      }
+      setDoctorProfile(data.cms);
+      const updatedFeature: CmsWhyChooseFeature = data.cms.whyChooseFeatures[index];
+      setForm((prev) => ({
+        ...prev,
+        // Patch only this index — replacing the whole array would drop any other
+        // locally-added card the admin hasn't uploaded an image for yet.
+        whyChooseFeatures: prev.whyChooseFeatures.map((entry, i) => (i === index ? updatedFeature : entry)),
+      }));
+      toast.success("Feature image updated");
+    } catch {
+      toast.error("Network error while uploading image");
+    } finally {
+      setUploadingWhyChooseIndex(null);
+    }
+  }
+
+  function updateGalleryImage(index: number, patch: Partial<CmsGalleryImage>) {
+    setForm((prev) => ({
+      ...prev,
+      careGalleryImages: prev.careGalleryImages.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addGalleryImage() {
+    setForm((prev) => ({ ...prev, careGalleryImages: [...prev.careGalleryImages, { image: "", label: "" }] }));
+  }
+
+  function removeGalleryImage(index: number) {
+    setForm((prev) => ({ ...prev, careGalleryImages: prev.careGalleryImages.filter((_, i) => i !== index) }));
+  }
+
+  function updateSpecializedService(index: number, patch: Partial<CmsSpecializedService>) {
+    setForm((prev) => ({
+      ...prev,
+      specializedServices: prev.specializedServices.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addSpecializedService() {
+    setForm((prev) => ({
+      ...prev,
+      specializedServices: [...prev.specializedServices, { icon: "medical_services", title: "", desc: "" }],
+    }));
+  }
+
+  function removeSpecializedService(index: number) {
+    setForm((prev) => ({ ...prev, specializedServices: prev.specializedServices.filter((_, i) => i !== index) }));
+  }
+
+  async function handleGalleryImageChange(index: number, file: File) {
+    setUploadingGalleryIndex(index);
+    try {
+      const formData = new FormData();
+      formData.append("index", String(index));
+      formData.append("file", file);
+      const res = await fetch("/api/cms/care-gallery-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload image");
+        return;
+      }
+      setDoctorProfile(data.cms);
+      const updatedImage: CmsGalleryImage = data.cms.careGalleryImages[index];
+      setForm((prev) => ({
+        ...prev,
+        // Patch only this index — see the equivalent comment in handleWhyChooseImageChange.
+        careGalleryImages: prev.careGalleryImages.map((entry, i) => (i === index ? updatedImage : entry)),
+      }));
+      toast.success("Gallery image updated");
+    } catch {
+      toast.error("Network error while uploading image");
+    } finally {
+      setUploadingGalleryIndex(null);
+    }
+  }
+
   function handleDiscard() {
     setForm(buildFormState());
     toast.info("Changes discarded");
@@ -151,6 +319,14 @@ export default function CmsContent() {
           languagesSpoken: form.languages,
           professionalMemberships: form.certifications,
           social: form.social,
+          whyChooseSubtitle: form.whyChooseSubtitle,
+          whyChooseFeatures: form.whyChooseFeatures.filter((f) => f.title.trim() && f.image.trim()),
+          careGalleryTitle: form.careGalleryTitle,
+          careGallerySubtitle: form.careGallerySubtitle,
+          careGalleryImages: form.careGalleryImages.filter((g) => g.image.trim()),
+          servicesTitle: form.servicesTitle,
+          servicesSubtitle: form.servicesSubtitle,
+          specializedServices: form.specializedServices.filter((s) => s.title.trim()),
         }),
       });
       const data = await res.json();
@@ -574,6 +750,242 @@ export default function CmsContent() {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Homepage Sections */}
+        {activeTab === "homepage" && (
+          <div className="space-y-gutter">
+            {/* Why Choose Us */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">stars</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Why Choose {form.fullName || "Us"}?</h3>
+              </div>
+              <label className="block text-caption text-on-surface-variant mb-xs">Subtitle</label>
+              <input
+                value={form.whyChooseSubtitle}
+                onChange={(e) => setForm((p) => ({ ...p, whyChooseSubtitle: e.target.value }))}
+                placeholder="Setting new benchmarks in gastrointestinal health through expertise and empathy."
+                className="w-full bg-surface border border-outline-variant rounded-lg p-sm mb-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+                {form.whyChooseFeatures.map((feature, i) => (
+                  <div key={i} className="flex gap-sm items-start p-sm border border-outline-variant rounded-lg">
+                    <label className="relative w-16 h-16 rounded-lg overflow-hidden bg-surface border border-outline-variant shrink-0 cursor-pointer group">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleWhyChooseImageChange(i, file);
+                        }}
+                      />
+                      {feature.image ? (
+                        <Image src={feature.image} alt={feature.title || "Feature"} fill className="object-cover" unoptimized />
+                      ) : (
+                        <span className="w-full h-full flex items-center justify-center text-outline">
+                          <span className="material-symbols-outlined">add_photo_alternate</span>
+                        </span>
+                      )}
+                      <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                        <span className="material-symbols-outlined text-[18px]">
+                          {uploadingWhyChooseIndex === i ? "progress_activity" : "upload"}
+                        </span>
+                      </span>
+                    </label>
+                    <div className="flex-1 grid grid-cols-2 gap-sm">
+                      <IconPicker
+                        value={feature.icon}
+                        onChange={(icon) => updateWhyChooseFeature(i, { icon })}
+                      />
+                      <input
+                        value={feature.title}
+                        onChange={(e) => updateWhyChooseFeature(i, { title: e.target.value })}
+                        placeholder="Title"
+                        className="bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <textarea
+                        value={feature.desc ?? ""}
+                        onChange={(e) => updateWhyChooseFeature(i, { desc: e.target.value })}
+                        placeholder="Description"
+                        rows={2}
+                        className="col-span-2 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeWhyChooseFeature(i)}
+                      className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addWhyChooseFeature}
+                className="w-full mt-md py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Feature
+              </button>
+            </div>
+
+            {/* Care You Can See gallery */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">photo_library</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Care &amp; Facility Gallery</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm mb-md">
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Section Title</label>
+                  <input
+                    value={form.careGalleryTitle}
+                    onChange={(e) => setForm((p) => ({ ...p, careGalleryTitle: e.target.value }))}
+                    placeholder="Care You Can See"
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Subtitle</label>
+                  <input
+                    value={form.careGallerySubtitle}
+                    onChange={(e) => setForm((p) => ({ ...p, careGallerySubtitle: e.target.value }))}
+                    placeholder="A calm, modern environment designed around patient comfort."
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+                {form.careGalleryImages.map((img, i) => (
+                  <div key={i} className="p-sm border border-outline-variant rounded-lg space-y-sm">
+                    <label className="relative block w-full h-32 rounded-lg overflow-hidden bg-surface border border-outline-variant cursor-pointer group">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleGalleryImageChange(i, file);
+                        }}
+                      />
+                      {img.image ? (
+                        <Image src={img.image} alt={img.label || "Gallery image"} fill className="object-cover" unoptimized />
+                      ) : (
+                        <span className="w-full h-full flex items-center justify-center text-outline">
+                          <span className="material-symbols-outlined">add_photo_alternate</span>
+                        </span>
+                      )}
+                      <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                        <span className="material-symbols-outlined text-[18px]">
+                          {uploadingGalleryIndex === i ? "progress_activity" : "upload"}
+                        </span>
+                      </span>
+                    </label>
+                    <div className="flex gap-sm items-center">
+                      <input
+                        value={img.label ?? ""}
+                        onChange={(e) => updateGalleryImage(i, { label: e.target.value })}
+                        placeholder="Caption (e.g. Modern Facilities)"
+                        className="flex-1 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(i)}
+                        className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addGalleryImage}
+                className="w-full mt-md py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Image
+              </button>
+            </div>
+
+            {/* Specialized Services */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">medical_services</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Specialized Services</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Section Title</label>
+                  <input
+                    value={form.servicesTitle}
+                    onChange={(e) => setForm((p) => ({ ...p, servicesTitle: e.target.value }))}
+                    placeholder="Specialized Services"
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Subtitle</label>
+                  <input
+                    value={form.servicesSubtitle}
+                    onChange={(e) => setForm((p) => ({ ...p, servicesSubtitle: e.target.value }))}
+                    placeholder="Comprehensive care for all digestive health issues..."
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+                {form.specializedServices.map((service, i) => (
+                  <div key={i} className="flex gap-sm items-start p-sm border border-outline-variant rounded-lg">
+                    <div className="w-10 h-10 rounded bg-surface flex-shrink-0 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-on-surface-variant">
+                        {service.icon || "medical_services"}
+                      </span>
+                    </div>
+                    <div className="flex-1 grid grid-cols-2 gap-sm">
+                      <IconPicker
+                        value={service.icon}
+                        onChange={(icon) => updateSpecializedService(i, { icon })}
+                      />
+                      <input
+                        value={service.title}
+                        onChange={(e) => updateSpecializedService(i, { title: e.target.value })}
+                        placeholder="Service name"
+                        className="bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <textarea
+                        value={service.desc ?? ""}
+                        onChange={(e) => updateSpecializedService(i, { desc: e.target.value })}
+                        placeholder="Description"
+                        rows={2}
+                        className="col-span-2 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSpecializedService(i)}
+                      className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addSpecializedService}
+                className="w-full mt-md py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Service
+              </button>
             </div>
           </div>
         )}

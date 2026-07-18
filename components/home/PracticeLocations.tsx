@@ -5,10 +5,10 @@ import React, {
   useEffect,
   useCallback,
   useRef,
-  useMemo,
   memo,
 } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import { useBookingStore } from "@/store/bookingStore";
 import type { WeeklySchedule } from "@/types/clinic";
@@ -62,16 +62,7 @@ const DAYS = [
   "Friday", "Saturday", "Sunday",
 ];
 
-function buildEmbedUrl(loc: Loc): string {
-  if (loc.coordinates) {
-    const { lat, lng } = loc.coordinates;
-    return `https://maps.google.com/maps?q=${lat},${lng}&z=15&ie=UTF8&iwloc=&output=embed`;
-  }
-  const q = encodeURIComponent(`${loc.name} Faisalabad Pakistan`);
-  return `https://maps.google.com/maps?q=${q}&z=14&ie=UTF8&iwloc=&output=embed`;
-}
-
-const PersistentMap = memo(function PersistentMap({
+const LocationImage = memo(function LocationImage({
   locations,
   activeIndex,
   containerRef,
@@ -80,29 +71,37 @@ const PersistentMap = memo(function PersistentMap({
   activeIndex: number;
   containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const embedUrls = useMemo(() => locations.map(buildEmbedUrl), [locations]);
-
   return (
     <div
       ref={containerRef}
-      className="relative h-[380px] lg:h-full lg:min-h-[460px] rounded-2xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container-low"
-      aria-label={`Map for ${locations[activeIndex]?.name}`}
+      className="relative h-[380px] lg:h-full lg:min-h-[460px] bg-surface-container-low"
+      aria-label={`Photo of ${locations[activeIndex]?.name}`}
     >
-      {locations.map((loc, i) => (
-        <iframe
-          key={i}
-          src={embedUrls[i]}
-          className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-in-out ${
-            i === activeIndex
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }`}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title={`Google Map — ${loc.name}`}
-          aria-hidden={i !== activeIndex}
-        />
-      ))}
+      {locations.map((loc, i) =>
+        loc.image ? (
+          <Image
+            key={i}
+            src={loc.image}
+            alt={loc.name}
+            fill
+            unoptimized
+            className={`object-cover transition-opacity duration-500 ease-in-out ${
+              i === activeIndex ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden={i !== activeIndex}
+          />
+        ) : (
+          <div
+            key={i}
+            className={`absolute inset-0 flex items-center justify-center text-outline transition-opacity duration-500 ease-in-out ${
+              i === activeIndex ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden={i !== activeIndex}
+          >
+            <span className="material-symbols-outlined text-[64px]">location_on</span>
+          </div>
+        )
+      )}
       <div className="absolute bottom-3 left-3 z-10 bg-surface/90 backdrop-blur-sm px-sm py-xs rounded-lg border border-outline-variant/30 shadow-sm pointer-events-none">
         <p className="text-caption font-semibold text-on-surface truncate max-w-[200px]">
           {locations[activeIndex]?.name}
@@ -277,7 +276,7 @@ export default function PracticeLocations() {
 
           <div
             ref={trackRef}
-            className="flex gap-md overflow-x-auto scroll-smooth [scroll-snap-type:x_mandatory] scrollbar-hide px-4"
+            className="flex gap-md justify-center overflow-x-auto scroll-smooth [scroll-snap-type:x_mandatory] scrollbar-hide px-4"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             role="listbox"
@@ -312,8 +311,14 @@ export default function PracticeLocations() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg items-stretch">
-          <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-lg space-y-md flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch rounded-2xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface">
+          <LocationImage
+            locations={locations}
+            activeIndex={activeIndex}
+            containerRef={mapContainerRef}
+          />
+
+          <div className="p-lg space-y-md flex flex-col border-t lg:border-t-0 lg:border-l border-outline-variant/30">
             <div>
               <span className="text-caption font-bold uppercase tracking-widest text-primary">
                 Location {activeIndex + 1} of {locations.length}
@@ -377,12 +382,6 @@ export default function PracticeLocations() {
               )}
             </div>
           </div>
-
-          <PersistentMap
-            locations={locations}
-            activeIndex={activeIndex}
-            containerRef={mapContainerRef}
-          />
         </div>
       </div>
     </section>

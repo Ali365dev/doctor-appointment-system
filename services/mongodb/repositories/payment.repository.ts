@@ -8,7 +8,6 @@ export interface CreatePaymentInput {
   method: PaymentMethod;
   amountPkr: number;
   status: PaymentStatus;
-  stripeSessionId?: string;
   transactionRef?: string;
   receiptUrl?: string;
   receiptPublicId?: string;
@@ -26,21 +25,6 @@ export async function findPaymentById(paymentId: string): Promise<PaymentDoc | n
   return Payment.findById(paymentId).lean<PaymentDoc>();
 }
 
-export async function findPaymentByStripeSessionId(sessionId: string): Promise<PaymentDoc | null> {
-  await connectDB();
-  return Payment.findOne({ stripeSessionId: sessionId }).lean<PaymentDoc>();
-}
-
-export async function updatePaymentStripeSession(paymentId: string, stripeSessionId: string): Promise<void> {
-  await connectDB();
-  await Payment.updateOne({ _id: paymentId }, { $set: { stripeSessionId } });
-}
-
-export async function updatePaymentIntentId(paymentId: string, stripePaymentIntentId: string): Promise<void> {
-  await connectDB();
-  await Payment.updateOne({ _id: paymentId }, { $set: { stripePaymentIntentId } });
-}
-
 export async function findPaymentByAppointmentId(appointmentId: string): Promise<PaymentDoc | null> {
   await connectDB();
   return Payment.findOne({ appointmentId }).sort({ createdAt: -1 }).lean<PaymentDoc>();
@@ -52,15 +36,6 @@ export async function clearPaymentReceipt(paymentId: string): Promise<void> {
     { _id: paymentId },
     { $unset: { receiptUrl: "", receiptPublicId: "", receiptUploadedAt: "" } }
   );
-}
-
-export async function markPaymentRefunded(paymentId: string): Promise<PaymentDoc | null> {
-  await connectDB();
-  return Payment.findByIdAndUpdate(
-    paymentId,
-    { $set: { status: "refunded", refundedAt: new Date() } },
-    { new: true }
-  ).lean<PaymentDoc>();
 }
 
 export async function findAllPayments(filter?: { status?: PaymentStatus }): Promise<PaymentDoc[]> {

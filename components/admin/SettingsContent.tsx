@@ -1,6 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { toast } from "react-toastify";
+
+type QrMethod = "bank" | "jazzcash" | "easypaisa";
+
+function QrUploadField({
+  qrUrl,
+  uploading,
+  inputRef,
+  onSelect,
+}: {
+  qrUrl?: string;
+  uploading: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onSelect: (file: File) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-label-md text-on-surface-variant mb-xs">QR Code</label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onSelect(file);
+        }}
+      />
+      {qrUrl ? (
+        <div className="flex items-center gap-md">
+          <div className="relative w-20 h-20 rounded-xl border border-outline-variant overflow-hidden bg-surface-container-lowest shrink-0">
+            <Image src={qrUrl} alt="QR code" fill className="object-contain p-xs" unoptimized />
+          </div>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="text-sm text-primary font-semibold hover:underline disabled:opacity-60"
+          >
+            {uploading ? "Uploading…" : "Replace QR Code"}
+          </button>
+        </div>
+      ) : (
+        <div
+          onClick={() => !uploading && inputRef.current?.click()}
+          className="border-2 border-dashed border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center gap-xs cursor-pointer hover:border-primary transition-colors group bg-surface-container-lowest"
+        >
+          <span className="material-symbols-outlined text-2xl text-outline group-hover:text-primary">
+            {uploading ? "progress_activity" : "qr_code_2"}
+          </span>
+          <p className="text-sm text-on-surface-variant">
+            {uploading ? "Uploading…" : (<>Drop QR image here or <span className="text-primary font-semibold">browse</span></>)}
+          </p>
+          <p className="text-caption text-outline">PNG, JPG, or WEBP, max 5 MB</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const tabs = [
   { id: "payment", label: "Payment Settings", icon: "payments" },
@@ -15,18 +75,117 @@ const sessions = [
 
 export default function SettingsContent() {
   const [activeTab, setActiveTab] = useState("payment");
-  const [stripeConnected, setStripeConnected] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState("jazzcash");
   const [notifications, setNotifications] = useState({
     confirmEmail: true, confirmSMS: true,
     reminderEmail: true, reminderSMS: false,
     surveyPush: true,
   });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(true);
+  const [jazzcashNumber, setJazzcashNumber] = useState("");
+  const [jazzcashAccountTitle, setJazzcashAccountTitle] = useState("");
+  const [easypaisaNumber, setEasypaisaNumber] = useState("");
+  const [easypaisaAccountTitle, setEasypaisaAccountTitle] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankAccountTitle, setBankAccountTitle] = useState("");
+  const [qrUrls, setQrUrls] = useState<Record<QrMethod, string | undefined>>({
+    bank: undefined,
+    jazzcash: undefined,
+    easypaisa: undefined,
+  });
+  const [uploadingQr, setUploadingQr] = useState<QrMethod | null>(null);
+  const qrInputRefs = {
+    bank: useRef<HTMLInputElement>(null),
+    jazzcash: useRef<HTMLInputElement>(null),
+    easypaisa: useRef<HTMLInputElement>(null),
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/payment-settings");
+        const data = await res.json();
+        if (res.ok) {
+          setJazzcashNumber(data.settings.jazzcashNumber);
+          setJazzcashAccountTitle(data.settings.jazzcashAccountTitle);
+          setEasypaisaNumber(data.settings.easypaisaNumber);
+          setEasypaisaAccountTitle(data.settings.easypaisaAccountTitle);
+          setBankName(data.settings.bankName);
+          setBankAccountNumber(data.settings.bankAccountNumber);
+          setBankAccountTitle(data.settings.bankAccountTitle);
+          setQrUrls({
+            bank: data.settings.bankQrUrl,
+            jazzcash: data.settings.jazzcashQrUrl,
+            easypaisa: data.settings.easypaisaQrUrl,
+          });
+        } else {
+          toast.error(data.error ?? "Could not load payment settings");
+        }
+      } catch {
+        toast.error("Network error loading payment settings");
+      } finally {
+        setPaymentSettingsLoading(false);
+      }
+    })();
+  }, []);
+
+  async function handleQrUpload(method: QrMethod, file: File) {
+    setUploadingQr(method);
+    try {
+      const formData = new FormData();
+      formData.append("method", method);
+      formData.append("file", file);
+      const res = await fetch("/api/payment-settings/qr", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload QR code");
+        return;
+      }
+      setQrUrls((prev) => ({ ...prev, [method]: data.settings[`${method}QrUrl`] }));
+      toast.success("QR code updated");
+    } catch {
+      toast.error("Network error uploading QR code");
+    } finally {
+      setUploadingQr(null);
+    }
+  }
+
+  async function handleSave() {
+    if (activeTab !== "payment") {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/payment-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jazzcashNumber,
+          jazzcashAccountTitle,
+          easypaisaNumber,
+          easypaisaAccountTitle,
+          bankName,
+          bankAccountNumber,
+          bankAccountTitle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not save payment settings");
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      toast.error("Network error saving payment settings");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -40,10 +199,11 @@ export default function SettingsContent() {
           </div>
           <button
             onClick={handleSave}
-            className={`px-md py-sm rounded-xl font-bold shadow-lg transition-all flex items-center gap-xs ${saved ? "bg-secondary text-on-secondary" : "bg-primary text-on-primary hover:brightness-110"}`}
+            disabled={saving}
+            className={`px-md py-sm rounded-xl font-bold shadow-lg transition-all flex items-center gap-xs disabled:opacity-60 ${saved ? "bg-secondary text-on-secondary" : "bg-primary text-on-primary hover:brightness-110"}`}
           >
-            <span className="material-symbols-outlined text-[20px]">{saved ? "check_circle" : "save"}</span>
-            {saved ? "Saved!" : "Save Changes"}
+            <span className="material-symbols-outlined text-[20px]">{saving ? "progress_activity" : saved ? "check_circle" : "save"}</span>
+            {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
           </button>
         </div>
 
@@ -64,68 +224,121 @@ export default function SettingsContent() {
         {/* Tab: Payment Settings */}
         {activeTab === "payment" && (
           <div className="space-y-lg">
-            {/* Stripe */}
-            <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
-              <div className="flex items-center justify-between mb-md">
-                <div className="flex items-center gap-sm">
-                  <div className="w-10 h-10 bg-[#635bff] rounded-xl flex items-center justify-center text-white text-label-md font-extrabold tracking-tight">S</div>
-                  <div>
-                    <h3 className="text-headline-md font-semibold">Stripe</h3>
-                    <p className="text-caption text-on-surface-variant">International cards & online checkout</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-sm">
-                  {stripeConnected && (
-                    <span className="flex items-center gap-xs text-sm text-secondary font-semibold">
-                      <span className="w-2 h-2 bg-secondary rounded-full" /> Connected
+            {paymentSettingsLoading ? (
+              <div className="bg-surface border border-outline-variant rounded-2xl p-xl text-center text-on-surface-variant">
+                <span className="material-symbols-outlined animate-spin align-middle mr-xs">progress_activity</span>
+                Loading payment settings…
+              </div>
+            ) : (
+              <>
+                {/* Bank Transfer */}
+                <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
+                  <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
+                    <span className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shrink-0">
+                      <span className="material-symbols-outlined text-[22px]">account_balance</span>
                     </span>
-                  )}
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input checked={stripeConnected} onChange={() => setStripeConnected((v) => !v)} type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-                  </label>
-                </div>
-              </div>
-              {stripeConnected && (
-                <div className="bg-surface-container-low rounded-xl p-sm border border-outline-variant flex items-center justify-between">
-                  <div>
-                    <p className="text-caption font-semibold text-on-surface">Account: acct_1Pk9SjBNqtjPd...</p>
-                    <p className="text-caption text-on-surface-variant">Last payout: $1,250 on Oct 28, 2024</p>
+                    Bank Transfer
+                  </h3>
+                  <p className="text-caption text-on-surface-variant mb-md">
+                    Shown to patients on the booking payment step. Manual receipt verification.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                    <div>
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Bank Name</label>
+                      <input
+                        type="text"
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Account Number</label>
+                      <input
+                        type="text"
+                        value={bankAccountNumber}
+                        onChange={(e) => setBankAccountNumber(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Account Title</label>
+                      <input
+                        type="text"
+                        value={bankAccountTitle}
+                        onChange={(e) => setBankAccountTitle(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                      />
+                    </div>
                   </div>
-                  <button className="text-sm text-primary font-semibold hover:underline">Manage in Stripe</button>
-                </div>
-              )}
-            </section>
+                  <div className="mt-md">
+                    <QrUploadField
+                      qrUrl={qrUrls.bank}
+                      uploading={uploadingQr === "bank"}
+                      inputRef={qrInputRefs.bank}
+                      onSelect={(file) => handleQrUpload("bank", file)}
+                    />
+                  </div>
+                </section>
 
-            {/* Local Payments */}
-            <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
-              <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
-                <span className="material-symbols-outlined text-tertiary">account_balance_wallet</span> Local Payment Method
-              </h3>
-              <div className="flex gap-sm mb-md">
-                {[{ id: "jazzcash", label: "JazzCash", dot: "bg-[#f64c1c]" }, { id: "easypaisa", label: "Easypaisa", dot: "bg-[#1db04e]" }].map((m) => (
-                  <label key={m.id} className={`flex-1 flex items-center gap-sm p-md border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === m.id ? "border-primary bg-primary/5" : "border-outline-variant hover:border-primary/30"}`}>
-                    <input type="radio" name="payMethod" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-primary" />
-                    <span className={`w-3 h-3 rounded-full ${m.dot}`} />
-                    <span className="font-semibold text-on-surface">{m.label}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="space-y-md">
-                <div>
-                  <label className="block text-label-md text-on-surface-variant mb-xs">Account Number</label>
-                  <input type="text" defaultValue="+92 300 1234567" className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface" />
-                </div>
-                <div>
-                  <label className="block text-label-md text-on-surface-variant mb-xs">QR Code Upload</label>
-                  <div className="border-2 border-dashed border-outline-variant rounded-xl p-xl flex flex-col items-center justify-center gap-sm cursor-pointer hover:border-primary transition-colors group bg-surface-container-lowest">
-                    <span className="material-symbols-outlined text-3xl text-outline group-hover:text-primary">qr_code_2</span>
-                    <p className="text-sm text-on-surface-variant">Drop QR image here or <span className="text-primary font-semibold">browse</span></p>
-                    <p className="text-caption text-outline">PNG or JPG, max 5 MB</p>
+                {/* Local Payments */}
+                <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
+                  <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
+                    <span className="material-symbols-outlined text-tertiary">account_balance_wallet</span> Local Payment Numbers
+                  </h3>
+                  <div className="space-y-md">
+                    <div>
+                      <label className="flex items-center gap-sm text-label-md text-on-surface-variant mb-xs">
+                        <span className="w-3 h-3 rounded-full bg-[#f64c1c]" /> JazzCash Number
+                      </label>
+                      <input
+                        type="text"
+                        value={jazzcashNumber}
+                        onChange={(e) => setJazzcashNumber(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface mb-sm"
+                      />
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Account Title</label>
+                      <input
+                        type="text"
+                        value={jazzcashAccountTitle}
+                        onChange={(e) => setJazzcashAccountTitle(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface mb-sm"
+                      />
+                      <QrUploadField
+                        qrUrl={qrUrls.jazzcash}
+                        uploading={uploadingQr === "jazzcash"}
+                        inputRef={qrInputRefs.jazzcash}
+                        onSelect={(file) => handleQrUpload("jazzcash", file)}
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-sm text-label-md text-on-surface-variant mb-xs">
+                        <span className="w-3 h-3 rounded-full bg-[#1db04e]" /> Easypaisa Number
+                      </label>
+                      <input
+                        type="text"
+                        value={easypaisaNumber}
+                        onChange={(e) => setEasypaisaNumber(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface mb-sm"
+                      />
+                      <label className="block text-label-md text-on-surface-variant mb-xs">Account Title</label>
+                      <input
+                        type="text"
+                        value={easypaisaAccountTitle}
+                        onChange={(e) => setEasypaisaAccountTitle(e.target.value)}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface mb-sm"
+                      />
+                      <QrUploadField
+                        qrUrl={qrUrls.easypaisa}
+                        uploading={uploadingQr === "easypaisa"}
+                        inputRef={qrInputRefs.easypaisa}
+                        onSelect={(file) => handleQrUpload("easypaisa", file)}
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
-            </section>
+                </section>
+              </>
+            )}
           </div>
         )}
 
