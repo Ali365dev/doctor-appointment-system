@@ -274,6 +274,52 @@ export default function ReportsContent() {
 
   /* ---------- Report computations ---------- */
 
+  const BREAKDOWN_HEADERS_APPTS = ["Appointments", "Paid Amount (Rs.)", "Pending Amount (Rs.)", "Total Amount (Rs.)"];
+
+  /** [count, paid, pending, total] rows for any grouping of appointments — shared by every breakdown table below. */
+  function breakdownRows(apts: ApiAppointment[], keyFn: (a: ApiAppointment) => string): (string | number)[][] {
+    const map = new Map<string, ApiAppointment[]>();
+    for (const a of apts) {
+      const k = keyFn(a);
+      const list = map.get(k) ?? [];
+      list.push(a);
+      map.set(k, list);
+    }
+    return [...map.entries()].map(([label, group]) => [
+      label,
+      group.length,
+      group.reduce((s, a) => s + paidAmount(a), 0),
+      group.reduce((s, a) => s + pendingAmount(a), 0),
+      group.reduce((s, a) => s + (paidAmount(a) + pendingAmount(a)), 0),
+    ]);
+  }
+
+  /** Payment Status Summary (Transactions + Amount) and Appointment Status Summary (Count) — shared by Overall and Patient reports. */
+  function paymentStatusSummaryTable(apts: ApiAppointment[]): ReportTable {
+    const map = new Map<string, { count: number; amount: number }>();
+    for (const a of apts) {
+      const p = getPayment(a);
+      if (!p) continue;
+      const entry = map.get(p.status) ?? { count: 0, amount: 0 };
+      entry.count += 1;
+      entry.amount += p.amountPkr;
+      map.set(p.status, entry);
+    }
+    return {
+      headers: ["Payment Status", "Transactions", "Amount (Rs.)"],
+      rows: [...map.entries()].map(([status, v]) => [capitalize(status), v.count, v.amount]),
+    };
+  }
+
+  function appointmentStatusSummaryTable(apts: ApiAppointment[]): ReportTable {
+    const map = new Map<string, number>();
+    for (const a of apts) map.set(STATUS_LABEL[a.status], (map.get(STATUS_LABEL[a.status]) ?? 0) + 1);
+    return {
+      headers: ["Appointment Status", "Count"],
+      rows: [...map.entries()].map(([label, count]) => [label, count]),
+    };
+  }
+
   const overall: ComputedReport = useMemo(() => {
     const patientIds = new Set(filteredAppointments.map((a) => a.patientId).filter(Boolean) as string[]);
     const completed = filteredAppointments.filter((a) => a.status === "completed").length;
@@ -352,7 +398,33 @@ export default function ReportsContent() {
         .map((p) => [p.name, p.phone ?? "—", p.email ?? "—", p.status, isoDay(p.createdAt)]),
     };
 
+    const appointmentTypeTable: ReportTable = {
+      headers: ["Appointment Type", ...BREAKDOWN_HEADERS_APPTS],
+      rows: breakdownRows(filteredAppointments, (a) => APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"]),
+    };
+    const paymentMethodTable: ReportTable = {
+      headers: ["Payment Method", "Transactions", "Paid Amount (Rs.)", "Pending Amount (Rs.)", "Total Amount (Rs.)"],
+      rows: breakdownRows(
+        filteredAppointments.filter((a) => getPayment(a)),
+        (a) => PAYMENT_METHOD_LABEL[getPayment(a)!.method]
+      ),
+    };
+    const clinicBreakdownTable: ReportTable = {
+      headers: ["Clinic", ...BREAKDOWN_HEADERS_APPTS],
+      rows: breakdownRows(filteredAppointments, (a) => clinicOf(a)?.name ?? "—"),
+    };
+    const procedureBreakdownTable: ReportTable = {
+      headers: ["Procedure / Service", ...BREAKDOWN_HEADERS_APPTS],
+      rows: breakdownRows(filteredAppointments, serviceLabel),
+    };
+
     const extraTables = [
+      { title: "Appointment Breakdown", table: appointmentTypeTable },
+      { title: "Payment Method Summary", table: paymentMethodTable },
+      { title: "Clinic-wise Summary", table: clinicBreakdownTable },
+      { title: "Procedure / Service Summary", table: procedureBreakdownTable },
+      { title: "Payment Status Summary", table: paymentStatusSummaryTable(filteredAppointments) },
+      { title: "Appointment Status Summary", table: appointmentStatusSummaryTable(filteredAppointments) },
       { title: "All Appointments", table: appointmentsTable },
       { title: "All Patients", table: patientsTable },
     ];
@@ -529,26 +601,6 @@ export default function ReportsContent() {
   }, [filteredAppointments, firstApptDateByPatient]);
 
   const PATIENT_TABLE_HEADERS = ["Date", "Time", "Patient", "Phone", "Email", "Clinic", "Procedure / Service", "Type", "Status", "Fee (Rs.)"];
-  const BREAKDOWN_HEADERS_APPTS = ["Appointments", "Paid Amount (Rs.)", "Pending Amount (Rs.)", "Total Amount (Rs.)"];
-
-  /** [count, paid, pending, total] rows for any grouping of appointments — shared by every breakdown table below. */
-  function breakdownRows(apts: ApiAppointment[], keyFn: (a: ApiAppointment) => string): (string | number)[][] {
-    const map = new Map<string, ApiAppointment[]>();
-    for (const a of apts) {
-      const k = keyFn(a);
-      const list = map.get(k) ?? [];
-      list.push(a);
-      map.set(k, list);
-    }
-    return [...map.entries()].map(([label, group]) => [
-      label,
-      group.length,
-      group.reduce((s, a) => s + paidAmount(a), 0),
-      group.reduce((s, a) => s + pendingAmount(a), 0),
-      group.reduce((s, a) => s + (paidAmount(a) + pendingAmount(a)), 0),
-    ]);
-  }
-
   // Full, unfiltered appointment history for the selected patient — used for the
   // identity header (last/next visit, total visits, outstanding balance), which
   // should reflect the patient's whole record, not just the active date range.
@@ -637,27 +689,10 @@ export default function ReportsContent() {
     };
 
     // 7. Payment Status Summary (Transactions + Amount only, no paid/pending split)
-    const paymentStatusMap = new Map<string, { count: number; amount: number }>();
-    for (const a of apts) {
-      const p = getPayment(a);
-      if (!p) continue;
-      const entry = paymentStatusMap.get(p.status) ?? { count: 0, amount: 0 };
-      entry.count += 1;
-      entry.amount += p.amountPkr;
-      paymentStatusMap.set(p.status, entry);
-    }
-    const paymentStatusTable: ReportTable = {
-      headers: ["Payment Status", "Transactions", "Amount (Rs.)"],
-      rows: [...paymentStatusMap.entries()].map(([status, v]) => [capitalize(status), v.count, v.amount]),
-    };
+    const paymentStatusTable = paymentStatusSummaryTable(apts);
 
     // 8. Appointment Status Summary (Count only)
-    const appointmentStatusMap = new Map<string, number>();
-    for (const a of apts) appointmentStatusMap.set(STATUS_LABEL[a.status], (appointmentStatusMap.get(STATUS_LABEL[a.status]) ?? 0) + 1);
-    const appointmentStatusTable: ReportTable = {
-      headers: ["Appointment Status", "Count"],
-      rows: [...appointmentStatusMap.entries()].map(([label, count]) => [label, count]),
-    };
+    const appointmentStatusTable = appointmentStatusSummaryTable(apts);
 
     // Full appointment listing — preserved from the previous report for drill-down detail, shown last.
     const appointmentDetailsTable: ReportTable = {
@@ -989,7 +1024,7 @@ export default function ReportsContent() {
           headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
           footStyles: { fillColor: ROW_ALT, textColor: TEXT_DARK, fontStyle: "bold" },
           alternateRowStyles: { fillColor: ROW_ALT },
-          margin: { left: margin, right: margin, top: HEADER_H + 4 },
+          margin: { left: margin, right: margin, top: 16, bottom: 16 },
           didParseCell: (data) => {
             if (data.section === "body" && badgeCols.has(data.column.index)) {
               data.cell.text = [""];
@@ -1014,7 +1049,9 @@ export default function ReportsContent() {
             doc.text(raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: "center" });
             doc.setTextColor(...TEXT_DARK);
           },
-          didDrawPage: drawHeader,
+          didDrawPage: () => {
+            if (doc.getCurrentPageInfo().pageNumber === 1) drawHeader();
+          },
         });
 
         return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
@@ -1066,6 +1103,22 @@ export default function ReportsContent() {
       }
 
       if (active.summary && active.summary.length > 0) {
+        // Cards are hand-drawn (no autoTable pagination), so pre-compute their
+        // height and break to a fresh page ourselves if they wouldn't fit —
+        // otherwise they silently overflow into (or past) the footer band.
+        const compactCount = active.summary.filter((c) => !isWideCard(c)).length;
+        const wideCount = active.summary.length - compactCount;
+        const cardH = 20;
+        const gap = 4;
+        const compactRows = compactCount > 0 ? Math.ceil(compactCount / Math.min(6, compactCount)) : 0;
+        const wideRows = wideCount > 0 ? Math.ceil(wideCount / Math.min(3, wideCount)) : 0;
+        const cardsBlockHeight = 5 + compactRows * (cardH + gap) + wideRows * (cardH + gap) + 4;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        if (y + cardsBlockHeight > pageHeight - 18) {
+          doc.addPage();
+          y = 16;
+        }
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.setTextColor(...NAVY);
@@ -1084,7 +1137,7 @@ export default function ReportsContent() {
         let startY = y + 12;
         if (startY > doc.internal.pageSize.getHeight() - 40) {
           doc.addPage();
-          startY = HEADER_H + 12;
+          startY = 16;
         }
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
