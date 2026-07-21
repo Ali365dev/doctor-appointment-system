@@ -6,6 +6,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import type { AppointmentStatus, AppointmentType, VisitType } from "@/types/appointment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
 
 /* ============================================================
    Types
@@ -26,7 +27,7 @@ interface ApiAppointment {
   date: string;
   time: string;
   patientId?: string;
-  patientSnapshot: { fullName: string; phone?: string };
+  patientSnapshot: { fullName: string; phone?: string; age?: number; gender?: string };
   feeSnapshotPkr: number;
   paymentId?: ApiPayment | string;
   status: AppointmentStatus;
@@ -48,6 +49,9 @@ interface ApiPatient {
   name: string;
   phone?: string;
   email?: string;
+  age?: number;
+  gender?: string;
+  totalVisits?: number;
   status: PatientGroup;
   createdAt: string;
 }
@@ -64,9 +68,20 @@ const APPOINTMENT_TYPE_LABEL: Record<AppointmentType, string> = {
 
 const PENDING_STATUSES: AppointmentStatus[] = ["pending_payment", "payment_submitted", "payment_verification"];
 const CANCELLED_STATUSES: AppointmentStatus[] = ["cancelled", "rejected", "no_show"];
-const PATIENT_GROUPS: PatientGroup[] = ["Active", "Follow-up", "New"];
+const APPOINTMENT_TYPES_LIST: AppointmentType[] = ["consultation", "procedure", "follow_up"];
+const ONLINE_PAYMENT_METHODS: PaymentMethod[] = ["bank", "jazzcash", "easypaisa"];
 
-type ReportKey = "overall" | "procedure" | "location" | "group" | "clinicSummary" | "patient";
+/** Paid = payment verified. Pending = still owed on any non-cancelled appointment. */
+function paidAmount(a: ApiAppointment): number {
+  const p = getPayment(a);
+  return p?.status === "verified" ? p.amountPkr : 0;
+}
+function pendingAmount(a: ApiAppointment): number {
+  if (CANCELLED_STATUSES.includes(a.status)) return 0;
+  return a.feeSnapshotPkr - paidAmount(a);
+}
+
+type ReportKey = "overall" | "procedure" | "location" | "group" | "clinicSummary" | "patient" | "payment";
 
 /** Data-driven tab list — add a new entry + a computeXxx() branch below to add a report type. */
 const REPORT_TABS: { key: ReportKey; label: string; icon: string }[] = [
@@ -76,6 +91,7 @@ const REPORT_TABS: { key: ReportKey; label: string; icon: string }[] = [
   { key: "group", label: "Group Report", icon: "category" },
   { key: "clinicSummary", label: "Clinic Summary", icon: "storefront" },
   { key: "patient", label: "Patient Report", icon: "person_search" },
+  { key: "payment", label: "Payment Report", icon: "payments" },
 ];
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -106,6 +122,29 @@ function serviceLabel(a: ApiAppointment): string {
 }
 function isoDay(dateLike: string): string {
   return dateLike.slice(0, 10);
+}
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * Sums every column where all rows hold a number, labeling the row "Total" in
+ * the first column. Returns null when there's nothing numeric to total (e.g.
+ * the Overall Report's Metric/Value table, whose Value column mixes numbers
+ * and pre-formatted strings) or when there are no rows.
+ */
+function computeTotalsRow(headers: string[], rows: (string | number)[][]): (string | number)[] | null {
+  if (rows.length === 0) return null;
+  const numericCols = headers
+    .map((_, i) => i)
+    .filter((i) => i > 0 && rows.every((r) => typeof r[i] === "number"));
+  if (numericCols.length === 0) return null;
+  const totals: (string | number)[] = headers.map(() => "");
+  totals[0] = "Total";
+  for (const i of numericCols) {
+    totals[i] = rows.reduce((sum, r) => sum + (r[i] as number), 0);
+  }
+  return totals;
 }
 
 interface ReportTable {
@@ -147,6 +186,8 @@ export default function ReportsContent() {
   const [locationFilter, setLocationFilter] = useState("All");
   const [procedureFilter, setProcedureFilter] = useState("All");
   const [patientFilter, setPatientFilter] = useState("All");
+  const [patientQuery, setPatientQuery] = useState("");
+  const [patientDropdownOpen, setPatientDropdownOpen] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportKey>("overall");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<number | null>(null);
@@ -183,6 +224,11 @@ export default function ReportsContent() {
 
   const clinicMap = useMemo(() => new Map(clinics.map((c) => [c._id, c])), [clinics]);
   const patientMap = useMemo(() => new Map(patients.map((p) => [p.id, p])), [patients]);
+  const patientOptions = useMemo(() => {
+    const sorted = [...patients].sort((a, b) => a.name.localeCompare(b.name));
+    const q = patientQuery.trim().toLowerCase();
+    return q ? sorted.filter((p) => p.name.toLowerCase().includes(q)) : sorted;
+  }, [patients, patientQuery]);
   const locations = useMemo(() => [...new Set(clinics.map((c) => c.city))].sort(), [clinics]);
   const procedures = useMemo(() => [...new Set(appointments.map(serviceLabel))].sort(), [appointments]);
 
@@ -366,31 +412,86 @@ export default function ReportsContent() {
   }, [filteredAppointments, clinicMap]);
 
   const groupReport: ComputedReport = useMemo(() => {
-    const rows = PATIENT_GROUPS.map((g) => {
-      const groupPatients = patients.filter((p) => {
-        if (p.status !== g) return false;
-        const day = isoDay(p.createdAt);
-        if (dateFrom && day < dateFrom) return false;
-        if (dateTo && day > dateTo) return false;
-        return true;
-      });
-      const ids = new Set(groupPatients.map((p) => p.id));
-      const apts = filteredAppointments.filter((a) => a.patientId && ids.has(a.patientId));
+    const rows = APPOINTMENT_TYPES_LIST.map((type) => {
+      const apts = filteredAppointments.filter((a) => (a.appointmentType ?? "consultation") === type);
+      const ids = new Set(apts.map((a) => a.patientId).filter(Boolean) as string[]);
       const revenue = apts.reduce((sum, a) => {
         const p = getPayment(a);
         return p?.status === "verified" ? sum + p.amountPkr : sum;
       }, 0);
-      return { group: g, patients: ids.size, appointments: apts.length, revenue };
+      return { type: APPOINTMENT_TYPE_LABEL[type], patients: ids.size, appointments: apts.length, revenue };
     });
 
     return {
       table: {
-        headers: ["Group", "Patients", "Appointments", "Revenue (Rs.)"],
-        rows: rows.map((r) => [r.group, r.patients, r.appointments, r.revenue]),
+        headers: ["Type", "Patients", "Appointments", "Revenue (Rs.)"],
+        rows: rows.map((r) => [r.type, r.patients, r.appointments, r.revenue]),
       },
-      chart: rows.map((r) => ({ label: r.group, value: r.patients })),
+      chart: rows.map((r) => ({ label: r.type, value: r.appointments })),
     };
-  }, [patients, filteredAppointments, dateFrom, dateTo]);
+  }, [filteredAppointments]);
+
+  const paymentReport: ComputedReport = useMemo(() => {
+    const withPayments = filteredAppointments
+      .map((a) => ({ a, p: getPayment(a) }))
+      .filter((x): x is { a: ApiAppointment; p: ApiPayment } => !!x.p);
+
+    const online = withPayments.filter((x) => ONLINE_PAYMENT_METHODS.includes(x.p.method));
+    const reception = withPayments.filter((x) => x.p.method === "reception");
+    const sumAmount = (list: typeof withPayments) => list.reduce((s, x) => s + x.p.amountPkr, 0);
+    const onlineTotal = sumAmount(online);
+    const receptionTotal = sumAmount(reception);
+
+    const sortByDateDesc = (list: typeof withPayments) =>
+      [...list].sort((x, y) => (x.a.date === y.a.date ? y.a.time.localeCompare(x.a.time) : y.a.date.localeCompare(x.a.date)));
+
+    const onlineTable: ReportTable = {
+      headers: ["Date", "Time", "Patient", "Method", "Amount (Rs.)", "Status"],
+      rows: sortByDateDesc(online).map((x) => [
+        x.a.date,
+        x.a.time,
+        x.a.patientSnapshot.fullName,
+        PAYMENT_METHOD_LABEL[x.p.method],
+        x.p.amountPkr,
+        capitalize(x.p.status),
+      ]),
+    };
+
+    const receptionTable: ReportTable = {
+      headers: ["Date", "Time", "Patient", "Amount (Rs.)", "Status"],
+      rows: sortByDateDesc(reception).map((x) => [
+        x.a.date,
+        x.a.time,
+        x.a.patientSnapshot.fullName,
+        x.p.amountPkr,
+        capitalize(x.p.status),
+      ]),
+    };
+
+    return {
+      table: {
+        headers: ["Payment Type", "Count", "Amount (Rs.)"],
+        rows: [
+          ["Online Payments", online.length, onlineTotal],
+          ["Reception Payments", reception.length, receptionTotal],
+        ],
+      },
+      chart: [
+        { label: "Online", value: onlineTotal },
+        { label: "Reception", value: receptionTotal },
+      ],
+      summary: [
+        { label: "Online Payments", value: `${online.length} · Rs. ${onlineTotal.toLocaleString()}` },
+        { label: "Reception Payments", value: `${reception.length} · Rs. ${receptionTotal.toLocaleString()}` },
+        { label: "Total Payments", value: withPayments.length },
+        { label: "Grand Total (Rs.)", value: (onlineTotal + receptionTotal).toLocaleString() },
+      ],
+      extraTables: [
+        { title: "Online Payments", table: onlineTable },
+        { title: "Reception Payments", table: receptionTable },
+      ],
+    };
+  }, [filteredAppointments]);
 
   const clinicSummaryReport: ComputedReport = useMemo(() => {
     const map = new Map<string, { name: string; patients: Set<string>; newPatients: Set<string>; appointments: number; revenue: number }>();
@@ -428,59 +529,177 @@ export default function ReportsContent() {
   }, [filteredAppointments, firstApptDateByPatient]);
 
   const PATIENT_TABLE_HEADERS = ["Date", "Time", "Patient", "Phone", "Email", "Clinic", "Procedure / Service", "Type", "Status", "Fee (Rs.)"];
+  const BREAKDOWN_HEADERS_APPTS = ["Appointments", "Paid Amount (Rs.)", "Pending Amount (Rs.)", "Total Amount (Rs.)"];
+
+  /** [count, paid, pending, total] rows for any grouping of appointments — shared by every breakdown table below. */
+  function breakdownRows(apts: ApiAppointment[], keyFn: (a: ApiAppointment) => string): (string | number)[][] {
+    const map = new Map<string, ApiAppointment[]>();
+    for (const a of apts) {
+      const k = keyFn(a);
+      const list = map.get(k) ?? [];
+      list.push(a);
+      map.set(k, list);
+    }
+    return [...map.entries()].map(([label, group]) => [
+      label,
+      group.length,
+      group.reduce((s, a) => s + paidAmount(a), 0),
+      group.reduce((s, a) => s + pendingAmount(a), 0),
+      group.reduce((s, a) => s + (paidAmount(a) + pendingAmount(a)), 0),
+    ]);
+  }
+
+  // Full, unfiltered appointment history for the selected patient — used for the
+  // identity header (last/next visit, total visits, outstanding balance), which
+  // should reflect the patient's whole record, not just the active date range.
+  const patientAllAppointments = useMemo(() => {
+    if (patientFilter === "All") return [];
+    return appointments
+      .filter((a) => a.patientId === patientFilter)
+      .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : b.date.localeCompare(a.date)));
+  }, [appointments, patientFilter]);
+
+  const patientHeaderInfo = useMemo(() => {
+    if (patientFilter === "All") return null;
+    const patient = patientMap.get(patientFilter);
+    const all = patientAllAppointments;
+    const todayStr = todayIso;
+    const past = all.filter((a) => a.date <= todayStr);
+    const future = all
+      .filter((a) => a.date > todayStr && (a.status === "confirmed" || PENDING_STATUSES.includes(a.status)))
+      .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)));
+
+    const resolvedPhone =
+      (patient?.phone && patient.phone !== "—" ? patient.phone : undefined) ??
+      all.find((a) => a.patientSnapshot.phone)?.patientSnapshot.phone ??
+      "—";
+    const resolvedEmail = patient?.email && patient.email !== "—" ? patient.email : "—";
+    const resolvedAge = patient?.age ?? all[0]?.patientSnapshot.age ?? null;
+    const resolvedGender = patient?.gender ?? all[0]?.patientSnapshot.gender ?? null;
+    const outstanding = all.reduce((s, a) => s + pendingAmount(a), 0);
+
+    return {
+      name: patient?.name ?? all[0]?.patientSnapshot.fullName ?? "—",
+      patientId: patientFilter,
+      phone: resolvedPhone,
+      email: resolvedEmail,
+      gender: resolvedGender ? capitalize(resolvedGender) : "—",
+      age: resolvedAge != null ? String(resolvedAge) : "—",
+      dob: "—",
+      registeredSince: patient ? isoDay(patient.createdAt) : "—",
+      totalVisits: patient?.totalVisits ?? all.length,
+      outstandingBalance: `Rs. ${outstanding.toLocaleString()}`,
+      lastAppointment: past.length > 0 ? `${past[0].date} ${past[0].time}` : "—",
+      nextAppointment: future.length > 0 ? `${future[0].date} ${future[0].time}` : "—",
+    };
+  }, [patientFilter, patientMap, patientAllAppointments, todayIso]);
 
   const patientReport: ComputedReport = useMemo(() => {
     if (patientFilter === "All") {
       return { table: { headers: PATIENT_TABLE_HEADERS, rows: [] }, chart: [] };
     }
-    const patient = patientMap.get(patientFilter);
     const apts = filteredAppointments
       .filter((a) => a.patientId === patientFilter)
       .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : b.date.localeCompare(a.date)));
 
     const completed = apts.filter((a) => a.status === "completed").length;
-    const cancelled = apts.filter((a) => CANCELLED_STATUSES.includes(a.status)).length;
-    const revenue = apts.reduce((sum, a) => {
+    const upcoming = apts.filter((a) => a.status === "confirmed" && a.date >= todayIso).length;
+    const cancelled = apts.filter((a) => a.status === "cancelled" || a.status === "rejected").length;
+    const rescheduled = apts.filter((a) => a.status === "rescheduled").length;
+    const totalPaid = apts.reduce((s, a) => s + paidAmount(a), 0);
+    const totalPending = apts.reduce((s, a) => s + pendingAmount(a), 0);
+
+    // 3. Appointment Breakdown — becomes the report's main table.
+    const appointmentTypeTable: ReportTable = {
+      headers: ["Appointment Type", ...BREAKDOWN_HEADERS_APPTS],
+      rows: breakdownRows(apts, (a) => APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"]),
+    };
+
+    // 4. Payment Method Summary
+    const paymentMethodTable: ReportTable = {
+      headers: ["Payment Method", "Transactions", "Paid Amount (Rs.)", "Pending Amount (Rs.)", "Total Amount (Rs.)"],
+      rows: breakdownRows(
+        apts.filter((a) => getPayment(a)),
+        (a) => PAYMENT_METHOD_LABEL[getPayment(a)!.method]
+      ),
+    };
+
+    // 5. Clinic-wise Summary
+    const clinicTable: ReportTable = {
+      headers: ["Clinic", ...BREAKDOWN_HEADERS_APPTS],
+      rows: breakdownRows(apts, (a) => clinicOf(a)?.name ?? "—"),
+    };
+
+    // 6. Procedure / Service Summary
+    const procedureTable: ReportTable = {
+      headers: ["Procedure / Service", ...BREAKDOWN_HEADERS_APPTS],
+      rows: breakdownRows(apts, serviceLabel),
+    };
+
+    // 7. Payment Status Summary (Transactions + Amount only, no paid/pending split)
+    const paymentStatusMap = new Map<string, { count: number; amount: number }>();
+    for (const a of apts) {
       const p = getPayment(a);
-      return p?.status === "verified" ? sum + p.amountPkr : sum;
-    }, 0);
+      if (!p) continue;
+      const entry = paymentStatusMap.get(p.status) ?? { count: 0, amount: 0 };
+      entry.count += 1;
+      entry.amount += p.amountPkr;
+      paymentStatusMap.set(p.status, entry);
+    }
+    const paymentStatusTable: ReportTable = {
+      headers: ["Payment Status", "Transactions", "Amount (Rs.)"],
+      rows: [...paymentStatusMap.entries()].map(([status, v]) => [capitalize(status), v.count, v.amount]),
+    };
 
-    const serviceCounts = new Map<string, number>();
-    for (const a of apts) serviceCounts.set(serviceLabel(a), (serviceCounts.get(serviceLabel(a)) ?? 0) + 1);
+    // 8. Appointment Status Summary (Count only)
+    const appointmentStatusMap = new Map<string, number>();
+    for (const a of apts) appointmentStatusMap.set(STATUS_LABEL[a.status], (appointmentStatusMap.get(STATUS_LABEL[a.status]) ?? 0) + 1);
+    const appointmentStatusTable: ReportTable = {
+      headers: ["Appointment Status", "Count"],
+      rows: [...appointmentStatusMap.entries()].map(([label, count]) => [label, count]),
+    };
 
-    const resolvedPhone =
-      (patient?.phone && patient.phone !== "—" ? patient.phone : undefined) ??
-      apts.find((a) => a.patientSnapshot.phone)?.patientSnapshot.phone ??
-      "—";
-    const resolvedEmail = patient?.email && patient.email !== "—" ? patient.email : "—";
+    // Full appointment listing — preserved from the previous report for drill-down detail, shown last.
+    const appointmentDetailsTable: ReportTable = {
+      headers: PATIENT_TABLE_HEADERS,
+      rows: apts.map((a) => [
+        a.date,
+        a.time,
+        a.patientSnapshot.fullName,
+        a.patientSnapshot.phone && a.patientSnapshot.phone !== "—" ? a.patientSnapshot.phone : patientHeaderInfo?.phone ?? "—",
+        patientHeaderInfo?.email ?? "—",
+        clinicOf(a)?.name ?? "—",
+        serviceLabel(a),
+        APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"],
+        STATUS_LABEL[a.status],
+        a.feeSnapshotPkr,
+      ]),
+    };
 
     return {
-      table: {
-        headers: PATIENT_TABLE_HEADERS,
-        rows: apts.map((a) => [
-          a.date,
-          a.time,
-          a.patientSnapshot.fullName,
-          a.patientSnapshot.phone && a.patientSnapshot.phone !== "—" ? a.patientSnapshot.phone : resolvedPhone,
-          resolvedEmail,
-          clinicOf(a)?.name ?? "—",
-          serviceLabel(a),
-          APPOINTMENT_TYPE_LABEL[a.appointmentType ?? "consultation"],
-          STATUS_LABEL[a.status],
-          a.feeSnapshotPkr,
-        ]),
-      },
-      chart: [...serviceCounts.entries()].map(([label, value]) => ({ label, value })),
+      table: appointmentTypeTable,
+      chart: [],
       summary: [
-        { label: "Phone", value: resolvedPhone },
-        { label: "Email", value: resolvedEmail },
+        { label: "Total Revenue", value: `Rs. ${(totalPaid + totalPending).toLocaleString()}` },
+        { label: "Total Paid Amount", value: `Rs. ${totalPaid.toLocaleString()}` },
+        { label: "Total Pending Amount", value: `Rs. ${totalPending.toLocaleString()}` },
+        { label: "Outstanding Balance", value: `Rs. ${totalPending.toLocaleString()}` },
         { label: "Total Appointments", value: apts.length },
-        { label: "Completed", value: completed },
-        { label: "Cancelled", value: cancelled },
-        { label: "Revenue", value: `Rs. ${revenue.toLocaleString()}` },
+        { label: "Completed Appointments", value: completed },
+        { label: "Upcoming Appointments", value: upcoming },
+        { label: "Cancelled Appointments", value: cancelled },
+        { label: "Rescheduled Appointments", value: rescheduled },
+      ],
+      extraTables: [
+        { title: "Payment Method Summary", table: paymentMethodTable },
+        { title: "Clinic-wise Summary", table: clinicTable },
+        { title: "Procedure / Service Summary", table: procedureTable },
+        { title: "Payment Status Summary", table: paymentStatusTable },
+        { title: "Appointment Status Summary", table: appointmentStatusTable },
+        { title: "Appointment Details", table: appointmentDetailsTable },
       ],
     };
-  }, [filteredAppointments, patientFilter, patientMap]);
+  }, [filteredAppointments, patientFilter, patientHeaderInfo, todayIso]);
 
   const reportByKey: Record<ReportKey, ComputedReport> = {
     overall,
@@ -489,6 +708,7 @@ export default function ReportsContent() {
     group: groupReport,
     clinicSummary: clinicSummaryReport,
     patient: patientReport,
+    payment: paymentReport,
   };
   const active = reportByKey[activeReport];
 
@@ -511,6 +731,11 @@ export default function ReportsContent() {
     });
     return copy;
   }, [searchedRows, sortKey, sortDir]);
+
+  const mainTotalsRow = useMemo(
+    () => computeTotalsRow(active.table.headers, sortedRows),
+    [active.table.headers, sortedRows]
+  );
 
   function toggleSort(colIndex: number) {
     if (sortKey === colIndex) {
@@ -752,14 +977,17 @@ export default function ReportsContent() {
 
       function renderTable(headers: string[], rows: (string | number)[][], startY: number, fontSize: number): number {
         const badgeCols = new Set(headers.map((h, i) => (h === "Status" || h === "Payment" ? i : -1)).filter((i) => i >= 0));
+        const totalsRow = computeTotalsRow(headers, rows);
 
         autoTable(doc, {
           startY,
           head: [headers],
           body: rows,
+          foot: totalsRow ? [totalsRow] : undefined,
           theme: "striped",
           styles: { fontSize, cellPadding: 2.5, textColor: TEXT_DARK, lineColor: CARD_BORDER, lineWidth: 0.1 },
           headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
+          footStyles: { fillColor: ROW_ALT, textColor: TEXT_DARK, fontStyle: "bold" },
           alternateRowStyles: { fillColor: ROW_ALT },
           margin: { left: margin, right: margin, top: HEADER_H + 4 },
           didParseCell: (data) => {
@@ -808,6 +1036,35 @@ export default function ReportsContent() {
 
       let y = HEADER_H + 25;
 
+      if (activeReport === "patient" && patientHeaderInfo) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...NAVY);
+        doc.text("Patient Information", margin, y);
+        doc.setTextColor(...TEXT_DARK);
+        y += 4;
+        y = renderTable(
+          ["Field", "Value"],
+          [
+            ["Patient Name", patientHeaderInfo.name],
+            ["Patient ID / MR No.", patientHeaderInfo.patientId],
+            ["Phone Number", patientHeaderInfo.phone],
+            ["Email", patientHeaderInfo.email],
+            ["Gender", patientHeaderInfo.gender],
+            ["Age", patientHeaderInfo.age],
+            ["Date of Birth", patientHeaderInfo.dob],
+            ["Registered Since", patientHeaderInfo.registeredSince],
+            ["Total Visits", patientHeaderInfo.totalVisits],
+            ["Outstanding Balance", patientHeaderInfo.outstandingBalance],
+            ["Last Appointment", patientHeaderInfo.lastAppointment],
+            ["Next Appointment", patientHeaderInfo.nextAppointment],
+          ],
+          y,
+          8
+        );
+        y += 6;
+      }
+
       if (active.summary && active.summary.length > 0) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
@@ -849,9 +1106,11 @@ export default function ReportsContent() {
     const sections: (string | number)[][] = [
       active.table.headers,
       ...sortedRows,
+      ...(mainTotalsRow ? [mainTotalsRow] : []),
     ];
     for (const et of active.extraTables ?? []) {
-      sections.push([], [et.title], et.table.headers, ...et.table.rows);
+      const etTotals = computeTotalsRow(et.table.headers, et.table.rows);
+      sections.push([], [et.title], et.table.headers, ...et.table.rows, ...(etTotals ? [etTotals] : []));
     }
     const csv = sections
       .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
@@ -871,11 +1130,20 @@ export default function ReportsContent() {
     try {
       const XLSX = await import("xlsx");
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet([active.table.headers, ...sortedRows]);
+      const ws = XLSX.utils.aoa_to_sheet([
+        active.table.headers,
+        ...sortedRows,
+        ...(mainTotalsRow ? [mainTotalsRow] : []),
+      ]);
       XLSX.utils.book_append_sheet(wb, ws, activeLabel.slice(0, 28));
 
       for (const et of active.extraTables ?? []) {
-        const ews = XLSX.utils.aoa_to_sheet([et.table.headers, ...et.table.rows]);
+        const etTotals = computeTotalsRow(et.table.headers, et.table.rows);
+        const ews = XLSX.utils.aoa_to_sheet([
+          et.table.headers,
+          ...et.table.rows,
+          ...(etTotals ? [etTotals] : []),
+        ]);
         XLSX.utils.book_append_sheet(wb, ews, et.title.slice(0, 28));
       }
 
@@ -893,6 +1161,7 @@ export default function ReportsContent() {
     setLocationFilter("All");
     setProcedureFilter("All");
     setPatientFilter("All");
+    setPatientQuery("");
   }
 
   /* ---------- Render ---------- */
@@ -969,14 +1238,59 @@ export default function ReportsContent() {
             ))}
           </select>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 relative">
           <label className="text-caption text-outline">Patient</label>
-          <select value={patientFilter} onChange={(e) => setPatientFilter(e.target.value)} className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md min-w-48">
-            <option value="All">Select a patient…</option>
-            {[...patients].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <input
+              type="text"
+              value={patientFilter === "All" ? patientQuery : patientMap.get(patientFilter)?.name ?? ""}
+              onChange={(e) => {
+                setPatientQuery(e.target.value);
+                setPatientFilter("All");
+                setPatientDropdownOpen(true);
+              }}
+              onFocus={() => setPatientDropdownOpen(true)}
+              placeholder="Search patient by name…"
+              className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md min-w-48 w-full"
+            />
+            {patientFilter !== "All" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPatientFilter("All");
+                  setPatientQuery("");
+                }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-outline hover:text-on-surface rounded"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            )}
+            {patientDropdownOpen && patientFilter === "All" && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPatientDropdownOpen(false)} />
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg">
+                  {patientOptions.length === 0 ? (
+                    <p className="px-sm py-xs text-caption text-outline">No patients found</p>
+                  ) : (
+                    patientOptions.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setPatientFilter(p.id);
+                          setPatientQuery(p.name);
+                          setPatientDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-sm py-xs text-body-md hover:bg-surface-container-high transition-colors"
+                      >
+                        {p.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <button onClick={resetFilters} className="text-primary text-label-md font-semibold hover:underline ml-auto">
           Reset Filters
@@ -1006,6 +1320,34 @@ export default function ReportsContent() {
         </div>
       ) : (
         <>
+          {/* Patient Information Header */}
+          {activeReport === "patient" && patientHeaderInfo && (
+            <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 shadow-sm mb-lg">
+              <h3 className="font-bold text-on-surface mb-md">Patient Information</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
+                {[
+                  { label: "Patient Name", value: patientHeaderInfo.name },
+                  { label: "Patient ID / MR No.", value: patientHeaderInfo.patientId },
+                  { label: "Phone Number", value: patientHeaderInfo.phone },
+                  { label: "Email", value: patientHeaderInfo.email },
+                  { label: "Gender", value: patientHeaderInfo.gender },
+                  { label: "Age", value: patientHeaderInfo.age },
+                  { label: "Date of Birth", value: patientHeaderInfo.dob },
+                  { label: "Registered Since", value: patientHeaderInfo.registeredSince },
+                  { label: "Total Visits", value: patientHeaderInfo.totalVisits },
+                  { label: "Outstanding Balance", value: patientHeaderInfo.outstandingBalance },
+                  { label: "Last Appointment", value: patientHeaderInfo.lastAppointment },
+                  { label: "Next Appointment", value: patientHeaderInfo.nextAppointment },
+                ].map((f) => (
+                  <div key={f.label}>
+                    <p className="text-caption font-semibold text-on-surface-variant uppercase tracking-wider">{f.label}</p>
+                    <p className="font-bold text-on-surface mt-1 text-body-lg break-all">{f.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Summary cards */}
           {active.summary && (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-md mb-lg">
@@ -1085,15 +1427,26 @@ export default function ReportsContent() {
                       </td>
                     </tr>
                   ) : (
-                    sortedRows.map((row, i) => (
-                      <tr key={i} className="hover:bg-surface-container-low/30 transition-colors">
-                        {row.map((cell, j) => (
-                          <td key={j} className="px-md py-sm text-body-md whitespace-nowrap">
-                            {typeof cell === "number" ? cell.toLocaleString() : cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
+                    <>
+                      {sortedRows.map((row, i) => (
+                        <tr key={i} className="hover:bg-surface-container-low/30 transition-colors">
+                          {row.map((cell, j) => (
+                            <td key={j} className="px-md py-sm text-body-md whitespace-nowrap">
+                              {typeof cell === "number" ? cell.toLocaleString() : cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                      {mainTotalsRow && (
+                        <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+                          {mainTotalsRow.map((cell, j) => (
+                            <td key={j} className="px-md py-sm text-body-md text-on-surface whitespace-nowrap">
+                              {typeof cell === "number" ? cell.toLocaleString() : cell}
+                            </td>
+                          ))}
+                        </tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>
@@ -1107,7 +1460,9 @@ export default function ReportsContent() {
           </div>
 
           {/* Extra data tables (e.g. full appointments / patients listing) */}
-          {active.extraTables?.map((et) => (
+          {active.extraTables?.map((et) => {
+            const etTotalsRow = computeTotalsRow(et.table.headers, et.table.rows);
+            return (
             <div key={et.title} className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden mt-lg">
               <div className="px-md py-sm border-b border-outline-variant/30">
                 <h3 className="font-bold text-on-surface">{et.title}</h3>
@@ -1131,15 +1486,26 @@ export default function ReportsContent() {
                         </td>
                       </tr>
                     ) : (
-                      et.table.rows.map((row, i) => (
-                        <tr key={i} className="hover:bg-surface-container-low/30 transition-colors">
-                          {row.map((cell, j) => (
-                            <td key={j} className="px-md py-sm text-body-md whitespace-nowrap">
-                              {typeof cell === "number" ? cell.toLocaleString() : cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))
+                      <>
+                        {et.table.rows.map((row, i) => (
+                          <tr key={i} className="hover:bg-surface-container-low/30 transition-colors">
+                            {row.map((cell, j) => (
+                              <td key={j} className="px-md py-sm text-body-md whitespace-nowrap">
+                                {typeof cell === "number" ? cell.toLocaleString() : cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                        {etTotalsRow && (
+                          <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+                            {etTotalsRow.map((cell, j) => (
+                              <td key={j} className="px-md py-sm text-body-md text-on-surface whitespace-nowrap">
+                                {typeof cell === "number" ? cell.toLocaleString() : cell}
+                              </td>
+                            ))}
+                          </tr>
+                        )}
+                      </>
                     )}
                   </tbody>
                 </table>
@@ -1150,7 +1516,8 @@ export default function ReportsContent() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </>
       )}
     </div>
