@@ -75,6 +75,8 @@ export interface CmsInput {
   servicesTitle?: string;
   servicesSubtitle?: string;
   specializedServices?: CmsSpecializedService[];
+  clinicClosedMessageEn?: string;
+  clinicClosedMessageUr?: string;
 }
 
 export interface CmsProfile {
@@ -107,6 +109,8 @@ export interface CmsProfile {
   servicesTitle: string;
   servicesSubtitle: string;
   specializedServices: CmsSpecializedService[];
+  clinicClosedMessageEn: string;
+  clinicClosedMessageUr: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -231,6 +235,11 @@ const DEFAULT_SPECIALIZED_SERVICES: CmsSpecializedService[] = (doctor.services ?
   desc: SERVICE_DESCRIPTIONS[name] ?? "",
 }));
 
+export const DEFAULT_CLINIC_CLOSED_MESSAGE_EN =
+  "📢 This clinic is closed today. Appointments cannot be booked for today. Please select another date or contact the clinic for more information.";
+export const DEFAULT_CLINIC_CLOSED_MESSAGE_UR =
+  "📢 آج یہ کلینک بند ہے، لہٰذا آج کے لیے اپائنٹمنٹ بک نہیں کی جا سکتی۔ براہِ کرم کوئی دوسری تاریخ منتخب کریں یا مزید معلومات کے لیے کلینک سے رابطہ کریں۔";
+
 function extractWhatsappPhone(waUrl: string): string {
   const match = waUrl.match(/phone=(\+?\d+)/);
   return match ? match[1] : "";
@@ -277,6 +286,8 @@ function buildSeed(): CmsInput {
     servicesSubtitle:
       "Comprehensive care for all digestive health issues using state-of-the-art diagnostic and therapeutic techniques.",
     specializedServices: DEFAULT_SPECIALIZED_SERVICES,
+    clinicClosedMessageEn: DEFAULT_CLINIC_CLOSED_MESSAGE_EN,
+    clinicClosedMessageUr: DEFAULT_CLINIC_CLOSED_MESSAGE_UR,
   };
 }
 
@@ -287,7 +298,8 @@ async function loadCmsProfile(): Promise<CmsProfile> {
     // Backfills homepage-section fields for CMS docs created before they existed.
     const needsWhyChooseBackfill = !existing.whyChooseFeatures || existing.whyChooseFeatures.length === 0;
     const needsServicesBackfill = !existing.specializedServices || existing.specializedServices.length === 0;
-    if (needsWhyChooseBackfill || needsServicesBackfill) {
+    const needsClinicClosedBackfill = !existing.clinicClosedMessageUr;
+    if (needsWhyChooseBackfill || needsServicesBackfill || needsClinicClosedBackfill) {
       const seed = buildSeed();
       const backfilled = await Cms.findOneAndUpdate(
         {},
@@ -310,6 +322,12 @@ async function loadCmsProfile(): Promise<CmsProfile> {
                   servicesTitle: existing.servicesTitle || seed.servicesTitle,
                   servicesSubtitle: existing.servicesSubtitle || seed.servicesSubtitle,
                   specializedServices: seed.specializedServices,
+                }
+              : {}),
+            ...(needsClinicClosedBackfill
+              ? {
+                  clinicClosedMessageEn: existing.clinicClosedMessageEn || seed.clinicClosedMessageEn,
+                  clinicClosedMessageUr: existing.clinicClosedMessageUr || seed.clinicClosedMessageUr,
                 }
               : {}),
           },

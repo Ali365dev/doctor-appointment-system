@@ -8,7 +8,7 @@ import { useBookingStore } from "@/store/bookingStore";
 import { doctor as staticDoctor } from "@/lib/data";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
-const cities = ["Select City", "Lahore", "Karachi", "Islamabad", "Faisalabad", "Rawalpindi"];
+const cities = ["Lahore", "Karachi", "Islamabad", "Faisalabad", "Rawalpindi"];
 
 export default function BookingStep3Content() {
   const doctor = useDoctorProfile();
@@ -34,7 +34,7 @@ export default function BookingStep3Content() {
     age: patientInfo.age,
     cnic: patientInfo.cnic,
     email: patientInfo.email,
-    city: patientInfo.city || cities[0],
+    city: patientInfo.city || "",
     condition: patientInfo.condition,
     notes: patientInfo.notes,
     isExisting: patientInfo.isExisting,
@@ -61,7 +61,7 @@ export default function BookingStep3Content() {
     else if (!/^[0-9+\-\s()]{7,15}$/.test(form.phone.trim())) e.phone = "Enter a valid phone number";
     if (!form.age.trim()) e.age = "Age is required";
     else if (Number(form.age) < 1 || Number(form.age) > 120) e.age = "Enter a valid age";
-    if (!form.city || form.city === cities[0]) e.city = "Please select your city";
+    if (!form.city.trim()) e.city = "Please enter your city";
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
       e.email = "Enter a valid email address";
     setErrors(e as Partial<typeof form>);
@@ -186,10 +186,11 @@ export default function BookingStep3Content() {
                   <span className="material-symbols-outlined text-[18px]">location_on</span>City
                   <span className="text-error">*</span>
                 </label>
-                <select name="city" value={form.city} onChange={(e) => set("city", e.target.value)}
-                  required aria-invalid={!!(errors as Record<string, string>).city} className={inputCls("city")}>
-                  {cities.map((c) => <option key={c}>{c}</option>)}
-                </select>
+                <input type="text" name="city" list="city-options" value={form.city} onChange={(e) => set("city", e.target.value)}
+                  placeholder="Select or type your city" required aria-invalid={!!(errors as Record<string, string>).city} className={inputCls("city")} />
+                <datalist id="city-options">
+                  {cities.map((c) => <option key={c} value={c} />)}
+                </datalist>
                 {(errors as Record<string, string>).city && <p className="text-caption text-error">{(errors as Record<string, string>).city}</p>}
               </div>
             </div>

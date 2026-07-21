@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Nastaliq_Urdu } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
@@ -13,6 +13,12 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
   variable: "--font-inter",
+});
+
+const notoNastaliqUrdu = Noto_Nastaliq_Urdu({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-urdu",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,7 +37,7 @@ export default async function RootLayout({
   const profile = await getCmsProfile();
 
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${notoNastaliqUrdu.variable} h-full antialiased`}>
       <head>
         <link
           rel="stylesheet"

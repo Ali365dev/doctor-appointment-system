@@ -13,6 +13,8 @@ interface CTASectionProps {
   secondaryLabel?: string;
   primaryHref?: string;
   secondaryHref?: string;
+  /** When provided, the secondary action becomes a button that runs this instead of navigating to secondaryHref (e.g. generating a client-side download). */
+  onSecondaryClick?: () => void;
   dark?: boolean;
 }
 
@@ -23,6 +25,7 @@ export default function CTASection({
   secondaryLabel = "Contact Office",
   primaryHref = "/book-appointment/step-1",
   secondaryHref,
+  onSecondaryClick,
   dark = false,
 }: CTASectionProps) {
   const doctor = useDoctorProfile();
@@ -59,16 +62,28 @@ export default function CTASection({
                     {primaryLabel}
                   </Link>
                 </motion.div>
-                <motion.a
-                  href={resolvedSecondary}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="border-2 border-white/60 text-on-primary px-xl py-md rounded-xl text-label-md font-semibold hover:bg-white/10 transition-colors text-center"
-                >
-                  {secondaryLabel}
-                </motion.a>
+                {onSecondaryClick ? (
+                  <motion.button
+                    type="button"
+                    onClick={onSecondaryClick}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="border-2 border-white/60 text-on-primary px-xl py-md rounded-xl text-label-md font-semibold hover:bg-white/10 transition-colors text-center"
+                  >
+                    {secondaryLabel}
+                  </motion.button>
+                ) : (
+                  <motion.a
+                    href={resolvedSecondary}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="border-2 border-white/60 text-on-primary px-xl py-md rounded-xl text-label-md font-semibold hover:bg-white/10 transition-colors text-center"
+                  >
+                    {secondaryLabel}
+                  </motion.a>
+                )}
               </div>
             </div>
           </Reveal>
@@ -91,16 +106,28 @@ export default function CTASection({
               {primaryLabel}
             </Link>
           </motion.div>
-          <motion.a
-            href={resolvedSecondary}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            className="border border-outline-variant text-primary px-xl py-md rounded-xl text-label-md font-semibold hover:bg-surface-container transition-colors"
-          >
-            {secondaryLabel}
-          </motion.a>
+          {onSecondaryClick ? (
+            <motion.button
+              type="button"
+              onClick={onSecondaryClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              className="border border-outline-variant text-primary px-xl py-md rounded-xl text-label-md font-semibold hover:bg-surface-container transition-colors"
+            >
+              {secondaryLabel}
+            </motion.button>
+          ) : (
+            <motion.a
+              href={resolvedSecondary}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              className="border border-outline-variant text-primary px-xl py-md rounded-xl text-label-md font-semibold hover:bg-surface-container transition-colors"
+            >
+              {secondaryLabel}
+            </motion.a>
+          )}
         </div>
       </Reveal>
     </section>

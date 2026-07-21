@@ -1,5 +1,6 @@
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep3Content from "@/components/appointment/BookingStep3Content";
+import ClinicClosedBanner from "@/components/appointment/ClinicClosedBanner";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 export async function generateMetadata() {
@@ -14,6 +15,7 @@ export default function BookAppointmentStep3() {
   return (
     <main className="grow pt-24 pb-16 px-gutter max-w-[1280px] mx-auto w-full min-h-screen">
       <BookingStepper currentStep={3} />
+      <ClinicClosedBanner />
       <BookingStep3Content />
     </main>
   );

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep1Form from "@/components/appointment/BookingStep1Form";
+import ClinicClosedBanner from "@/components/appointment/ClinicClosedBanner";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 export async function generateMetadata() {
@@ -26,6 +27,8 @@ export default async function BookAppointmentStep1() {
           Begin your booking by choosing your preferred consultation method with {doctor.name}.
         </p>
       </header>
+
+      <ClinicClosedBanner />
 
       <Suspense>
         <BookingStep1Form />

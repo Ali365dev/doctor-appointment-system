@@ -42,6 +42,15 @@ export default function BookingStep2Content() {
   const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
   const [slotsLoading, setSlotsLoading] = useState(false);
 
+  // Keep the shared store's selectedDate in sync with the calendar as the user
+  // browses — same live-sync pattern Step 1 already uses for clinic selection —
+  // so anything reading selectedDate (e.g. the clinic-closed banner) reacts
+  // immediately instead of only after "Continue" is clicked.
+  useEffect(() => {
+    if (isoDate) setDate(isoDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isoDate]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {

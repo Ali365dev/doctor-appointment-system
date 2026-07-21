@@ -86,7 +86,6 @@ export default function HomePage() {
   const displayName = name;
   const specializations = specialization.join(" & ");
   const whatsappLink = buildWhatsappLink(contactWhatsapp);
-  const helpline = contactPhone;
   const featuredConditions = conditions_treated.slice(0, 14);
   const moreConditionsCount = Math.max(0, conditions_treated.length - featuredConditions.length);
 
@@ -550,12 +549,14 @@ export default function HomePage() {
               Video Consultation
             </MotionLink>
             <motion.a
-              href={`tel:${helpline}`}
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               className="border-2 border-on-primary/30 text-on-primary px-lg py-sm rounded-xl font-bold text-center"
             >
-              Call helpline
+              WhatsApp
             </motion.a>
           </div>
         </Reveal>

@@ -62,6 +62,7 @@ const tabs = [
   { id: "clinical", label: "Clinical Profile" },
   { id: "homepage", label: "Homepage Sections" },
   { id: "social", label: "Social Media" },
+  { id: "announcements", label: "Announcements" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -129,6 +130,8 @@ export default function CmsContent() {
       servicesTitle: doctorProfile.servicesTitle,
       servicesSubtitle: doctorProfile.servicesSubtitle,
       specializedServices: doctorProfile.specializedServices,
+      clinicClosedMessageEn: doctorProfile.clinicClosedMessageEn,
+      clinicClosedMessageUr: doctorProfile.clinicClosedMessageUr,
     };
   }
 
@@ -327,6 +330,8 @@ export default function CmsContent() {
           servicesTitle: form.servicesTitle,
           servicesSubtitle: form.servicesSubtitle,
           specializedServices: form.specializedServices.filter((s) => s.title.trim()),
+          clinicClosedMessageEn: form.clinicClosedMessageEn,
+          clinicClosedMessageUr: form.clinicClosedMessageUr,
         }),
       });
       const data = await res.json();
@@ -986,6 +991,47 @@ export default function CmsContent() {
               >
                 + Add Service
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Announcements */}
+        {activeTab === "announcements" && (
+          <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm space-y-lg max-w-3xl">
+            <div className="flex items-center gap-xs">
+              <span className="material-symbols-outlined text-warning">campaign</span>
+              <div>
+                <h3 className="text-[18px] font-bold text-on-surface">Clinic Closed Announcement Bar</h3>
+                <p className="text-caption text-on-surface-variant">
+                  Shown on the booking page when the selected clinic is closed today, based on that
+                  clinic&apos;s weekly schedule (Clinic Management → edit clinic → weekly hours).
+                  Leave a field blank to use the built-in default message.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+              <div>
+                <label className="block text-caption text-on-surface-variant mb-xs">Message (Urdu)</label>
+                <textarea
+                  value={form.clinicClosedMessageUr}
+                  onChange={(e) => setForm((p) => ({ ...p, clinicClosedMessageUr: e.target.value }))}
+                  placeholder="📢 آج یہ کلینک بند ہے، لہٰذا آج کے لیے اپائنٹمنٹ بک نہیں کی جا سکتی۔"
+                  dir="rtl"
+                  rows={4}
+                  className="font-urdu w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-caption text-on-surface-variant mb-xs">Message (English)</label>
+                <textarea
+                  value={form.clinicClosedMessageEn}
+                  onChange={(e) => setForm((p) => ({ ...p, clinicClosedMessageEn: e.target.value }))}
+                  placeholder="📢 This clinic is closed today. Appointments cannot be booked for today."
+                  rows={4}
+                  className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                />
+              </div>
             </div>
           </div>
         )}

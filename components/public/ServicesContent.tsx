@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { buildWhatsappLink } from "@/lib/data";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import ProcedureCard, { type Procedure } from "@/components/public/ProcedureCard";
 import CTASection from "@/components/public/CTASection";
@@ -58,6 +57,39 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
   const doctor = useDoctorProfile();
   // Most specialized (highest price) shown first
   const sorted = [...procedures].sort((a, b) => b.pricePkr - a.pricePkr);
+
+  async function downloadPreparationGuide() {
+    const { default: jsPDF } = await import("jspdf");
+    const doc = new jsPDF();
+    const margin = 20;
+    const contentWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    let y = 25;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Procedure Preparation Guide", margin, y);
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`${doctor.name} — ${doctor.designation}`, margin, y);
+    doc.setTextColor(0, 0, 0);
+    y += 12;
+
+    for (const step of PREP_STEPS) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text(`${step.num}. ${step.title}`, margin, y);
+      y += 7;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10.5);
+      const lines = doc.splitTextToSize(step.body, contentWidth);
+      doc.text(lines, margin, y);
+      y += lines.length * 5.5 + 8;
+    }
+
+    doc.save("preparation-guide.pdf");
+  }
 
   return (
     <main className="pt-24">
@@ -202,7 +234,7 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
         subtitle="Get priority booking and a detailed consultation session with Dr. Zaid Gul."
         primaryLabel="Book Online"
         secondaryLabel="Download Guide (PDF)"
-        secondaryHref={buildWhatsappLink(doctor.contactWhatsapp)}
+        onSecondaryClick={downloadPreparationGuide}
       />
     </main>
   );

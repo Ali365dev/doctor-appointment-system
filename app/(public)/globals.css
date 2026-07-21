@@ -306,6 +306,12 @@ body {
   line-height: var(--line-height-body);
 }
 
+/* Urdu-script text (e.g. the clinic-closed banner) needs a Nastaliq font
+   for correct rendering — Inter has no Arabic/Urdu glyph coverage. */
+.font-urdu {
+  font-family: var(--font-urdu, "Noto Nastaliq Urdu", serif);
+}
+
 /* Every <select> gets one consistent custom arrow instead of relying on
    inconsistent native browser rendering. !important on padding-right only
    overrides the right side, so components' own left-padding classes still work. */
