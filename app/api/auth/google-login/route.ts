@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/services/firebase/admin";
 import { findUserByFirebaseUid, createGooglePatient, touchLastLogin } from "@/services/mongodb/repositories/user.repository";
 import { signSession, sessionCookieOptions } from "@/lib/session";
+import { sendNotification } from "@/services/notifications";
+import { welcomeEmail } from "@/services/notifications/templates";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,6 +35,8 @@ export async function POST(req: NextRequest) {
         avatar: decoded.picture,
       });
       isNew = true;
+      // Best-effort — a missing SMTP config must never block signup.
+      void sendNotification({ email: user.email }, welcomeEmail({ patientName: user.name }));
     }
 
     if (!user.isActive) {

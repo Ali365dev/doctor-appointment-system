@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,6 @@ import RevealGroup, { revealItem } from "@/components/common/RevealGroup";
 
 interface Props {
   conditions: string[];
-  services: string[];
 }
 
 const CONDITION_ICONS: Record<string, string> = {
@@ -71,24 +70,8 @@ const CONDITION_DESCS: Record<string, string> = {
   "Typhoid Fever": "Antibiotic management and recovery support.",
 };
 
-const SERVICE_ICONS: Record<string, string> = {
-  Biopsy: "biotech",
-  Colonoscopy: "analytics",
-  "Constipation Treatment": "healing",
-  "Diarrhea Treatment": "waves",
-  "Digital Rectal Examination": "monitor_heart",
-  Endoscopist: "stethoscope",
-  Endoscopy: "visibility",
-  Gastroscopy: "emergency",
-  "Hepatitis A Treatment": "vaccines",
-  "Hepatitis B Treatment": "vaccines",
-  "Hepatitis C Treatment": "vaccines",
-  Oesophagoscopy: "vital_signs",
-};
-
-export default function ConditionsSearch({ conditions, services }: Props) {
+export default function ConditionsSearch({ conditions }: Props) {
   const doctor = useDoctorProfile();
-  const [query, setQuery] = useState("");
   const router = useRouter();
   const setClinic = useBookingStore((s) => s.setClinic);
 
@@ -104,178 +87,11 @@ export default function ConditionsSearch({ conditions, services }: Props) {
     router.push("/book-appointment/step-1");
   }, [setClinic, router]);
 
-  const filteredConditions = useMemo(() => {
-    if (!query.trim()) return conditions;
-    const q = query.toLowerCase();
-    return conditions.filter((c) => c.toLowerCase().includes(q));
-  }, [conditions, query]);
-
-  const filteredServices = useMemo(() => {
-    if (!query.trim()) return services;
-    const q = query.toLowerCase();
-    return services.filter((s) => s.toLowerCase().includes(q));
-  }, [services, query]);
-
   return (
     <>
-      {/* Search */}
-   <section className="px-gutter pb-xl">
-  <div className="max-w-[1280px] mx-auto">
-    <Reveal className="relative max-w-xl mx-auto -mt-8">
-      <span
-        className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-outline text-2xl"
-      >
-        search
-      </span>
-
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search treatments, conditions, or services..."
-        className="
-          w-full
-          h-14
-          rounded-full
-          border border-outline-variant
-          bg-surface-container-lowest
-          pl-14
-          pr-12
-          shadow-lg
-          outline-none
-          transition-all
-          focus:border-primary
-          focus:ring-4
-          focus:ring-primary/20
-          text-body-md
-        "
-      />
-
-      {query && (
-        <button
-          type="button"
-          onClick={() => setQuery("")}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
-          aria-label="Clear search"
-        >
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      )}
-    </Reveal>
-  </div>
-</section>
-
       {/* Main canvas */}
       <section className="px-gutter pb-xl">
         <div className="max-w-[1280px] mx-auto">
-
-          {/* Diagnostic Services Bento */}
-          {filteredServices.length > 0 && (
-            <div className="mb-xl mt-12">
-              <Reveal className="flex items-center gap-xs mb-lg">
-                <span className="material-symbols-outlined text-primary">biotech</span>
-                <h2 className="text-headline-lg font-bold">
-                  Diagnostic &amp; Procedural Services
-                </h2>
-              </Reveal>
-              <RevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-md">
-                {/* Featured: first service */}
-                <motion.div
-                  variants={revealItem}
-                  whileHover={{ y: -4 }}
-                  className="md:col-span-2 group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:border-primary transition-colors cursor-pointer relative overflow-hidden shadow-sm"
-                >
-                  <div className="relative z-10">
-                    <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mb-md">
-                      <span className="material-symbols-outlined">
-                        {SERVICE_ICONS[filteredServices[0]] ?? "medical_services"}
-                      </span>
-                    </div>
-                    <h3 className="text-headline-md font-semibold mb-sm">
-                      {filteredServices[0]}
-                    </h3>
-                    <p className="text-body-md text-on-surface-variant max-w-md">
-                      Comprehensive specialized procedure performed with advanced
-                      technology for accurate diagnosis and effective treatment.
-                    </p>
-                    <ul className="mt-md space-y-2">
-                      <li className="flex items-center gap-xs text-body-md text-primary">
-                        <span className="material-symbols-outlined text-body-lg">check_circle</span>
-                        Fast recovery
-                      </li>
-                      <li className="flex items-center gap-xs text-body-md text-primary">
-                        <span className="material-symbols-outlined text-body-lg">check_circle</span>
-                        High-definition imaging
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="absolute right-0 bottom-0 w-48 h-48 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <span className="material-symbols-outlined text-[192px]">medical_services</span>
-                  </div>
-                </motion.div>
-
-                {/* Service cards 2 & 3 */}
-                {filteredServices.slice(1, 3).map((s, i) => (
-                  <motion.div
-                    key={s}
-                    variants={revealItem}
-                    whileHover={{ y: -4 }}
-                    className={`group bg-surface-container-lowest p-lg rounded-xl border border-outline-variant hover:border-primary transition-colors cursor-pointer shadow-sm ${
-                      i === 1 ? "md:col-start-3" : ""
-                    }`}
-                  >
-                    <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center mb-md ${
-                        i === 0
-                          ? "bg-secondary/10 text-secondary"
-                          : "bg-tertiary/10 text-tertiary"
-                      }`}
-                    >
-                      <span className="material-symbols-outlined">
-                        {SERVICE_ICONS[s] ?? "medical_services"}
-                      </span>
-                    </div>
-                    <h3 className="text-headline-md font-semibold mb-sm">{s}</h3>
-                    <p className="text-body-md text-on-surface-variant">
-                      Precision procedure performed by a specialist using
-                      state-of-the-art equipment.
-                    </p>
-                  </motion.div>
-                ))}
-
-                {/* Advanced Liver Imaging banner */}
-                <motion.div
-                  variants={revealItem}
-                  className="md:col-span-2 bg-primary text-on-primary p-lg rounded-xl shadow-sm flex flex-col md:flex-row items-center gap-lg"
-                >
-                  <div className="flex-1">
-                    <h3 className="text-headline-md font-semibold mb-sm">
-                      Advanced Liver Imaging
-                    </h3>
-                    <p className="text-body-md opacity-90 mb-md">
-                      Utilizing non-invasive technology to assess liver health
-                      and fibrosis levels without surgical intervention.
-                    </p>
-                    <motion.div className="inline-block" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-                      <Link
-                        href="/services"
-                        className="block bg-surface text-primary text-label-md font-semibold px-md py-xs rounded-xl hover:bg-surface-container transition-colors"
-                      >
-                        View Procedures
-                      </Link>
-                    </motion.div>
-                  </div>
-                  <div className="w-full md:w-1/3 aspect-video bg-on-primary/10 rounded-xl overflow-hidden relative">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[64px] opacity-40">
-                        monitor_heart
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              </RevealGroup>
-            </div>
-          )}
 
           {/* Conditions Grid */}
           <div className="mb-xl">
@@ -284,24 +100,13 @@ export default function ConditionsSearch({ conditions, services }: Props) {
               <h2 className="text-headline-lg font-bold">Conditions Treated</h2>
             </Reveal>
 
-            {filteredConditions.length === 0 ? (
+            {conditions.length === 0 ? (
               <div className="text-center py-xl text-on-surface-variant">
-                <span className="material-symbols-outlined text-display mb-md block text-outline">
-                  search_off
-                </span>
-                <p className="text-body-lg">
-                  No conditions found for &ldquo;{query}&rdquo;
-                </p>
-                <button
-                  onClick={() => setQuery("")}
-                  className="mt-md text-primary font-semibold hover:underline"
-                >
-                  Clear search
-                </button>
+                <p className="text-body-lg">No conditions available right now.</p>
               </div>
             ) : (
               <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
-                {filteredConditions.map((condition) => (
+                {conditions.map((condition) => (
                   <motion.button
                     key={condition}
                     variants={revealItem}

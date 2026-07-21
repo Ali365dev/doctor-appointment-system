@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default function AppointmentPage() {
-  const { conditions_treated, services } = doctor;
+  const { conditions_treated } = doctor;
 
   return (
     <main className="pt-24 min-h-screen">
@@ -35,10 +35,7 @@ export default function AppointmentPage() {
       </section>
 
       {/* Client-rendered search + grid + CTA */}
-      <ConditionsSearch
-        conditions={conditions_treated}
-        services={services}
-      />
+      <ConditionsSearch conditions={conditions_treated} />
     </main>
   );
 }

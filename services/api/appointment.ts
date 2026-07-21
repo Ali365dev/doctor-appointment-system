@@ -6,6 +6,7 @@ import { findProcedureById } from "@/services/mongodb/repositories/procedure.rep
 import { findAssignment } from "@/services/mongodb/repositories/clinicProcedure.repository";
 import { generateSlotsForDate } from "@/lib/slots";
 import { sendNotification } from "@/services/notifications";
+import { bookingConfirmationEmail, cancellationEmail, appointmentConfirmedEmail } from "@/services/notifications/templates";
 import {
   createAppointment as createAppointmentRecord,
   findAppointmentByClinicDateTime,
@@ -128,10 +129,16 @@ export async function createAppointment(params: CreateAppointmentParams): Promis
   // Best-effort — a missing SMTP/WhatsApp config must never block booking creation.
   void sendNotification(
     { email: params.patient.email, phone: params.patient.phone },
-    {
-      subject: "Booking Confirmation",
-      text: `Hi ${params.patient.fullName}, your ${procedureNameSnapshot ?? "consultation"} appointment (${appointmentNumber}) on ${params.date} at ${params.time} has been booked. We'll notify you once your payment is confirmed.`,
-    }
+    bookingConfirmationEmail({
+      patientName: params.patient.fullName,
+      appointmentNumber,
+      appointmentId: String(appointment._id),
+      clinicName: clinic.name,
+      procedureName: procedureNameSnapshot,
+      date: params.date,
+      time: params.time,
+      feePkr: totalAmount,
+    })
   );
 
   return appointment;
@@ -175,10 +182,27 @@ export async function changeAppointmentStatus(
   if (status === "cancelled" || status === "rejected") {
     void sendNotification(
       { email: updated.patientSnapshot.email, phone: updated.patientSnapshot.phone },
-      {
-        subject: "Cancellation Notice",
-        text: `Hi ${updated.patientSnapshot.fullName}, your appointment (${updated.appointmentNumber}) on ${updated.date} at ${updated.time} has been ${status}.${note ? ` Reason: ${note}` : ""}`,
-      }
+      cancellationEmail({
+        patientName: updated.patientSnapshot.fullName,
+        appointmentNumber: updated.appointmentNumber,
+        date: updated.date,
+        time: updated.time,
+        status,
+        note,
+      })
+    );
+  } else if (status === "confirmed") {
+    // Covers every path to "confirmed" — payment verified, pay-at-reception,
+    // and an admin manually confirming from the appointments panel.
+    void sendNotification(
+      { email: updated.patientSnapshot.email, phone: updated.patientSnapshot.phone },
+      appointmentConfirmedEmail({
+        patientName: updated.patientSnapshot.fullName,
+        appointmentNumber: updated.appointmentNumber,
+        appointmentId: String(updated._id),
+        date: updated.date,
+        time: updated.time,
+      })
     );
   }
 

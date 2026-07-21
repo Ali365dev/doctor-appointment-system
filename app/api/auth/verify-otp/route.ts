@@ -3,7 +3,8 @@ import { getAdminAuth } from "@/services/firebase/admin";
 import { findUserByFirebaseUid, createPatient, touchLastLogin } from "@/services/mongodb/repositories/user.repository";
 import { signSession, sessionCookieOptions } from "@/lib/session";
 import { generateTemporaryPassword, hashPassword } from "@/lib/password";
-import { sendTemporaryPassword } from "@/services/notifications";
+import { sendTemporaryPassword, sendNotification } from "@/services/notifications";
+import { welcomeEmail } from "@/services/notifications/templates";
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,6 +70,9 @@ export async function POST(req: NextRequest) {
       { phone: created.phone },
       { name: created.name, temporaryPassword }
     );
+
+    // Best-effort — a missing SMTP/WhatsApp config must never block signup.
+    void sendNotification({ phone: created.phone }, welcomeEmail({ patientName: created.name }));
 
     return NextResponse.json({
       registered: true,

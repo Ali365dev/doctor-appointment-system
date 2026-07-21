@@ -14,7 +14,6 @@ import {
   changeAppointmentStatus,
 } from "@/services/api/appointment";
 import { deleteUploadedAsset } from "@/services/cloudinary";
-import { sendNotification } from "@/services/notifications";
 import type { PaymentDoc } from "@/services/mongodb/models/Payment";
 import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 
@@ -132,22 +131,14 @@ export async function verifyManualPayment(
     throw new PaymentServiceError("Payment not found", 404);
   }
 
-  const appointment = await changeAppointmentStatus(
+  // changeAppointmentStatus sends the "Appointment Confirmed" email itself
+  // whenever status becomes "confirmed" — no separate send needed here.
+  await changeAppointmentStatus(
     String(payment.appointmentId),
     approve ? "confirmed" : "pending_payment",
     verifiedBy,
     approve ? "Payment verified by admin" : (rejectionReason ?? "Payment rejected by admin — please re-upload your receipt")
   );
-
-  if (approve) {
-    void sendNotification(
-      { email: appointment.patientSnapshot.email, phone: appointment.patientSnapshot.phone },
-      {
-        subject: "Payment Confirmation",
-        text: `Hi ${appointment.patientSnapshot.fullName}, your payment for appointment ${appointment.appointmentNumber} has been verified and confirmed.`,
-      }
-    );
-  }
 
   return updated;
 }

@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import PublicWhatsAppButton from "@/components/layout/PublicWhatsAppButton";
 import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
@@ -42,6 +43,7 @@ export default async function RootLayout({
           <Header />
           {children}
           <Footer />
+          <PublicWhatsAppButton />
         </DoctorProfileProvider>
         <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>

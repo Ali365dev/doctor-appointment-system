@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { doctor as staticDoctor } from "@/lib/data";
+import { doctor as staticDoctor, buildWhatsappLink } from "@/lib/data";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import HeroBookingForm from "@/components/home/HeroBookingForm";
 import PracticeLocations from "@/components/home/PracticeLocations";
@@ -85,7 +85,7 @@ export default function HomePage() {
   const firstName = name.split(" ")[0];
   const displayName = name;
   const specializations = specialization.join(" & ");
-  const whatsappLink = `https://api.whatsapp.com/send?phone=${contactWhatsapp.replace(/[^\d]/g, "")}`;
+  const whatsappLink = buildWhatsappLink(contactWhatsapp);
   const helpline = contactPhone;
   const featuredConditions = conditions_treated.slice(0, 14);
   const moreConditionsCount = Math.max(0, conditions_treated.length - featuredConditions.length);
@@ -108,7 +108,7 @@ export default function HomePage() {
   const blobYBottom = useTransform(heroScroll, [0, 1], [0, -80]);
 
   return (
-    <main className="pt-24 overflow-x-hidden">
+    <main className="pt-24 overflow-x-hidden relative">
       {/* ── Hero ── */}
       <section
         ref={heroRef}
@@ -560,6 +560,7 @@ export default function HomePage() {
           </div>
         </Reveal>
       </section>
+
     </main>
   );
 }
