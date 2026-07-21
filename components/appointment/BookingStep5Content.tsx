@@ -243,11 +243,13 @@ export default function BookingStep5Content() {
     { label: "Patient", value: patientInfo.fullName || "—" },
   ];
 
+  // "Pay at Reception" only makes sense for an in-clinic visit — there's no
+  // reception desk to pay at for an online consultation.
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "bank", label: "Bank Transfer", icon: "account_balance" },
     { id: "jazzcash", label: "JazzCash", icon: "account_balance_wallet" },
     { id: "easypaisa", label: "Easypaisa", icon: "account_balance_wallet" },
-    { id: "reception", label: "Pay at Reception", icon: "storefront" },
+    ...(visitType === "online" ? [] : [{ id: "reception" as Tab, label: "Pay at Reception", icon: "storefront" }]),
     { id: "whatsapp", label: "WhatsApp", icon: "chat" },
   ];
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { doctor } from "@/lib/data";
+import type { Review as DbReview } from "@/types/review";
 
 function StarRating({ count }: { count: number }) {
   return (
@@ -10,7 +11,7 @@ function StarRating({ count }: { count: number }) {
         <span
           key={i}
           className="material-symbols-outlined"
-          style={{ fontVariationSettings: "'FILL' 1" }}
+          style={i <= count ? { fontVariationSettings: "'FILL' 1" } : undefined}
         >
           star
         </span>
@@ -19,10 +20,54 @@ function StarRating({ count }: { count: number }) {
   );
 }
 
+/** Shared shape between DB-backed reviews and the static fallback sample reviews. */
+interface DisplayReview {
+  key: string;
+  text: string;
+  reviewer: string;
+  time_ago: string;
+  verified: boolean;
+  rating: number;
+}
+
 export default function ReviewsCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const reviews = doctor.sample_reviews;
-  const { score, reviews_count, satisfaction_percent } = doctor.rating;
+  const [dbReviews, setDbReviews] = useState<DbReview[] | null>(null);
+  const [stats, setStats] = useState<{ count: number; average: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/reviews/public");
+        const data = await res.json();
+        if (res.ok) {
+          setDbReviews(data.reviews ?? []);
+          setStats(data.stats ?? null);
+        }
+      } catch {
+        // Non-fatal — falls back to the static sample reviews below.
+      }
+    })();
+  }, []);
+
+  // Real, moderated reviews take priority; fall back to the static sample
+  // set only until there's enough real content (avoids an empty homepage
+  // section right after this feature ships).
+  const reviews: DisplayReview[] =
+    dbReviews && dbReviews.length > 0
+      ? dbReviews.map((r) => ({
+          key: r.id,
+          text: r.comment,
+          reviewer: r.patientName,
+          time_ago: new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+          verified: true,
+          rating: r.rating,
+        }))
+      : doctor.sample_reviews.map((r, i) => ({ key: String(i), ...r, rating: 5 }));
+
+  const score = stats && stats.count > 0 ? stats.average.toFixed(1) : doctor.rating.score;
+  const reviews_count = stats && stats.count > 0 ? stats.count : doctor.rating.reviews_count;
+  const { satisfaction_percent } = doctor.rating;
 
   const scroll = (dir: "left" | "right") =>
     scrollRef.current?.scrollBy({ left: dir === "left" ? -340 : 340, behavior: "smooth" });
@@ -62,12 +107,12 @@ export default function ReviewsCarousel() {
         ref={scrollRef}
         className="flex gap-md overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-md snap-x snap-mandatory"
       >
-        {reviews.map((r, i) => (
+        {reviews.map((r) => (
           <div
-            key={i}
+            key={r.key}
             className="min-w-[320px] md:min-w-[400px] bg-surface p-lg rounded-2xl shadow-sm border border-outline-variant/20 snap-start flex flex-col"
           >
-            <StarRating count={5} />
+            <StarRating count={r.rating} />
             <p className="italic text-on-surface-variant mb-md flex-1">&ldquo;{r.text}&rdquo;</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-sm">

@@ -53,6 +53,11 @@ export async function createPaymentForAppointment(params: CreatePaymentParams): 
 
   const appointment = await getAppointmentById(params.appointmentId);
 
+  // Online consultations have no reception desk to pay at.
+  if (params.method === "reception" && appointment.visitType === "online") {
+    throw new PaymentServiceError("Pay at Reception is not available for online consultations", 400);
+  }
+
   // Re-upload after rejection: this appointment already has a previous payment
   // attempt with a receipt — delete that old Cloudinary asset so it doesn't
   // become an orphan now that a new receipt is replacing it.

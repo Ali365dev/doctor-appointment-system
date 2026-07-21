@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { GENDERS, VISIT_TYPES, APPOINTMENT_TYPES, type PatientSnapshot, type VisitType, type Gender, type AppointmentType } from "@/types/appointment";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/types/payment";
 import { DAYS_OF_WEEK, SLOT_DURATION_OPTIONS, type WeeklySchedule } from "@/types/clinic";
+import { REVIEW_STATUSES } from "@/types/review";
 
 export function isValidObjectId(value: unknown): value is string {
   return typeof value === "string" && Types.ObjectId.isValid(value);
@@ -515,6 +516,31 @@ interface PaymentSettingsRequestBody {
   bankName?: unknown;
   bankAccountNumber?: unknown;
   bankAccountTitle?: unknown;
+}
+
+export interface ReviewRequestBody {
+  appointmentId?: string;
+  rating?: number;
+  comment?: string;
+}
+
+/** Validates the raw request body for POST /api/reviews (patient submitting a review). */
+export function validateReviewBody(body: unknown): string | null {
+  if (!body || typeof body !== "object") return "Request body is required";
+  const b = body as ReviewRequestBody;
+
+  if (!isValidObjectId(b.appointmentId)) return "A valid appointmentId is required";
+  if (!Number.isInteger(b.rating) || (b.rating as number) < 1 || (b.rating as number) > 5) {
+    return "Rating must be an integer between 1 and 5";
+  }
+  if (!b.comment || !b.comment.trim()) return "A review comment is required";
+  if (b.comment.trim().length > 1000) return "Review comment must be under 1000 characters";
+
+  return null;
+}
+
+export function isValidReviewStatus(value: unknown): value is (typeof REVIEW_STATUSES)[number] {
+  return typeof value === "string" && (REVIEW_STATUSES as readonly string[]).includes(value);
 }
 
 export function validatePaymentSettingsBody(body: unknown): string | null {

@@ -49,6 +49,14 @@ interface ApiAppointment {
   procedureNameSnapshot?: string;
 }
 
+interface ApiReview {
+  id: string;
+  appointmentId: string;
+  rating: number;
+  comment: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 function clinicName(clinicId: ApiAppointment["clinicId"]): string {
   return typeof clinicId === "string" ? clinicId : clinicId?.name ?? "—";
 }
@@ -110,6 +118,10 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
   const [detailId, setDetailId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [detailPrep, setDetailPrep] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<ApiReview[]>([]);
+  const [reviewApptId, setReviewApptId] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
 
   const loadAppointments = useCallback(async () => {
     try {
@@ -124,15 +136,25 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
     }
   }, []);
 
+  const loadReviews = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reviews");
+      const data = await res.json();
+      if (res.ok) setReviews(data.reviews ?? []);
+    } catch {
+      // Non-fatal — the "Leave a Review" action just won't know about past submissions.
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
-      await loadAppointments();
+      await Promise.all([loadAppointments(), loadReviews()]);
     })();
     // Lightweight polling so payment/admin updates made elsewhere
     // (admin approval) show up here without a manual refresh.
     const interval = setInterval(loadAppointments, 20000);
     return () => clearInterval(interval);
-  }, [loadAppointments]);
+  }, [loadAppointments, loadReviews]);
 
   const filtered = appointments
     .filter((a) => !onlyProcedures || a.appointmentType === "procedure")
@@ -145,6 +167,36 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
         a.appointmentNumber.toLowerCase().includes(search.toLowerCase())
     )
     .slice(0, limit);
+
+  function openReview(appointmentId: string) {
+    setReviewApptId(appointmentId);
+    setReviewRating(5);
+    setReviewComment("");
+  }
+
+  async function submitReview() {
+    if (!reviewApptId || !reviewComment.trim()) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointmentId: reviewApptId, rating: reviewRating, comment: reviewComment.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not submit review");
+        return;
+      }
+      setReviews((prev) => [...prev, data.review]);
+      setReviewApptId(null);
+      toast.success("Thanks for your review!");
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function confirmCancel() {
     if (!cancelId) return;
@@ -266,6 +318,8 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                     payment &&
                     (payment.method === "jazzcash" || payment.method === "easypaisa" || payment.method === "bank") &&
                     payment.status === "rejected";
+                  const existingReview = reviews.find((r) => r.appointmentId === appt._id);
+                  const canReview = appt.status === "completed" && !existingReview;
 
                   return (
                     <tr key={appt._id} className="hover:bg-surface-container-low transition-colors group">
@@ -321,6 +375,25 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                             >
                               <span className="material-symbols-outlined text-[20px]">cancel</span>
                             </button>
+                          )}
+                          {canReview && (
+                            <button
+                              onClick={() => openReview(appt._id)}
+                              className="text-tertiary hover:bg-tertiary/10 p-xs rounded transition-colors"
+                              title="Leave a Review"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">rate_review</span>
+                            </button>
+                          )}
+                          {existingReview && (
+                            <span
+                              className="text-tertiary p-xs flex items-center"
+                              title={`You rated this ${existingReview.rating}/5`}
+                            >
+                              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                star
+                              </span>
+                            </span>
                           )}
                         </div>
                       </td>
@@ -449,6 +522,60 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                 className="flex-1 py-sm bg-primary text-on-primary rounded-lg font-bold hover:bg-primary/90 transition-colors"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave a Review modal */}
+      {reviewApptId && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md"
+          onClick={() => setReviewApptId(null)}
+        >
+          <div
+            className="bg-surface-container-lowest rounded-xl p-lg shadow-xl max-w-sm w-full border border-outline-variant"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-headline-md font-bold text-on-surface mb-md">Leave a Review</h3>
+            <div className="flex items-center justify-center gap-xs mb-md">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button
+                  key={i}
+                  onClick={() => setReviewRating(i)}
+                  className="text-tertiary p-xs"
+                  aria-label={`Rate ${i} star${i > 1 ? "s" : ""}`}
+                >
+                  <span
+                    className="material-symbols-outlined text-headline-lg"
+                    style={i <= reviewRating ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                  >
+                    star
+                  </span>
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              rows={4}
+              placeholder="Share your experience with the doctor…"
+              className="w-full bg-surface border border-outline-variant rounded-lg p-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md resize-none mb-lg"
+            />
+            <div className="flex gap-sm justify-end">
+              <button
+                onClick={() => setReviewApptId(null)}
+                className="px-md py-sm border border-outline-variant rounded-lg text-on-surface font-bold hover:bg-surface-container-low transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={busy || !reviewComment.trim()}
+                onClick={submitReview}
+                className="px-md py-sm bg-primary text-on-primary rounded-lg font-bold hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                Submit Review
               </button>
             </div>
           </div>

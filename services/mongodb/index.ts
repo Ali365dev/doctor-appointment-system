@@ -15,6 +15,9 @@ export type { PaymentDoc } from "./models/Payment";
 export { default as Cms } from "./models/Cms";
 export type { CmsDoc } from "./models/Cms";
 
+export { default as Review } from "./models/Review";
+export type { ReviewDoc } from "./models/Review";
+
 // ==================================================
 // Models (to be implemented in a future phase)
 // ==================================================
@@ -22,5 +25,4 @@ export type { CmsDoc } from "./models/Cms";
 // export { default as Doctor } from "./models/Doctor";
 // export { default as MedicalRecord } from "./models/MedicalRecord";
 // export { default as Chat } from "./models/Chat";
-// export { default as Review } from "./models/Review";
 // export { default as Notification } from "./models/Notification";
