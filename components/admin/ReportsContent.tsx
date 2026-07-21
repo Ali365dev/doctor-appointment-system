@@ -274,7 +274,7 @@ export default function ReportsContent() {
       { label: "Revenue (Rs.)", value: revenue.toLocaleString() },
       ...paymentSummary.map((g): SummaryCard => ({
         label: `Payments — ${g.status.charAt(0).toUpperCase()}${g.status.slice(1)}`,
-        value: `${g.count} (Rs. ${g.amount.toLocaleString()})`,
+        value: g.amount.toLocaleString(),
       })),
     ];
 
@@ -1055,9 +1055,9 @@ export default function ReportsContent() {
                 />
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-150">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-surface-container-low/50 border-b border-outline-variant/30">
+                <thead className="bg-surface-container-low border-b border-outline-variant/30 sticky top-0 z-1">
                   <tr>
                     {active.table.headers.map((h, i) => (
                       <th
@@ -1112,9 +1112,9 @@ export default function ReportsContent() {
               <div className="px-md py-sm border-b border-outline-variant/30">
                 <h3 className="font-bold text-on-surface">{et.title}</h3>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-150">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-container-low/50 border-b border-outline-variant/30">
+                  <thead className="bg-surface-container-low border-b border-outline-variant/30 sticky top-0 z-1">
                     <tr>
                       {et.table.headers.map((h) => (
                         <th key={h} className="px-md py-sm font-label-md text-label-md text-outline uppercase tracking-wider whitespace-nowrap">

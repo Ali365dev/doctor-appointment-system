@@ -303,11 +303,12 @@ export default function PaymentVerificationContent() {
 
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-sm">
+        <div className="overflow-x-auto overflow-y-auto max-h-150">
         <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-surface-container-low/60 border-b border-outline-variant">
+          <thead className="sticky top-0 z-1">
+            <tr className="bg-surface-container-low border-b border-outline-variant">
               {["Patient", "Phone Number", "Appointment", "ID / Method", "Amount", "Status", "Actions"].map((h) => (
-                <th key={h} className="px-md py-md text-label-md font-semibold text-on-surface-variant uppercase tracking-wide whitespace-nowrap">
+                <th key={h} className="px-md py-xs text-label-md font-semibold text-on-surface-variant uppercase tracking-wide whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -339,25 +340,25 @@ export default function PaymentVerificationContent() {
                       : "border-l-transparent hover:bg-surface-container-low"
                   }`}
                 >
-                  <td className="px-md py-md font-bold text-body-md text-on-surface whitespace-nowrap">{info.name}</td>
-                  <td className="px-md py-md text-body-md text-on-surface-variant whitespace-nowrap">{info.phone}</td>
-                  <td className="px-md py-md text-body-md text-on-surface-variant">{info.number}</td>
-                  <td className="px-md py-md">
+                  <td className="px-md py-xs font-bold text-body-md text-on-surface whitespace-nowrap">{info.name}</td>
+                  <td className="px-md py-xs text-body-md text-on-surface-variant whitespace-nowrap">{info.phone}</td>
+                  <td className="px-md py-xs text-body-md text-on-surface-variant">{info.number}</td>
+                  <td className="px-md py-xs">
                     <div className="flex items-center gap-xs font-semibold text-body-md text-on-surface">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${METHOD_DOT[row.method]}`} />
                       {METHOD_LABEL[row.method]}
                     </div>
                     {row.transactionRef && <div className="text-caption text-outline mt-[2px]">TXN: {row.transactionRef}</div>}
                   </td>
-                  <td className="px-md py-md font-bold text-body-md text-on-surface whitespace-nowrap">
+                  <td className="px-md py-xs font-bold text-body-md text-on-surface whitespace-nowrap">
                     PKR {row.amountPkr.toLocaleString()}
                   </td>
-                  <td className="px-md py-md">
+                  <td className="px-md py-xs">
                     <span className={`px-sm py-[3px] rounded-full text-caption font-bold uppercase tracking-wide ${STATUS_STYLE[row.status]}`}>
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-md py-md">
+                  <td className="px-md py-xs">
                     <div className="flex items-center gap-xs">
                       {canVerify ? (
                         <button
@@ -373,13 +374,17 @@ export default function PaymentVerificationContent() {
                         </span>
                       )}
                       {!canVerify && row.method !== "reception" && row.receiptUrl && (
-                        <button
-                          onClick={() => { setVerifyTarget(row); setNotes(""); }}
-                          className="p-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                          title="View Receipt"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">visibility</span>
-                        </button>
+                        <div className="relative group/tip">
+                          <button
+                            onClick={() => { setVerifyTarget(row); setNotes(""); }}
+                            className="p-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                          </button>
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            View Receipt
+                          </span>
+                        </div>
                       )}
                     </div>
                   </td>
@@ -388,6 +393,7 @@ export default function PaymentVerificationContent() {
             })}
           </tbody>
         </table>
+        </div>
 
         {/* Footer */}
         <div className="px-md py-sm border-t border-outline-variant/20">

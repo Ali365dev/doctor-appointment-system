@@ -119,8 +119,9 @@ export default function ClinicalDashboardPage() {
             </button>
           </div>
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
+            <div className="overflow-x-auto overflow-y-auto max-h-150">
             <table className="w-full border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-1">
                 <tr className="bg-surface-container-low text-left">
                   {["Time","Patient","Type","Status","Action"].map((h,i) => (
                     <th key={h} className={`px-md py-sm text-label-md text-on-surface-variant ${i===4?"text-right":""}`}>{h}</th>
@@ -144,14 +145,20 @@ export default function ClinicalDashboardPage() {
                       <span className={`px-sm py-[2px] rounded-full text-xs font-bold ${row.statusClass}`}>{row.statusLabel}</span>
                     </td>
                     <td className="px-md py-sm text-right">
-                      <button className="p-xs opacity-0 group-hover:opacity-100 transition-opacity text-primary">
-                        <span className="material-symbols-outlined">more_vert</span>
-                      </button>
+                      <div className="relative group/tip inline-block">
+                        <button className="p-xs opacity-0 group-hover:opacity-100 transition-opacity text-primary">
+                          <span className="material-symbols-outlined">more_vert</span>
+                        </button>
+                        <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                          More options
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 

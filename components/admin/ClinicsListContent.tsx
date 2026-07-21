@@ -106,12 +106,12 @@ export default function ClinicsListContent() {
 
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-150">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
+            <thead className="sticky top-0 z-1">
+              <tr className="border-b border-outline-variant/30 bg-surface-container-low">
                 {["Image", "Clinic Name", "Address", "Consultation Fee", "Status", "Actions"].map((h, i, arr) => (
-                  <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
+                  <th key={h} className={`px-md py-xs text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -133,7 +133,7 @@ export default function ClinicsListContent() {
               ) : (
                 clinics.map((c) => (
                   <tr key={c._id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-md py-md">
+                    <td className="px-md py-xs">
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-surface-container-high flex items-center justify-center shrink-0">
                         {c.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -143,16 +143,16 @@ export default function ClinicsListContent() {
                         )}
                       </div>
                     </td>
-                    <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-on-surface">
+                    <td className="px-md py-xs whitespace-nowrap text-body-md font-semibold text-on-surface">
                       {c.name}
                     </td>
-                    <td className="px-md py-md text-body-md text-on-surface-variant max-w-[260px] truncate">
+                    <td className="px-md py-xs text-body-md text-on-surface-variant max-w-[260px] truncate">
                       {c.address || "—"}
                     </td>
-                    <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-primary">
+                    <td className="px-md py-xs whitespace-nowrap text-body-md font-semibold text-primary">
                       Rs. {c.feePkr.toLocaleString()}
                     </td>
-                    <td className="px-md py-md whitespace-nowrap">
+                    <td className="px-md py-xs whitespace-nowrap">
                       <button
                         disabled={busy}
                         onClick={() => toggleActive(c)}
@@ -165,29 +165,41 @@ export default function ClinicsListContent() {
                         {c.isActive ? "Active" : "Disabled"}
                       </button>
                     </td>
-                    <td className="px-md py-md text-right">
+                    <td className="px-md py-xs text-right">
                       <div className="flex items-center justify-end gap-xs">
-                        <button
-                          onClick={() => setScheduleClinic(c)}
-                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                          title="View Schedule"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">schedule</span>
-                        </button>
-                        <Link
-                          href={`/admin/clinics/${c._id}`}
-                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                          title="Edit"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </Link>
-                        <button
-                          onClick={() => setDeleteClinicTarget(c)}
-                          className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
-                          title="Delete"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
+                        <div className="relative group/tip">
+                          <button
+                            onClick={() => setScheduleClinic(c)}
+                            className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">schedule</span>
+                          </button>
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            View Schedule
+                          </span>
+                        </div>
+                        <div className="relative group/tip">
+                          <Link
+                            href={`/admin/clinics/${c._id}`}
+                            className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors block"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </Link>
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            Edit
+                          </span>
+                        </div>
+                        <div className="relative group/tip">
+                          <button
+                            onClick={() => setDeleteClinicTarget(c)}
+                            className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            Delete
+                          </span>
+                        </div>
                       </div>
                     </td>
                   </tr>

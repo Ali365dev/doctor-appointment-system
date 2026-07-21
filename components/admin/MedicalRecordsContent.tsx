@@ -304,12 +304,12 @@ export default function MedicalRecordsContent() {
 
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-150">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
+            <thead className="sticky top-0 z-1">
+              <tr className="border-b border-outline-variant/30 bg-surface-container-low">
                 {["Patient", "Report", "Category", "Files", "Submitted", "Status", "Actions"].map((h, i, arr) => (
-                  <th key={h} className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
+                  <th key={h} className={`px-md py-xs text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -333,7 +333,7 @@ export default function MedicalRecordsContent() {
                   const meta = STATUS_CONFIG[r.status];
                   return (
                     <tr key={r.id} className="hover:bg-surface-container-low transition-colors">
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         <div className="flex items-center gap-sm">
                           <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-caption shrink-0">
                             {initials(r.patientName)}
@@ -341,27 +341,31 @@ export default function MedicalRecordsContent() {
                           <span className="font-semibold">{r.patientName}</span>
                         </div>
                       </td>
-                      <td className="px-md py-md">{r.title}</td>
-                      <td className="px-md py-md text-on-surface-variant whitespace-nowrap">{r.category}</td>
-                      <td className="px-md py-md text-on-surface-variant whitespace-nowrap">
+                      <td className="px-md py-xs">{r.title}</td>
+                      <td className="px-md py-xs text-on-surface-variant whitespace-nowrap">{r.category}</td>
+                      <td className="px-md py-xs text-on-surface-variant whitespace-nowrap">
                         {r.files.length} file{r.files.length !== 1 ? "s" : ""}
                       </td>
-                      <td className="px-md py-md text-on-surface-variant whitespace-nowrap">{formatDate(r.createdAt)}</td>
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs text-on-surface-variant whitespace-nowrap">{formatDate(r.createdAt)}</td>
+                      <td className="px-md py-xs whitespace-nowrap">
                         <span className={`px-sm py-1 rounded-full ${meta.className} text-caption font-bold flex items-center gap-1 w-fit`}>
                           <span className="material-symbols-outlined text-[14px]">{meta.icon}</span>
                           {meta.label}
                         </span>
                       </td>
-                      <td className="px-md py-md text-right">
+                      <td className="px-md py-xs text-right">
                         <div className="flex items-center justify-end gap-xs">
-                          <button
-                            onClick={() => openDetail(r.id, true)}
-                            title="Message patient"
-                            className="p-xs rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">chat</span>
-                          </button>
+                          <div className="relative group/tip">
+                            <button
+                              onClick={() => openDetail(r.id, true)}
+                              className="p-xs rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">chat</span>
+                            </button>
+                            <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              Message patient
+                            </span>
+                          </div>
                           <button
                             onClick={() => openDetail(r.id)}
                             className={
@@ -372,13 +376,17 @@ export default function MedicalRecordsContent() {
                           >
                             {r.status === "pending" || r.status === "reviewing" ? "Review" : "View"}
                           </button>
-                          <button
-                            onClick={() => setDeleteId(r.id)}
-                            title="Delete report"
-                            className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                          </button>
+                          <div className="relative group/tip">
+                            <button
+                              onClick={() => setDeleteId(r.id)}
+                              className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                            <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              Delete report
+                            </span>
+                          </div>
                         </div>
                       </td>
                     </tr>

@@ -99,7 +99,7 @@ const FILTER_TABS: (AppointmentStatus | "All")[] = [
   "rejected",
 ];
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 25;
 
 function clinicName(clinicId: ApiAppointment["clinicId"]): string {
   return typeof clinicId === "string" ? clinicId : clinicId?.name ?? "—";
@@ -304,6 +304,13 @@ export default function AppointmentsContent() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function confirmPayment(apt: ApiAppointment) {
+    const payment = getPayment(apt);
+    if (!payment) return;
+    const ok = await savePaymentStatus(payment, "verified");
+    if (ok) await loadAppointments(true);
   }
 
   async function cancelAppointment(id: string) {
@@ -547,14 +554,14 @@ export default function AppointmentsContent() {
 
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-150">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
+            <thead className="sticky top-0 z-1">
+              <tr className="border-b border-outline-variant/30 bg-surface-container-low">
                 {["Patient", "Appointment ID", "Phone", "Date & Time", "Clinic", "Visit Type", "Appointment Type", "Payment Type", "Payment Status", "Status", "Fee", "Actions"].map((h, i, arr) => (
                   <th
                     key={h}
-                    className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""} ${h === "Clinic" ? "w-45" : ""}`}
+                    className={`px-md py-xs text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""} ${h === "Clinic" ? "w-45" : ""}`}
                   >
                     {h}
                   </th>
@@ -588,7 +595,7 @@ export default function AppointmentsContent() {
 
                   return (
                     <tr key={apt._id} className="hover:bg-surface-container-low transition-colors group">
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         <div className="flex items-center gap-sm">
                           <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                             {initials}
@@ -598,35 +605,35 @@ export default function AppointmentsContent() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-md py-md whitespace-nowrap text-body-md text-on-surface-variant">
+                      <td className="px-md py-xs whitespace-nowrap text-body-md text-on-surface-variant">
                         {apt.appointmentNumber}
                       </td>
-                      <td className="px-md py-md whitespace-nowrap text-body-md text-on-surface-variant">
+                      <td className="px-md py-xs whitespace-nowrap text-body-md text-on-surface-variant">
                         {apt.patientSnapshot.phone}
                       </td>
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         <p className="text-body-md font-medium">{apt.date}</p>
                         <p className="text-caption text-on-surface-variant">{apt.time}</p>
                       </td>
-                      <td className="px-md py-md whitespace-nowrap w-45">
+                      <td className="px-md py-xs whitespace-nowrap w-45">
                         <p className="text-body-md text-on-surface-variant max-w-45 truncate" title={clinicName(apt.clinicId)}>
                           {clinicName(apt.clinicId)}
                         </p>
                       </td>
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         <span className="px-sm py-xs rounded-full bg-surface-container text-caption font-bold border border-outline-variant/30 capitalize">
                           {apt.visitType}
                         </span>
                       </td>
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         <span className="px-sm py-xs rounded-full bg-primary/10 text-primary text-caption font-bold">
                           {APPOINTMENT_TYPE_LABEL[apt.appointmentType ?? "consultation"]}
                         </span>
                       </td>
-                      <td className="px-md py-md text-body-md text-on-surface-variant whitespace-nowrap">
+                      <td className="px-md py-xs text-body-md text-on-surface-variant whitespace-nowrap">
                         {payment ? PAYMENT_METHOD_LABEL[payment.method] : "—"}
                       </td>
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         {payment ? (
                           <span className={`px-sm py-[2px] rounded-full ${PAYMENT_STATUS_META[payment.status].badgeClass} text-caption font-bold`}>
                             {PAYMENT_STATUS_META[payment.status].label}
@@ -635,7 +642,7 @@ export default function AppointmentsContent() {
                           <span className="text-caption text-on-surface-variant">—</span>
                         )}
                       </td>
-                      <td className="px-md py-md whitespace-nowrap">
+                      <td className="px-md py-xs whitespace-nowrap">
                         <div className="flex items-center gap-xs">
                           <div className={`w-2 h-2 rounded-full ${meta.dotClass}`} />
                           <span className={`px-sm py-[2px] rounded-full ${meta.badgeClass} text-caption font-bold`}>
@@ -643,46 +650,76 @@ export default function AppointmentsContent() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-md py-md text-body-md font-semibold text-primary whitespace-nowrap">
+                      <td className="px-md py-xs text-body-md font-semibold text-primary whitespace-nowrap">
                         Rs. {apt.feeSnapshotPkr.toLocaleString()}
                       </td>
-                      <td className="px-md py-md text-right sticky right-0 bg-surface-container-lowest group-hover:bg-surface-container-low transition-colors">
+                      <td className="px-md py-xs text-right sticky right-0 bg-surface-container-lowest group-hover:bg-surface-container-low transition-colors">
                         <div className="flex items-center justify-end gap-xs">
+                          {payment && (payment.status === "submitted" || (payment.status === "pending" && payment.method === "reception")) && (
+                            <div className="relative group/tip">
+                              <button
+                                disabled={busy}
+                                onClick={() => confirmPayment(apt)}
+                                className="p-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">verified</span>
+                              </button>
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                                Confirm Payment
+                              </span>
+                            </div>
+                          )}
                           {(apt.status === "pending_payment" || apt.status === "payment_verification") && (
-                            <button
-                              disabled={busy}
-                              onClick={() => changeStatus(apt._id, "confirmed")}
-                              className="p-xs rounded-lg bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors"
-                              title="Confirm"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                            </button>
+                            <div className="relative group/tip">
+                              <button
+                                disabled={busy}
+                                onClick={() => changeStatus(apt._id, "confirmed")}
+                                className="p-xs rounded-full bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                              </button>
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                                Confirm
+                              </span>
+                            </div>
                           )}
                           {apt.status === "confirmed" && (
-                            <button
-                              disabled={busy}
-                              onClick={() => changeStatus(apt._id, "completed")}
-                              className="p-xs rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                              title="Mark Completed"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">task_alt</span>
-                            </button>
+                            <div className="relative group/tip">
+                              <button
+                                disabled={busy}
+                                onClick={() => changeStatus(apt._id, "completed")}
+                                className="p-xs rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">task_alt</span>
+                              </button>
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                                Mark Completed
+                              </span>
+                            </div>
                           )}
-                          <button
-                            onClick={() => openDetails(apt)}
-                            className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                            title="View Receipt"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-                          </button>
-                          {canCancel && (
+                          <div className="relative group/tip">
                             <button
-                              onClick={() => setCancelId(apt._id)}
-                              className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
-                              title="Cancel"
+                              onClick={() => openDetails(apt)}
+                              className="p-xs rounded-full border border-outline-variant hover:bg-surface-container-high transition-colors"
                             >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                              <span className="material-symbols-outlined text-[16px]">receipt_long</span>
                             </button>
+                            <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              View Receipt
+                            </span>
+                          </div>
+                          {canCancel && (
+                            <div className="relative group/tip">
+                              <button
+                                onClick={() => setCancelId(apt._id)}
+                                className="p-xs rounded-full border border-error/20 text-error hover:bg-error/10 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                                Cancel
+                              </span>
+                            </div>
                           )}
                         </div>
                       </td>
@@ -733,22 +770,22 @@ export default function AppointmentsContent() {
       {/* Cancel confirm modal */}
       {cancelId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-sm w-full mx-md">
+          <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-md w-full mx-md">
             <h3 className="text-headline-md font-bold text-on-surface mb-sm">Cancel Appointment?</h3>
             <p className="text-body-md text-on-surface-variant mb-lg">
               This will cancel appointment {appointments.find((a) => a._id === cancelId)?.appointmentNumber}. This action cannot be undone.
             </p>
-            <div className="flex gap-sm justify-end">
+            <div className="flex gap-sm">
               <button
                 onClick={() => setCancelId(null)}
-                className="px-md py-xs rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container-high"
+                className="flex-1 px-md py-sm rounded-xl border border-outline-variant text-on-surface font-semibold text-label-md whitespace-nowrap hover:bg-surface-container-high transition-colors"
               >
                 Keep Appointment
               </button>
               <button
                 disabled={busy}
                 onClick={() => cancelAppointment(cancelId)}
-                className="px-md py-xs rounded-xl bg-error text-on-error font-semibold hover:opacity-90"
+                className="flex-1 px-md py-sm rounded-xl bg-error text-on-error font-semibold text-label-md whitespace-nowrap hover:opacity-90 disabled:opacity-60 transition-opacity"
               >
                 Cancel Appointment
               </button>

@@ -10,7 +10,7 @@ import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 import { createLetterheadPdf } from "@/lib/pdf/letterhead";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 25;
 
 type PatientDirectoryStatus = "New" | "Active" | "Follow-up";
 
@@ -411,9 +411,9 @@ export default function PatientDetailContent({ patientId }: { patientId: string 
           <EmptyState icon="event_busy" text="No appointments recorded for this patient yet." />
         ) : (
           <>
-            <div className="overflow-x-auto -mx-md">
+            <div className="overflow-x-auto overflow-y-auto max-h-150 -mx-md">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-1">
                   <tr className="bg-surface-container-low">
                     {["Date & Time", "Visit Type", "Location", "Fee", "Payment Status", "Appt. Status", "Actions"].map((h, i, arr) => (
                       <th

@@ -286,14 +286,14 @@ export default function ProceduresContent() {
 
       {/* Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-150">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-outline-variant/30 bg-surface-container-low/50">
+            <thead className="sticky top-0 z-1">
+              <tr className="border-b border-outline-variant/30 bg-surface-container-low">
                 {["Name", "Location", "Price", "Original Price", "Discount", "Status", "Actions"].map((h, i, arr) => (
                   <th
                     key={h}
-                    className={`px-md py-md text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""} ${h === "Name" ? "w-60" : ""}`}
+                    className={`px-md py-xs text-label-md text-on-surface-variant ${i === arr.length - 1 ? "text-right" : ""} ${h === "Name" ? "w-60" : ""}`}
                   >
                     {h}
                   </th>
@@ -323,22 +323,22 @@ export default function ProceduresContent() {
                 }
                 return visible.map((p) => (
                   <tr key={p._id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-on-surface w-60">
+                    <td className="px-md py-xs whitespace-nowrap text-body-md font-semibold text-on-surface w-60">
                       <p className="max-w-60 truncate" title={p.name}>{p.name}</p>
                     </td>
-                    <td className="px-md py-md text-body-md text-on-surface-variant max-w-[220px] truncate">
+                    <td className="px-md py-xs text-body-md text-on-surface-variant max-w-[220px] truncate">
                       {p.location}
                     </td>
-                    <td className="px-md py-md whitespace-nowrap text-body-md font-semibold text-primary">
+                    <td className="px-md py-xs whitespace-nowrap text-body-md font-semibold text-primary">
                       Rs. {p.pricePkr.toLocaleString()}
                     </td>
-                    <td className="px-md py-md whitespace-nowrap text-body-md text-outline line-through">
+                    <td className="px-md py-xs whitespace-nowrap text-body-md text-outline line-through">
                       Rs. {p.originalPricePkr.toLocaleString()}
                     </td>
-                    <td className="px-md py-md whitespace-nowrap text-body-md text-on-surface-variant">
+                    <td className="px-md py-xs whitespace-nowrap text-body-md text-on-surface-variant">
                       {p.discountPercent}%
                     </td>
-                    <td className="px-md py-md whitespace-nowrap">
+                    <td className="px-md py-xs whitespace-nowrap">
                       <button
                         disabled={busy}
                         onClick={() => toggleActive(p)}
@@ -351,22 +351,30 @@ export default function ProceduresContent() {
                         {p.isActive ? "Active" : "Hidden"}
                       </button>
                     </td>
-                    <td className="px-md py-md text-right">
+                    <td className="px-md py-xs text-right">
                       <div className="flex items-center justify-end gap-xs">
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
-                          title="Edit"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button
-                          onClick={() => setDeleteId(p._id)}
-                          className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
-                          title="Delete"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
+                        <div className="relative group/tip">
+                          <button
+                            onClick={() => openEdit(p)}
+                            className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            Edit
+                          </span>
+                        </div>
+                        <div className="relative group/tip">
+                          <button
+                            onClick={() => setDeleteId(p._id)}
+                            className="p-xs rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            Delete
+                          </span>
+                        </div>
                       </div>
                     </td>
                   </tr>

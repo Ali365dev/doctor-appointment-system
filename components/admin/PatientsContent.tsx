@@ -36,7 +36,7 @@ const AVATAR_TINTS = [
   "bg-tertiary-fixed text-on-tertiary-fixed-variant",
 ];
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 25;
 
 function initialsOf(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -189,14 +189,14 @@ export default function PatientsContent() {
 
       {/* Patients Table */}
       <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-150">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-surface-container-low/50 border-b border-outline-variant/30">
+            <thead className="bg-surface-container-low border-b border-outline-variant/30 sticky top-0 z-1">
               <tr>
                 {["Patient Name", "Age/Gender", "Contact", "Last Visit", "Appointments", "Status", "Actions"].map((h, i, arr) => (
                   <th
                     key={h}
-                    className={`px-md py-sm font-label-md text-label-md text-outline uppercase tracking-wider whitespace-nowrap ${
+                    className={`px-md py-xs font-label-md text-label-md text-outline uppercase tracking-wider whitespace-nowrap ${
                       h === "Appointments" ? "text-center" : i === arr.length - 1 ? "text-right" : ""
                     }`}
                   >
@@ -221,7 +221,7 @@ export default function PatientsContent() {
               ) : (
                 pageItems.map((p, i) => (
                   <tr key={p.id} className="hover:bg-surface-container-low/30 transition-colors group">
-                    <td className="px-md py-md">
+                    <td className="px-md py-xs">
                       <div className="flex items-center gap-sm">
                         {p.avatar && !brokenAvatars.has(p.id) ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -244,46 +244,54 @@ export default function PatientsContent() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-md py-md text-body-md whitespace-nowrap">
+                    <td className="px-md py-xs text-body-md whitespace-nowrap">
                       {p.age ? `${p.age}y` : "—"}, {p.gender ?? "—"}
                     </td>
-                    <td className="px-md py-md text-body-md">
+                    <td className="px-md py-xs text-body-md">
                       <p className="text-on-surface whitespace-nowrap">{p.phone}</p>
                       {p.email && <p className="text-caption text-outline">{p.email}</p>}
                     </td>
-                    <td className="px-md py-md text-body-md whitespace-nowrap">{p.lastVisit || "—"}</td>
-                    <td className="px-md py-md text-center">
+                    <td className="px-md py-xs text-body-md whitespace-nowrap">{p.lastVisit || "—"}</td>
+                    <td className="px-md py-xs text-center">
                       <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-surface-container-high text-on-surface-variant text-label-md font-semibold">
                         {p.totalVisits}
                       </span>
                     </td>
-                    <td className="px-md py-md">
+                    <td className="px-md py-xs">
                       <span className={`px-sm py-0.5 ${STATUS_PILL[p.status]} font-bold text-[11px] rounded-full uppercase tracking-tighter whitespace-nowrap`}>
                         {p.status}
                       </span>
                     </td>
-                    <td className="px-md py-md text-right">
+                    <td className="px-md py-xs text-right">
                       <div className="flex items-center justify-end gap-xs">
-                        <button
-                          onClick={() => router.push(`/admin/patients/${p.id}`)}
-                          className="p-xs text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                          title="View Profile"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">visibility</span>
-                        </button>
-                        {p.email ? (
-                          <a
-                            href={`mailto:${p.email}`}
+                        <div className="relative group/tip">
+                          <button
+                            onClick={() => router.push(`/admin/patients/${p.id}`)}
                             className="p-xs text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                            title="Message"
                           >
-                            <span className="material-symbols-outlined text-[20px]">mail</span>
-                          </a>
-                        ) : (
-                          <button disabled title="No email on file" className="p-xs text-outline opacity-40 cursor-not-allowed rounded-lg">
-                            <span className="material-symbols-outlined text-[20px]">mail</span>
+                            <span className="material-symbols-outlined text-[20px]">visibility</span>
                           </button>
-                        )}
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            View Profile
+                          </span>
+                        </div>
+                        <div className="relative group/tip">
+                          {p.email ? (
+                            <a
+                              href={`mailto:${p.email}`}
+                              className="p-xs text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all block"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">mail</span>
+                            </a>
+                          ) : (
+                            <button disabled className="p-xs text-outline opacity-40 cursor-not-allowed rounded-lg">
+                              <span className="material-symbols-outlined text-[20px]">mail</span>
+                            </button>
+                          )}
+                          <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            {p.email ? "Message" : "No email on file"}
+                          </span>
+                        </div>
                       </div>
                     </td>
                   </tr>
