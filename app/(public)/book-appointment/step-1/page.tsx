@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep1Form from "@/components/appointment/BookingStep1Form";
-import ClinicClosedTicker from "@/components/layout/ClinicClosedTicker";
+import ClinicClosedBanner from "@/components/appointment/ClinicClosedBanner";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 
 export async function generateMetadata() {
@@ -28,7 +28,7 @@ export default async function BookAppointmentStep1() {
         </p>
       </header>
 
-      <ClinicClosedTicker />
+      <ClinicClosedBanner />
 
       <Suspense>
         <BookingStep1Form />
