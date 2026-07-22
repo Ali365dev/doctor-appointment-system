@@ -77,6 +77,8 @@ export interface CmsInput {
   specializedServices?: CmsSpecializedService[];
   clinicClosedMessageEn?: string;
   clinicClosedMessageUr?: string;
+  generalAnnouncementMessageEn?: string;
+  generalAnnouncementMessageUr?: string;
 }
 
 export interface CmsProfile {
@@ -111,6 +113,8 @@ export interface CmsProfile {
   specializedServices: CmsSpecializedService[];
   clinicClosedMessageEn: string;
   clinicClosedMessageUr: string;
+  generalAnnouncementMessageEn: string;
+  generalAnnouncementMessageUr: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -240,6 +244,11 @@ export const DEFAULT_CLINIC_CLOSED_MESSAGE_EN =
 export const DEFAULT_CLINIC_CLOSED_MESSAGE_UR =
   "📢 آج یہ کلینک بند ہے، لہٰذا آج کے لیے اپائنٹمنٹ بک نہیں کی جا سکتی۔ براہِ کرم کوئی دوسری تاریخ منتخب کریں یا مزید معلومات کے لیے کلینک سے رابطہ کریں۔";
 
+export const DEFAULT_GENERAL_ANNOUNCEMENT_MESSAGE_EN =
+  "Have a question or query? Feel free to contact the doctor's clinic anytime.";
+export const DEFAULT_GENERAL_ANNOUNCEMENT_MESSAGE_UR =
+  "کوئی سوال یا استفسار ہے؟ کسی بھی وقت کلینک سے رابطہ کریں۔";
+
 function extractWhatsappPhone(waUrl: string): string {
   const match = waUrl.match(/phone=(\+?\d+)/);
   return match ? match[1] : "";
@@ -288,6 +297,8 @@ function buildSeed(): CmsInput {
     specializedServices: DEFAULT_SPECIALIZED_SERVICES,
     clinicClosedMessageEn: DEFAULT_CLINIC_CLOSED_MESSAGE_EN,
     clinicClosedMessageUr: DEFAULT_CLINIC_CLOSED_MESSAGE_UR,
+    generalAnnouncementMessageEn: DEFAULT_GENERAL_ANNOUNCEMENT_MESSAGE_EN,
+    generalAnnouncementMessageUr: DEFAULT_GENERAL_ANNOUNCEMENT_MESSAGE_UR,
   };
 }
 
@@ -299,7 +310,10 @@ async function loadCmsProfile(): Promise<CmsProfile> {
     const needsWhyChooseBackfill = !existing.whyChooseFeatures || existing.whyChooseFeatures.length === 0;
     const needsServicesBackfill = !existing.specializedServices || existing.specializedServices.length === 0;
     const needsClinicClosedBackfill = !existing.clinicClosedMessageUr;
-    if (needsWhyChooseBackfill || needsServicesBackfill || needsClinicClosedBackfill) {
+    // Strict `undefined` check (not falsy) — an admin deliberately clearing this
+    // field to "" to hide the ticker must stay hidden, not get reseeded.
+    const needsGeneralAnnouncementBackfill = existing.generalAnnouncementMessageUr === undefined;
+    if (needsWhyChooseBackfill || needsServicesBackfill || needsClinicClosedBackfill || needsGeneralAnnouncementBackfill) {
       const seed = buildSeed();
       const backfilled = await Cms.findOneAndUpdate(
         {},
@@ -328,6 +342,12 @@ async function loadCmsProfile(): Promise<CmsProfile> {
               ? {
                   clinicClosedMessageEn: existing.clinicClosedMessageEn || seed.clinicClosedMessageEn,
                   clinicClosedMessageUr: existing.clinicClosedMessageUr || seed.clinicClosedMessageUr,
+                }
+              : {}),
+            ...(needsGeneralAnnouncementBackfill
+              ? {
+                  generalAnnouncementMessageEn: seed.generalAnnouncementMessageEn,
+                  generalAnnouncementMessageUr: seed.generalAnnouncementMessageUr,
                 }
               : {}),
           },

@@ -95,6 +95,12 @@ const cmsSchema = new Schema(
     // (per its weekly schedule). Blank falls back to a built-in default message.
     clinicClosedMessageEn: { type: String, default: "" },
     clinicClosedMessageUr: { type: String, default: "" },
+    // General-purpose site-wide header ticker (unrelated to clinic-closed
+    // status). Blank on both hides the ticker entirely — unlike the
+    // clinic-closed message, there's no mandatory fallback since nothing is
+    // actually wrong when this is empty.
+    generalAnnouncementMessageEn: { type: String, default: "" },
+    generalAnnouncementMessageUr: { type: String, default: "" },
   },
   { timestamps: true }
 );

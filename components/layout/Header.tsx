@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
-import ClinicClosedTicker from "./ClinicClosedTicker";
+import GeneralAnnouncementTicker from "./GeneralAnnouncementTicker";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -52,7 +52,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 w-full z-1030 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm">
-      <ClinicClosedTicker />
+      <GeneralAnnouncementTicker />
       <div className="max-w-[1280px] mx-auto flex justify-between items-center px-gutter py-4">
         <Link href="/" className="flex items-center">
           <img src={logoUrl || "/dr_zaid_gul_logo_navbar.svg"} alt={name} className="h-12 w-auto" />

@@ -2,14 +2,12 @@
 
 import { useClinicClosedToday } from "@/lib/hooks/useClinicClosedToday";
 
-export const CLINIC_CLOSED_TICKER_HEIGHT_PX = 40;
-
 /**
- * Site-wide marquee notice, rendered as the first row inside the fixed
- * header, warning that the user's selected clinic (from the booking flow) is
- * closed today. `AnnouncementSpacer` reserves the matching amount of page
- * flow space so this never overlaps page content — the two stay in sync
- * because both read the same `useClinicClosedToday` state independently.
+ * Marquee notice shown only on the booking-appointment pages, warning that
+ * the currently selected clinic (from the booking store) is closed today per
+ * its weekly schedule. Rendered inline in the normal page flow (not fixed),
+ * so no spacer is needed — it just pushes the rest of the page content down
+ * like any other block.
  */
 export default function ClinicClosedTicker() {
   const { isClosedToday, clinicName, messageEn, messageUr } = useClinicClosedToday();
@@ -22,14 +20,13 @@ export default function ClinicClosedTicker() {
     <div
       role="status"
       aria-live="polite"
-      style={{ height: CLINIC_CLOSED_TICKER_HEIGHT_PX }}
-      className="w-full overflow-hidden bg-amber-400 border-b border-amber-500/60 flex items-center"
+      className="w-full overflow-hidden bg-amber-50 border border-amber-200 rounded-xl py-3 mb-8 flex items-center"
     >
       <div className="flex whitespace-nowrap will-change-transform animate-ticker motion-reduce:animate-none motion-reduce:pl-4">
-        <span dir="auto" className="font-urdu font-semibold text-[14px] text-amber-950 px-6">
+        <span dir="auto" className="font-urdu font-semibold text-[14px] text-amber-800 px-6">
           {text}
         </span>
-        <span dir="auto" className="font-urdu font-semibold text-[14px] text-amber-950 px-6" aria-hidden>
+        <span dir="auto" className="font-urdu font-semibold text-[14px] text-amber-800 px-6" aria-hidden>
           {text}
         </span>
       </div>

@@ -806,8 +806,8 @@ export default function ReportsContent() {
       const contentWidth = pageWidth - margin * 2;
       const HEADER_H = 32;
 
-      const NAVY: [number, number, number] = [10, 36, 71];
-      const NAVY_LIGHT: [number, number, number] = [24, 60, 105];
+      const NAVY: [number, number, number] = [19, 78, 74];
+      const NAVY_LIGHT: [number, number, number] = [15, 118, 110];
       const TEXT_DARK: [number, number, number] = [24, 28, 38];
       const TEXT_MUTED: [number, number, number] = [110, 114, 130];
       const CARD_BORDER: [number, number, number] = [226, 230, 238];
@@ -1448,11 +1448,11 @@ export default function ReportsContent() {
               <h3 className="text-headline-md font-semibold mb-md">{activeLabel}</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={active.chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#e1e2ed" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#737686" }} axisLine={{ stroke: "#e1e2ed" }} tickLine={false} interval={active.chart.length > 10 ? Math.ceil(active.chart.length / 10) : 0} />
-                  <YAxis tick={{ fontSize: 11, fill: "#737686" }} axisLine={false} tickLine={false} width={48} allowDecimals={false} />
-                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#c3c6d7", fontSize: 12 }} />
-                  <Bar dataKey="value" fill="#006591" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} interval={active.chart.length > 10 ? Math.ceil(active.chart.length / 10) : 0} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} width={48} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0", fontSize: 12 }} />
+                  <Bar dataKey="value" fill="#0d9488" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

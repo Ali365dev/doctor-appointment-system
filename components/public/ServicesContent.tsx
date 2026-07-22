@@ -69,8 +69,8 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
 
     // Same brand header/footer treatment as the admin Reports PDF export, so
     // every doctor-branded PDF in the app looks consistent.
-    const NAVY: [number, number, number] = [10, 36, 71];
-    const NAVY_LIGHT: [number, number, number] = [24, 60, 105];
+    const NAVY: [number, number, number] = [19, 78, 74];
+    const NAVY_LIGHT: [number, number, number] = [15, 118, 110];
     const TEXT_DARK: [number, number, number] = [24, 28, 38];
     const TEXT_MUTED: [number, number, number] = [110, 114, 130];
     const CARD_BORDER: [number, number, number] = [226, 230, 238];

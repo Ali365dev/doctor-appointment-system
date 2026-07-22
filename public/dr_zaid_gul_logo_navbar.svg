@@ -1,14 +1,14 @@
 <svg viewBox="0 0 340 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="blueGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#004ac6"/>
-      <stop offset="100%" stop-color="#00327f"/>
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="100%" stop-color="#134e4a"/>
     </linearGradient>
   </defs>
 
   <!-- Compact emblem -->
   <g transform="translate(32,32)">
-    <circle cx="0" cy="0" r="27" fill="none" stroke="#004ac6" stroke-width="2.4"/>
+    <circle cx="0" cy="0" r="27" fill="none" stroke="#0f766e" stroke-width="2.4"/>
 
     <path d="M -10 -14
              C -19 -9, -19 9, -8 16
@@ -24,7 +24,7 @@
 
   <!-- Wordmark: single bold line, high legibility at small size -->
   <g font-family="Helvetica, Arial, sans-serif">
-    <text x="72" y="30" font-size="24" fill="#111111" font-weight="700" letter-spacing="0.2">Dr. Zaid Gul</text>
-    <text x="72" y="48" font-size="11.5" fill="#004ac6" font-weight="600" letter-spacing="1.8">GASTROENTEROLOGIST</text>
+    <text x="72" y="30" font-size="24" fill="#1a1c1e" font-weight="700" letter-spacing="0.2">Dr. Zaid Gul</text>
+    <text x="72" y="48" font-size="11.5" fill="#0f766e" font-weight="600" letter-spacing="1.8">GASTROENTEROLOGIST</text>
   </g>
 </svg>

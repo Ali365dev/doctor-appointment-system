@@ -75,7 +75,7 @@ const socialFields = [
   { key: "linkedin" as const, label: "LinkedIn", placeholder: "https://linkedin.com/in/yourprofile", icon: "work", color: "#0077B5" },
   { key: "x" as const, label: "X (Twitter)", placeholder: "@yourhandle", icon: "close", color: "#191b23" },
   { key: "youtube" as const, label: "YouTube", placeholder: "https://youtube.com/c/yourchannel", icon: "play_circle", color: "#FF0000" },
-  { key: "website" as const, label: "Website", placeholder: "https://yourclinic.com", icon: "language", color: "#004ac6" },
+  { key: "website" as const, label: "Website", placeholder: "https://yourclinic.com", icon: "language", color: "#0f766e" },
 ];
 
 function isValidSocialValue(key: string, value: string) {
@@ -132,6 +132,8 @@ export default function CmsContent() {
       specializedServices: doctorProfile.specializedServices,
       clinicClosedMessageEn: doctorProfile.clinicClosedMessageEn,
       clinicClosedMessageUr: doctorProfile.clinicClosedMessageUr,
+      generalAnnouncementMessageEn: doctorProfile.generalAnnouncementMessageEn,
+      generalAnnouncementMessageUr: doctorProfile.generalAnnouncementMessageUr,
     };
   }
 
@@ -332,6 +334,8 @@ export default function CmsContent() {
           specializedServices: form.specializedServices.filter((s) => s.title.trim()),
           clinicClosedMessageEn: form.clinicClosedMessageEn,
           clinicClosedMessageUr: form.clinicClosedMessageUr,
+          generalAnnouncementMessageEn: form.generalAnnouncementMessageEn,
+          generalAnnouncementMessageUr: form.generalAnnouncementMessageUr,
         }),
       });
       const data = await res.json();
@@ -997,40 +1001,79 @@ export default function CmsContent() {
 
         {/* Tab: Announcements */}
         {activeTab === "announcements" && (
-          <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm space-y-lg max-w-3xl">
-            <div className="flex items-center gap-xs">
-              <span className="material-symbols-outlined text-warning">campaign</span>
-              <div>
-                <h3 className="text-[18px] font-bold text-on-surface">Clinic Closed Announcement Bar</h3>
-                <p className="text-caption text-on-surface-variant">
-                  Shown on the booking page when the selected clinic is closed today, based on that
-                  clinic&apos;s weekly schedule (Clinic Management → edit clinic → weekly hours).
-                  Leave a field blank to use the built-in default message.
-                </p>
+          <div className="space-y-lg max-w-3xl">
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm space-y-lg">
+              <div className="flex items-center gap-xs">
+                <span className="material-symbols-outlined text-primary">campaign</span>
+                <div>
+                  <h3 className="text-[18px] font-bold text-on-surface">General Site-Wide Ticker</h3>
+                  <p className="text-caption text-on-surface-variant">
+                    Always shown as a scrolling ticker at the top of every page (in the site header) —
+                    for general info, not tied to any clinic status. Leave both fields blank to hide it entirely.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Message (Urdu)</label>
+                  <textarea
+                    value={form.generalAnnouncementMessageUr}
+                    onChange={(e) => setForm((p) => ({ ...p, generalAnnouncementMessageUr: e.target.value }))}
+                    placeholder="کوئی سوال یا استفسار ہے؟ کسی بھی وقت کلینک سے رابطہ کریں۔"
+                    dir="rtl"
+                    rows={3}
+                    className="font-urdu w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Message (English)</label>
+                  <textarea
+                    value={form.generalAnnouncementMessageEn}
+                    onChange={(e) => setForm((p) => ({ ...p, generalAnnouncementMessageEn: e.target.value }))}
+                    placeholder="Have a question or query? Feel free to contact the doctor's clinic anytime."
+                    rows={3}
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-              <div>
-                <label className="block text-caption text-on-surface-variant mb-xs">Message (Urdu)</label>
-                <textarea
-                  value={form.clinicClosedMessageUr}
-                  onChange={(e) => setForm((p) => ({ ...p, clinicClosedMessageUr: e.target.value }))}
-                  placeholder="📢 آج یہ کلینک بند ہے، لہٰذا آج کے لیے اپائنٹمنٹ بک نہیں کی جا سکتی۔"
-                  dir="rtl"
-                  rows={4}
-                  className="font-urdu w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
-                />
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm space-y-lg">
+              <div className="flex items-center gap-xs">
+                <span className="material-symbols-outlined text-warning">campaign</span>
+                <div>
+                  <h3 className="text-[18px] font-bold text-on-surface">Clinic Closed Announcement Bar</h3>
+                  <p className="text-caption text-on-surface-variant">
+                    Shown only on the booking-appointment pages, when the selected clinic is closed today
+                    based on that clinic&apos;s weekly schedule (Clinic Management → edit clinic → weekly hours).
+                    Leave a field blank to use the built-in default message.
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-caption text-on-surface-variant mb-xs">Message (English)</label>
-                <textarea
-                  value={form.clinicClosedMessageEn}
-                  onChange={(e) => setForm((p) => ({ ...p, clinicClosedMessageEn: e.target.value }))}
-                  placeholder="📢 This clinic is closed today. Appointments cannot be booked for today."
-                  rows={4}
-                  className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Message (Urdu)</label>
+                  <textarea
+                    value={form.clinicClosedMessageUr}
+                    onChange={(e) => setForm((p) => ({ ...p, clinicClosedMessageUr: e.target.value }))}
+                    placeholder="📢 آج یہ کلینک بند ہے، لہٰذا آج کے لیے اپائنٹمنٹ بک نہیں کی جا سکتی۔"
+                    dir="rtl"
+                    rows={4}
+                    className="font-urdu w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Message (English)</label>
+                  <textarea
+                    value={form.clinicClosedMessageEn}
+                    onChange={(e) => setForm((p) => ({ ...p, clinicClosedMessageEn: e.target.value }))}
+                    placeholder="📢 This clinic is closed today. Appointments cannot be booked for today."
+                    rows={4}
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                  />
+                </div>
               </div>
             </div>
           </div>

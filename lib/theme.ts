@@ -1,16 +1,16 @@
 
 export const theme = {
   colors: {
-    // Brand
-    primary: "#004ac6",
+    // Brand — "Clinical Precision" (Emerald variant)
+    primary: "#0f766e",
     onPrimary: "#ffffff",
-    primaryContainer: "#2563eb",
-    onPrimaryContainer: "#eeefff",
+    primaryContainer: "#0d9488",
+    onPrimaryContainer: "#f0fdfa",
 
-    secondary: "#006591",
+    secondary: "#0d9488",
     onSecondary: "#ffffff",
-    secondaryContainer: "#39b8fd",
-    onSecondaryContainer: "#004666",
+    secondaryContainer: "#2dd4bf",
+    onSecondaryContainer: "#003731",
 
     tertiary: "#943700",
     onTertiary: "#ffffff",
@@ -18,35 +18,35 @@ export const theme = {
     onTertiaryContainer: "#ffede6",
 
     // Background & Surface
-    background: "#faf8ff",
-    onBackground: "#191b23",
+    background: "#f7f9fb",
+    onBackground: "#1a1c1e",
 
-    surface: "#faf8ff",
-    surfaceBright: "#faf8ff",
-    surfaceDim: "#d9d9e5",
+    surface: "#f7f9fb",
+    surfaceBright: "#ffffff",
+    surfaceDim: "#d8dadc",
 
     surfaceContainerLowest: "#ffffff",
-    surfaceContainerLow: "#f3f3fe",
-    surfaceContainer: "#ededf9",
-    surfaceContainerHigh: "#e7e7f3",
-    surfaceContainerHighest: "#e1e2ed",
+    surfaceContainerLow: "#f1f5f4",
+    surfaceContainer: "#eaeef0",
+    surfaceContainerHigh: "#e3e8ea",
+    surfaceContainerHighest: "#dde3e5",
 
-    surfaceVariant: "#e1e2ed",
+    surfaceVariant: "#e2e8f0",
 
-    onSurface: "#191b23",
-    onSurfaceVariant: "#434655",
+    onSurface: "#1a1c1e",
+    onSurfaceVariant: "#44474e",
 
-    inverseSurface: "#2e3039",
-    inverseOnSurface: "#f0f0fb",
-    inversePrimary: "#b4c5ff",
+    inverseSurface: "#2e3132",
+    inverseOnSurface: "#f0f4f3",
+    inversePrimary: "#5eead4",
 
-    outline: "#737686",
-    outlineVariant: "#c3c6d7",
+    outline: "#64748b",
+    outlineVariant: "#e2e8f0",
 
-    surfaceTint: "#0053db",
+    surfaceTint: "#0f766e",
 
     // Semantic
-    success: "#22c55e",
+    success: "#10b981",
     warning: "#f59e0b",
 
     error: "#ba1a1a",

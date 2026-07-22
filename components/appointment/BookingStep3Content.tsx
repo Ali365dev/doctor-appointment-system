@@ -204,7 +204,7 @@ export default function BookingStep3Content() {
                   <label key={String(val)} className="flex items-center gap-3 cursor-pointer">
                     <input type="radio" name="existing" checked={form.isExisting === val}
                       onChange={() => set("isExisting", val)}
-                      className="w-5 h-5 text-primary border-outline-variant focus:ring-primary/20" />
+                      className="w-5 h-5 accent-primary border-outline-variant focus:ring-primary/20" />
                     <span className="text-body-md text-on-surface">
                       {val ? "Yes, I am an existing patient" : "No, this is my first visit"}
                     </span>

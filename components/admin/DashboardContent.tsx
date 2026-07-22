@@ -231,20 +231,20 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                 <AreaChart data={revenueTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#006591" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="#006591" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#0d9488" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#0d9488" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="#e1e2ed" />
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
                   <XAxis
                     dataKey="day"
-                    tick={{ fontSize: 11, fill: "#737686" }}
-                    axisLine={{ stroke: "#e1e2ed" }}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    axisLine={{ stroke: "#e2e8f0" }}
                     tickLine={false}
                     interval={2}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "#737686" }}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
                     axisLine={false}
                     tickLine={false}
                     width={48}
@@ -253,12 +253,12 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
                   <Tooltip
                     labelFormatter={(day) => `${monthLabel.split(" ")[0]} ${day}`}
                     formatter={(value) => [`Rs. ${Number(Array.isArray(value) ? value[0] : value ?? 0).toLocaleString()}`, "Revenue"]}
-                    contentStyle={{ borderRadius: 8, borderColor: "#c3c6d7", fontSize: 12 }}
+                    contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0", fontSize: 12 }}
                   />
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#006591"
+                    stroke="#0d9488"
                     strokeWidth={2}
                     fill="url(#revenueFill)"
                     dot={false}
@@ -283,20 +283,20 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
             ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={dailyAppointmentsInMonth} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#e1e2ed" />
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
                   <XAxis
                     dataKey="day"
-                    tick={{ fontSize: 11, fill: "#737686" }}
-                    axisLine={{ stroke: "#e1e2ed" }}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    axisLine={{ stroke: "#e2e8f0" }}
                     tickLine={false}
                     interval={2}
                   />
-                  <YAxis tick={{ fontSize: 11, fill: "#737686" }} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
                   <Tooltip
                     labelFormatter={(day) => `${monthLabel.split(" ")[0]} ${day}`}
-                    contentStyle={{ borderRadius: 8, borderColor: "#c3c6d7", fontSize: 12 }}
+                    contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0", fontSize: 12 }}
                   />
-                  <Bar dataKey="count" name="Appointments" fill="#006591" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" name="Appointments" fill="#0d9488" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
