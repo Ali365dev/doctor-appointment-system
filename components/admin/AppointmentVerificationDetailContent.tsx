@@ -125,12 +125,17 @@ interface TimelineEvent {
   iconBg: string;
 }
 
+/** Older records stored the raw actor userId instead of a role label — display those as "Admin" rather than a bare hex id. */
+function displayChangedBy(changedBy: string): string {
+  return /^[0-9a-f]{24}$/i.test(changedBy) ? "admin" : changedBy;
+}
+
 /** Merges appointment status history with payment milestones into one chronological timeline. */
 function buildTimeline(appointment: ApiAppointment, payment: ApiPayment | null): TimelineEvent[] {
   const events: TimelineEvent[] = appointment.statusHistory.map((entry) => ({
     label: STATUS_LABEL[entry.status],
     changedAt: entry.changedAt,
-    changedBy: entry.changedBy,
+    changedBy: displayChangedBy(entry.changedBy),
     note: entry.note,
     icon: TIMELINE_ICON[entry.status],
     iconBg: "bg-primary-container",

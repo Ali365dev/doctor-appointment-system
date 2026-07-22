@@ -61,33 +61,98 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
   async function downloadPreparationGuide() {
     const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF();
-    const margin = 20;
-    const contentWidth = doc.internal.pageSize.getWidth() - margin * 2;
-    let y = 25;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const contentWidth = pageWidth - margin * 2;
+    const HEADER_H = 32;
 
+    // Same brand header/footer treatment as the admin Reports PDF export, so
+    // every doctor-branded PDF in the app looks consistent.
+    const NAVY: [number, number, number] = [10, 36, 71];
+    const NAVY_LIGHT: [number, number, number] = [24, 60, 105];
+    const TEXT_DARK: [number, number, number] = [24, 28, 38];
+    const TEXT_MUTED: [number, number, number] = [110, 114, 130];
+    const CARD_BORDER: [number, number, number] = [226, 230, 238];
+
+    const generatedAt = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+    const initials = doctor.name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "DR";
+
+    function drawHeader() {
+      doc.setFillColor(...NAVY);
+      doc.rect(0, 0, pageWidth, HEADER_H, "F");
+      doc.setFillColor(...NAVY_LIGHT);
+      doc.triangle(pageWidth * 0.62, HEADER_H, pageWidth, HEADER_H, pageWidth, HEADER_H * 0.25, "F");
+
+      doc.setFillColor(255, 255, 255);
+      doc.circle(margin + 8, HEADER_H / 2, 8, "F");
+      doc.setTextColor(...NAVY);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(initials, margin + 8, HEADER_H / 2 + 1.5, { align: "center" });
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text(doctor.name, margin + 20, HEADER_H / 2 - 4);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(doctor.designation, margin + 20, HEADER_H / 2 + 1.5);
+      doc.setFontSize(8);
+      doc.text([doctor.contactPhone, doctor.contactEmail].filter(Boolean).join("   ·   "), margin + 20, HEADER_H / 2 + 7);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Preparation Guide", pageWidth - margin, HEADER_H / 2 - 3, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(`Generated: ${generatedAt}`, pageWidth - margin, HEADER_H / 2 + 4, { align: "right" });
+
+      doc.setTextColor(...TEXT_DARK);
+    }
+
+    function drawFooter() {
+      doc.setDrawColor(...CARD_BORDER);
+      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...TEXT_MUTED);
+      doc.text("Confidential — for internal clinical use only", margin, pageHeight - 7);
+      doc.text("Page 1 of 1", pageWidth - margin, pageHeight - 7, { align: "right" });
+    }
+
+    drawHeader();
+
+    let y = HEADER_H + 16;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
+    doc.setFontSize(15);
+    doc.setTextColor(...NAVY);
     doc.text("Procedure Preparation Guide", margin, y);
-    y += 8;
+    y += 6;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`${doctor.name} — ${doctor.designation}`, margin, y);
-    doc.setTextColor(0, 0, 0);
-    y += 12;
+    doc.setFontSize(9);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text("Please follow these clinical protocols carefully prior to your appointment.", margin, y);
+    doc.setDrawColor(...CARD_BORDER);
+    doc.line(margin, y + 4, pageWidth - margin, y + 4);
+    doc.setTextColor(...TEXT_DARK);
+    y += 14;
 
     for (const step of PREP_STEPS) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.text(`${step.num}. ${step.title}`, margin, y);
+      doc.setFontSize(12.5);
+      doc.setTextColor(...NAVY);
+      doc.text(`${step.num}.  ${step.title}`, margin, y);
       y += 7;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10.5);
+      doc.setTextColor(...TEXT_DARK);
       const lines = doc.splitTextToSize(step.body, contentWidth);
       doc.text(lines, margin, y);
-      y += lines.length * 5.5 + 8;
+      y += lines.length * 5.5 + 9;
     }
 
+    drawFooter();
     doc.save("preparation-guide.pdf");
   }
 

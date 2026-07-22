@@ -15,7 +15,7 @@ export default function AppointmentsPage() {
           </p>
         </div>
         <Link
-          href="/book-appointment"
+          href="/book-appointment/step-1"
           className="inline-flex items-center gap-xs bg-primary text-on-primary font-bold text-label-md px-md py-sm rounded-xl shadow-sm hover:brightness-110 active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined">add</span>

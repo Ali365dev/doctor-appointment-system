@@ -4,6 +4,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import AnnouncementSpacer from "@/components/layout/AnnouncementSpacer";
 import Footer from "@/components/layout/Footer";
 import PublicWhatsAppButton from "@/components/layout/PublicWhatsAppButton";
 import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
@@ -47,6 +48,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <DoctorProfileProvider profile={profile}>
           <Header />
+          <AnnouncementSpacer />
           {children}
           <Footer />
           <PublicWhatsAppButton />

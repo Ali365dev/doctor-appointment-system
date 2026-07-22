@@ -26,7 +26,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const { note } = await req.json().catch(() => ({ note: undefined }));
-    const updated = await cancelAppointment(id, session.userId, note);
+    // Record the human-readable role, not the raw userId — matches
+    // "system"/"admin" elsewhere in the status history.
+    const updated = await cancelAppointment(id, session.role === "doctor" ? "admin" : "patient", note);
     return NextResponse.json({ appointment: updated });
   } catch (err) {
     if (err instanceof AppointmentServiceError) {

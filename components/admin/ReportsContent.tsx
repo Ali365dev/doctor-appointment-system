@@ -1014,6 +1014,26 @@ export default function ReportsContent() {
         const badgeCols = new Set(headers.map((h, i) => (h === "Status" || h === "Payment" ? i : -1)).filter((i) => i >= 0));
         const totalsRow = computeTotalsRow(headers, rows);
 
+        // Badge cell text is blanked below (drawn as a colored pill instead), which
+        // would otherwise starve autoTable's auto-width calc for that column — pill
+        // width is measured up front so the column is never narrower than its widest
+        // pill, which is what caused pills to spill into the next column.
+        const badgePillFontSize = Math.max(6, fontSize - 0.5);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(badgePillFontSize);
+        const badgeColumnStyles: Record<number, { minCellWidth: number }> = {};
+        for (const colIndex of badgeCols) {
+          let maxPillWidth = 0;
+          for (const row of rows) {
+            const raw = String(row[colIndex] ?? "").trim();
+            if (!raw || raw === "—") continue;
+            maxPillWidth = Math.max(maxPillWidth, doc.getTextWidth(raw) + 4.4);
+          }
+          if (maxPillWidth > 0) badgeColumnStyles[colIndex] = { minCellWidth: maxPillWidth + 5 };
+        }
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+
         autoTable(doc, {
           startY,
           head: [headers],
@@ -1024,6 +1044,7 @@ export default function ReportsContent() {
           headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
           footStyles: { fillColor: ROW_ALT, textColor: TEXT_DARK, fontStyle: "bold" },
           alternateRowStyles: { fillColor: ROW_ALT },
+          columnStyles: badgeColumnStyles,
           margin: { left: margin, right: margin, top: 16, bottom: 16 },
           didParseCell: (data) => {
             if (data.section === "body" && badgeCols.has(data.column.index)) {
@@ -1039,7 +1060,9 @@ export default function ReportsContent() {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(Math.max(6, fontSize - 0.5));
             const textW = doc.getTextWidth(raw);
-            const pillW = textW + 4.4;
+            // Clamped so a long label can never overflow into the next column even
+            // if the column ends up narrower than the pill (e.g. a very tight page).
+            const pillW = Math.min(textW + 4.4, data.cell.width - 1);
             const pillH = data.cell.height - 3;
             const px = data.cell.x + (data.cell.width - pillW) / 2;
             const py = data.cell.y + (data.cell.height - pillH) / 2;

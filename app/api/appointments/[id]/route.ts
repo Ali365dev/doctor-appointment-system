@@ -54,7 +54,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "A valid status is required" }, { status: 400 });
     }
 
-    const appointment = await changeAppointmentStatus(id, status as AppointmentStatus, session.userId, note);
+    // Only a doctor session can reach this route (checked above) — record the
+    // human-readable role, not the raw userId, matching "system"/"patient"
+    // elsewhere in the status history so the timeline UI never leaks raw ids.
+    const appointment = await changeAppointmentStatus(id, status as AppointmentStatus, "admin", note);
     return NextResponse.json({ appointment });
   } catch (err) {
     if (err instanceof AppointmentServiceError) {

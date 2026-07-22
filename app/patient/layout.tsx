@@ -76,7 +76,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
             <span className="material-symbols-outlined">calendar_month</span>
             <span className="text-caption">Appts</span>
           </a>
-          <a href="/book-appointment" className="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center -mt-8 shadow-lg border-4 border-surface">
+          <a href="/book-appointment/step-1" className="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center -mt-8 shadow-lg border-4 border-surface">
             <span className="material-symbols-outlined">add</span>
           </a>
           <a href="/patient/profile" className="flex flex-col items-center text-on-surface-variant">

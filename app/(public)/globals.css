@@ -312,6 +312,21 @@ body {
   font-family: var(--font-urdu, "Noto Nastaliq Urdu", serif);
 }
 
+/* Header marquee ticker — the inner track holds the message twice back-to-back
+   and scrolls exactly one copy's width for a seamless, non-jumping loop. */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker-scroll 22s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker {
+    animation: none;
+  }
+}
+
 /* Every <select> gets one consistent custom arrow instead of relying on
    inconsistent native browser rendering. !important on padding-right only
    overrides the right side, so components' own left-padding classes still work. */

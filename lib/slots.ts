@@ -52,6 +52,13 @@ export function generateSlotsForDate(
   return slots;
 }
 
+/** True when the clinic's weekly schedule marks the given date's weekday as not open. */
+export function isClinicClosedOnDate(schedule: WeeklySchedule | undefined, dateStr: string): boolean {
+  if (!schedule) return false;
+  const entry = schedule.find((d) => d.day === dayOfWeekForDate(dateStr));
+  return entry ? !entry.isOpen : false;
+}
+
 /** Set of JS Date.getDay() values (0=Sun..6=Sat) the clinic is open on. */
 export function openWeekdayNumbers(schedule: WeeklySchedule | undefined): Set<number> {
   if (!schedule) return new Set();

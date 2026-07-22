@@ -151,7 +151,7 @@ export default function AppointmentVerificationContent() {
 
       {/* Results */}
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
-        <div className="flex flex-col gap-md p-md">
+        <div className="flex flex-col gap-xs p-sm">
           {loading ? (
             <p className="text-center text-body-md text-on-surface-variant py-xl">Loading appointments…</p>
           ) : pageItems.length === 0 ? (
@@ -165,62 +165,62 @@ export default function AppointmentVerificationContent() {
               return (
                 <div
                   key={apt._id}
-                  className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-lg shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-center justify-between gap-lg"
+                  className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-sm shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-center justify-between gap-sm"
                 >
                   {/* Identity */}
-                  <div className="flex items-center gap-sm flex-1 w-full md:w-auto">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-label-md">
+                  <div className="flex items-center gap-xs flex-1 w-full md:w-auto">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-caption">
                       {initialsOf(apt.patientSnapshot.fullName)}
                     </div>
                     <div>
-                      <h3 className="text-label-md font-bold text-on-surface">{apt.patientSnapshot.fullName}</h3>
-                      <p className="text-caption text-outline">ID: {apt.appointmentNumber}</p>
-                      <p className="text-caption text-outline">{apt.patientSnapshot.phone}</p>
+                      <h3 className="text-label-md font-bold text-on-surface leading-tight">{apt.patientSnapshot.fullName}</h3>
+                      <p className="text-caption text-outline leading-tight">ID: {apt.appointmentNumber}</p>
+                      <p className="text-caption text-outline leading-tight">{apt.patientSnapshot.phone}</p>
                     </div>
                   </div>
 
                   {/* Schedule / location */}
-                  <div className="flex flex-col gap-xs flex-[2] w-full md:w-auto md:border-l border-outline-variant/30 md:pl-lg">
+                  <div className="flex flex-col gap-0.5 flex-[2] w-full md:w-auto md:border-l border-outline-variant/30 md:pl-md">
                     <div className="flex items-center gap-xs text-on-surface">
-                      <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
-                      <span className="text-body-md font-medium">{apt.date} • {apt.time}</span>
+                      <span className="material-symbols-outlined text-primary text-[16px]">calendar_today</span>
+                      <span className="text-caption font-medium">{apt.date} • {apt.time}</span>
                     </div>
                     <div className="flex items-center gap-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-[20px]">
+                      <span className="material-symbols-outlined text-[16px]">
                         {apt.visitType === "online" ? "videocam" : "location_on"}
                       </span>
-                      <span className="text-body-md">
+                      <span className="text-caption">
                         {apt.visitType === "online" ? "Remote Consultation" : clinicName(apt.clinicId)}
                       </span>
                     </div>
                   </div>
 
                   {/* Status + actions */}
-                  <div className="flex flex-col items-end gap-sm shrink-0 w-full md:w-auto">
+                  <div className="flex flex-col items-end gap-xs shrink-0 w-full md:w-auto">
                     <div className="flex gap-xs flex-wrap justify-end">
                       {paymentMeta && (
-                        <span className={`inline-flex items-center gap-1 px-sm py-xs rounded-full text-caption font-bold ${paymentMeta.badgeClass}`}>
-                          <span className="material-symbols-outlined text-[14px]">{paymentMeta.icon}</span>
+                        <span className={`inline-flex items-center gap-1 px-xs py-0.5 rounded-full text-caption font-bold ${paymentMeta.badgeClass}`}>
+                          <span className="material-symbols-outlined text-caption">{paymentMeta.icon}</span>
                           {paymentMeta.label}
                         </span>
                       )}
-                      <span className={`inline-flex items-center px-sm py-xs rounded-full text-caption font-bold ${STATUS_BADGE[apt.status]}`}>
+                      <span className={`inline-flex items-center px-xs py-0.5 rounded-full text-caption font-bold ${STATUS_BADGE[apt.status]}`}>
                         {STATUS_LABEL[apt.status]}
                       </span>
                     </div>
                     <div className="flex items-center gap-xs">
                       <button
                         onClick={() => goToDetails(apt._id)}
-                        className="px-lg py-xs bg-primary text-on-primary text-label-md rounded-lg hover:brightness-110 transition-all shadow-sm active:scale-95"
+                        className="px-md py-1 bg-primary text-on-primary text-caption font-semibold rounded-lg hover:brightness-110 transition-all shadow-sm active:scale-95"
                       >
                         Verify Appointment
                       </button>
                       <button
                         onClick={() => goToDetails(apt._id)}
                         title="View Details"
-                        className="p-xs rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors"
+                        className="p-1 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors"
                       >
-                        <span className="material-symbols-outlined">visibility</span>
+                        <span className="material-symbols-outlined text-body-lg">visibility</span>
                       </button>
                     </div>
                   </div>

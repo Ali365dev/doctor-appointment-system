@@ -179,6 +179,7 @@ export default function BookingStep4Content() {
               { label: "Phone", value: patientInfo.phone || "—" },
               { label: "Age", value: patientInfo.age ? `${patientInfo.age} years` : "—" },
               { label: "Gender", value: patientInfo.gender },
+              { label: "City", value: patientInfo.city || "—" },
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="text-caption text-outline uppercase tracking-wider">{label}</p>
