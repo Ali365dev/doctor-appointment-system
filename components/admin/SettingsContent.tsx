@@ -68,10 +68,7 @@ const tabs = [
   { id: "security", label: "Security", icon: "lock" },
 ];
 
-const sessions = [
-  { device: "MacBook Pro 16\"", os: "macOS 14.2", location: "Karachi, Pakistan", icon: "laptop_mac", current: true },
-  { device: "iPhone 15 Pro", os: "iOS 17.2", location: "Karachi, Pakistan", icon: "smartphone", current: false },
-];
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function SettingsContent() {
   const [activeTab, setActiveTab] = useState("payment");
@@ -82,6 +79,48 @@ export default function SettingsContent() {
   });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState({ current: false, new: false, confirm: false });
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  async function handleChangePassword() {
+    if (!currentPassword) {
+      toast.error("Enter your current password");
+      return;
+    }
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update password");
+        return;
+      }
+      toast.success("Password updated successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      toast.error("Network error while updating password");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
 
   const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(true);
   const [jazzcashNumber, setJazzcashNumber] = useState("");
@@ -413,42 +452,39 @@ export default function SettingsContent() {
                 <span className="material-symbols-outlined text-primary">key</span> Change Password
               </h3>
               <div className="space-y-md max-w-md">
-                {[["Current Password","Enter current password"],["New Password","At least 12 characters"],["Confirm New Password","Repeat new password"]].map(([label, ph]) => (
-                  <div key={label}>
+                {(
+                  [
+                    ["current", "Current Password", "Enter current password", currentPassword, setCurrentPassword],
+                    ["new", "New Password", `At least ${MIN_PASSWORD_LENGTH} characters`, newPassword, setNewPassword],
+                    ["confirm", "Confirm New Password", "Repeat new password", confirmPassword, setConfirmPassword],
+                  ] as const
+                ).map(([key, label, ph, value, setValue]) => (
+                  <div key={key}>
                     <label className="block text-label-md text-on-surface-variant mb-xs">{label}</label>
                     <div className="relative">
-                      <input type="password" placeholder={ph} className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm pr-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-                      <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-outline cursor-pointer hover:text-on-surface">visibility</span>
+                      <input
+                        type={passwordVisible[key] ? "text" : "password"}
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder={ph}
+                        className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm pr-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <span
+                        onClick={() => setPasswordVisible((p) => ({ ...p, [key]: !p[key] }))}
+                        className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-outline cursor-pointer hover:text-on-surface"
+                      >
+                        {passwordVisible[key] ? "visibility_off" : "visibility"}
+                      </span>
                     </div>
                   </div>
                 ))}
-                <button className="bg-primary text-on-primary px-md py-sm rounded-xl font-bold hover:brightness-110 transition-all shadow-sm">Update Password</button>
-              </div>
-            </section>
-
-            {/* Active Sessions */}
-            <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
-              <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
-                <span className="material-symbols-outlined text-secondary">devices</span> Active Sessions
-              </h3>
-              <div className="space-y-sm">
-                {sessions.map((s) => (
-                  <div key={s.device} className={`flex items-center gap-md p-md rounded-xl border transition-colors ${s.current ? "border-primary/30 bg-primary/5" : "border-outline-variant bg-surface-container-lowest"}`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.current ? "bg-primary/10 text-primary" : "bg-surface-container-high text-on-surface-variant"}`}>
-                      <span className="material-symbols-outlined text-[28px]">{s.icon}</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-xs">
-                        <p className="font-semibold text-on-surface">{s.device}</p>
-                        {s.current && <span className="text-[10px] font-bold px-xs py-[1px] bg-primary/10 text-primary rounded-full uppercase tracking-wide">Current</span>}
-                      </div>
-                      <p className="text-caption text-on-surface-variant">{s.os} · {s.location}</p>
-                    </div>
-                    {!s.current && (
-                      <button className="text-sm text-error font-semibold border border-error/30 px-sm py-xs rounded-lg hover:bg-error/5 transition-colors">Log Out</button>
-                    )}
-                  </div>
-                ))}
+                <button
+                  onClick={handleChangePassword}
+                  disabled={changingPassword}
+                  className="bg-primary text-on-primary px-md py-sm rounded-xl font-bold hover:brightness-110 transition-all shadow-sm disabled:opacity-60"
+                >
+                  {changingPassword ? "Updating…" : "Update Password"}
+                </button>
               </div>
             </section>
           </div>
