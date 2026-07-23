@@ -189,16 +189,10 @@ export default function TopBar({ user, onMenuClick }: TopBarProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-md">
-        {/* Notifications */}
-        <button className="relative p-xs rounded-lg hover:bg-surface-container-high transition-colors">
-          <span className="material-symbols-outlined text-on-surface-variant text-[22px]">notifications</span>
-          <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-        </button>
-
         {/* Settings */}
-        <button className="p-xs rounded-lg hover:bg-surface-container-high transition-colors">
+        <Link href="/admin/settings" className="p-xs rounded-lg hover:bg-surface-container-high transition-colors">
           <span className="material-symbols-outlined text-on-surface-variant text-[22px]">settings</span>
-        </button>
+        </Link>
 
         {/* Divider */}
         <div className="h-6 w-px bg-outline-variant/50" />

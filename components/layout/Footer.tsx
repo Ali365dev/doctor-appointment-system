@@ -1,7 +1,8 @@
 import type { JSX } from "react";
 import Link from "next/link";
-import { doctor as staticDoctor, buildWhatsappLink } from "@/lib/data";
+import { buildWhatsappLink } from "@/lib/data";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
+import { findActiveClinics } from "@/services/mongodb/repositories/clinic.repository";
 
 const quickLinks = [
   { href: "#about", label: "About Dr. Zaid Gul" },
@@ -42,8 +43,8 @@ const SocialSvg: Record<string, (props: { className?: string }) => JSX.Element> 
 
 export default async function Footer() {
   const { name, contactEmail, contactPhone, contactWhatsapp, social, verification } = await getCmsProfile();
-  const { practice_locations } = staticDoctor;
-  const firstLocation = practice_locations[0];
+  const clinics = await findActiveClinics();
+  const firstLocation = clinics[0];
   const socialLinks = Object.entries(social ?? {}).filter(
     ([platform, url]) => !!url && platform in SocialSvg
   ) as [string, string][];
@@ -60,7 +61,7 @@ export default async function Footer() {
       ? [{ icon: "mail", text: contactEmail, href: `mailto:${contactEmail}` }]
       : []),
     ...(firstLocation?.address
-      ? [{ icon: "location_on", text: firstLocation.address, href: firstLocation.map_link }]
+      ? [{ icon: "location_on", text: firstLocation.address, href: firstLocation.mapLink }]
       : []),
   ];
 
@@ -175,16 +176,16 @@ export default async function Footer() {
           </div>
 
           {/* All locations summary */}
-          {practice_locations.length > 1 && (
+          {clinics.length > 1 && (
             <div className="mt-sm">
               <p className="text-caption text-on-surface-variant font-semibold mb-xs uppercase tracking-wider">
                 All Locations
               </p>
-              {practice_locations.map((loc, i) => {
-                const mapLink = (loc as { map_link?: string }).map_link;
+              {clinics.map((clinic) => {
+                const mapLink = clinic.mapLink ?? undefined;
                 return (
                   <a
-                    key={i}
+                    key={String(clinic._id)}
                     href={mapLink}
                     target={mapLink ? "_blank" : undefined}
                     rel={mapLink ? "noopener noreferrer" : undefined}
@@ -196,9 +197,9 @@ export default async function Footer() {
                       {mapLink && (
                         <span className="material-symbols-outlined text-[14px] shrink-0">location_on</span>
                       )}
-                      {loc.name}
+                      {clinic.name}
                     </span>
-                    <span className="text-primary font-semibold shrink-0">Rs. {loc.fee_pkr.toLocaleString()}</span>
+                    <span className="text-primary font-semibold shrink-0">Rs. {clinic.feePkr.toLocaleString()}</span>
                   </a>
                 );
               })}
