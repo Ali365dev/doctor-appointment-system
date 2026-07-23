@@ -18,10 +18,10 @@ import { readFile } from "node:fs/promises";
 
 const [, , phoneArg, passwordArg, ...nameParts] = process.argv;
 
-const phone = phoneArg || "+10000000001";
+const phone = phoneArg || "+03086889966";
 const password = passwordArg || "Admin@12345";
 
-let defaultName = "Dr. Admin";
+let defaultName = "Dr. Zaid Gul";
 try {
   const data = JSON.parse(await readFile(new URL("../data.json", import.meta.url), "utf-8"));
   defaultName = data.name ?? defaultName;
