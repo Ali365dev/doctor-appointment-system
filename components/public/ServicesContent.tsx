@@ -299,7 +299,8 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
         subtitle="Get priority booking and a detailed consultation session with Dr. Zaid Gul."
         primaryLabel="Book Online"
         secondaryLabel="Download Guide (PDF)"
-        onSecondaryClick={downloadPreparationGuide}
+        secondaryHref={doctor.prepGuidePdfUrl || undefined}
+        onSecondaryClick={doctor.prepGuidePdfUrl ? undefined : downloadPreparationGuide}
       />
     </main>
   );

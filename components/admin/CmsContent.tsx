@@ -100,6 +100,8 @@ export default function CmsContent() {
   const [newCertification, setNewCertification] = useState("");
   const [uploadingWhyChooseIndex, setUploadingWhyChooseIndex] = useState<number | null>(null);
   const [uploadingGalleryIndex, setUploadingGalleryIndex] = useState<number | null>(null);
+  const [uploadingPrepGuide, setUploadingPrepGuide] = useState(false);
+  const prepGuideInputRef = useRef<HTMLInputElement>(null);
 
   function buildFormState() {
     return {
@@ -394,6 +396,29 @@ export default function CmsContent() {
       toast.error("Network error while uploading logo");
     } finally {
       setUploadingLogo(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handlePrepGuideChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPrepGuide(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/cms/prep-guide-pdf", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload PDF");
+        return;
+      }
+      setDoctorProfile(data.cms);
+      toast.success("Preparation guide PDF updated");
+    } catch {
+      toast.error("Network error while uploading PDF");
+    } finally {
+      setUploadingPrepGuide(false);
       e.target.value = "";
     }
   }
@@ -995,6 +1020,54 @@ export default function CmsContent() {
               >
                 + Add Service
               </button>
+            </div>
+
+            {/* Download Guide PDF */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">picture_as_pdf</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Download Guide (PDF)</h3>
+              </div>
+              <p className="text-caption text-on-surface-variant mb-md">
+                Upload the PDF served by the &quot;Download Guide (PDF)&quot; button on the Services page. If no PDF is
+                uploaded, a preparation guide is generated automatically instead.
+              </p>
+              <div className="flex items-center gap-md">
+                <div className="w-14 h-14 rounded-lg border border-dashed border-outline-variant bg-surface flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-on-surface-variant text-2xl">
+                    {doctorProfile.prepGuidePdfUrl ? "description" : "upload_file"}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  {doctorProfile.prepGuidePdfUrl ? (
+                    <a
+                      href={doctorProfile.prepGuidePdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary text-body-sm font-semibold hover:underline truncate block"
+                    >
+                      View current PDF
+                    </a>
+                  ) : (
+                    <span className="text-on-surface-variant text-body-sm">No PDF uploaded yet</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => prepGuideInputRef.current?.click()}
+                  disabled={uploadingPrepGuide}
+                  className="px-md py-sm border border-outline-variant rounded-lg text-on-surface-variant text-caption font-semibold hover:border-primary hover:text-primary transition-all disabled:opacity-50 shrink-0"
+                >
+                  {uploadingPrepGuide ? "Uploading..." : doctorProfile.prepGuidePdfUrl ? "Replace PDF" : "Upload PDF"}
+                </button>
+                <input
+                  ref={prepGuideInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handlePrepGuideChange}
+                />
+              </div>
             </div>
           </div>
         )}

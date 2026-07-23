@@ -192,6 +192,18 @@ export default function PatientDetailContent({ patientId }: { patientId: string 
   const [notFound, setNotFound] = useState(false);
   const [page, setPage] = useState(1);
 
+  // mailto: links silently no-op on machines with no default mail client
+  // configured (common on Windows). Copy the address as a fallback so the
+  // click is always useful, without blocking the mailto navigation itself.
+  function handleEmailClick(email: string) {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(email)
+        .then(() => toast.info(`Email copied: ${email}`))
+        .catch(() => {});
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -327,6 +339,7 @@ export default function PatientDetailContent({ patientId }: { patientId: string 
           {patient.email && (
             <a
               href={`mailto:${patient.email}`}
+              onClick={() => handleEmailClick(patient.email!)}
               className="p-xs rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors"
               title="Send Message (Email)"
             >

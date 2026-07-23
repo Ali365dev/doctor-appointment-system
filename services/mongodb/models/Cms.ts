@@ -91,6 +91,8 @@ const cmsSchema = new Schema(
     servicesTitle: { type: String, default: "" },
     servicesSubtitle: { type: String, default: "" },
     specializedServices: { type: [specializedServiceSchema], default: [] },
+    prepGuidePdfUrl: { type: String, default: "" },
+    prepGuidePdfPublicId: { type: String },
     // Shown on the booking flow when the selected clinic is closed today
     // (per its weekly schedule). Blank falls back to a built-in default message.
     clinicClosedMessageEn: { type: String, default: "" },

@@ -129,6 +129,18 @@ export async function uploadCareGalleryImage(file: File): Promise<CloudinaryUplo
   return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.careGallery, resourceType: "image" });
 }
 
+/** Validates and uploads the "Download Guide (PDF)" preparation guide to the prep-guide folder. */
+export async function uploadPrepGuidePdf(file: File): Promise<CloudinaryUploadResult> {
+  if (file.type !== "application/pdf") {
+    throw new Error("Only PDF files are allowed for the preparation guide");
+  }
+  if (file.size > MAX_RECEIPT_SIZE_BYTES) {
+    throw new Error("Preparation guide PDF must be 10 MB or smaller");
+  }
+  // See uploadReceiptImage — PDFs must upload as "raw" or they 401 on open.
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.prepGuide, resourceType: "raw" });
+}
+
 /** Deletes a previously-uploaded profile photo, receipt, clinic, procedure, or medical report file from Cloudinary. */
 export async function deleteUploadedAsset(publicId: string, resourceType: "image" | "raw" = "image"): Promise<void> {
   return deleteFromCloudinary(publicId, resourceType);

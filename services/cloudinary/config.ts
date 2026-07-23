@@ -38,4 +38,5 @@ export const CLOUDINARY_FOLDERS = {
   paymentQr: "doctor-clinic/payment-qr",
   whyChoose: "doctor-clinic/why-choose",
   careGallery: "doctor-clinic/care-gallery",
+  prepGuide: "doctor-clinic/prep-guide",
 } as const;

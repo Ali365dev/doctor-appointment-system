@@ -10,7 +10,6 @@ const navItems = [
   { label: "My Procedures", icon: "medical_services", href: "/patient/procedures" },
   { label: "Medical Records", icon: "folder_shared", href: "/patient/medical-records" },
   { label: "Profile", icon: "person", href: "/patient/profile" },
-  { label: "Settings", icon: "settings", href: "/patient/settings" },
 ];
 
 export default function PatientSidebar() {

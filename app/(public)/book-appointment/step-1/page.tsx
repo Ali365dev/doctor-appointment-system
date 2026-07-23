@@ -12,6 +12,7 @@ export async function generateMetadata() {
   };
 }
 
+
 export default async function BookAppointmentStep1() {
   const doctor = await getCmsProfile();
 

@@ -69,6 +69,18 @@ export default function PatientsContent() {
   const [page, setPage] = useState(1);
   const [brokenAvatars, setBrokenAvatars] = useState<Set<string>>(new Set());
 
+  // mailto: links silently no-op on machines with no default mail client
+  // configured (common on Windows). Copy the address as a fallback so the
+  // click is always useful, without blocking the mailto navigation itself.
+  function handleEmailClick(email: string) {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(email)
+        .then(() => toast.info(`Email copied: ${email}`))
+        .catch(() => {});
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -279,6 +291,7 @@ export default function PatientsContent() {
                           {p.email ? (
                             <a
                               href={`mailto:${p.email}`}
+                              onClick={() => handleEmailClick(p.email!)}
                               className="p-xs text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all block"
                             >
                               <span className="material-symbols-outlined text-[20px]">mail</span>

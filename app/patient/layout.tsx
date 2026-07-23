@@ -83,10 +83,6 @@ export default async function PatientLayout({ children }: { children: React.Reac
             <span className="material-symbols-outlined">person</span>
             <span className="text-caption">Profile</span>
           </a>
-          <a href="/patient/settings" className="flex flex-col items-center text-on-surface-variant">
-            <span className="material-symbols-outlined">settings</span>
-            <span className="text-caption">Settings</span>
-          </a>
         </nav>
         </DoctorProfileProvider>
 

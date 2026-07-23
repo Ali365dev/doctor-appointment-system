@@ -78,7 +78,6 @@ export default function PatientTopBar({ user }: PatientTopBarProps) {
                 { label: "Dashboard", icon: "dashboard", href: "/patient/dashboard" },
                 { label: "Appointments", icon: "calendar_today", href: "/patient/appointments" },
                 { label: "Profile", icon: "person", href: "/patient/profile" },
-                { label: "Settings", icon: "settings", href: "/patient/settings" },
               ].map((item) => (
                 <Link
                   key={item.href}

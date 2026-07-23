@@ -75,6 +75,8 @@ export interface CmsInput {
   servicesTitle?: string;
   servicesSubtitle?: string;
   specializedServices?: CmsSpecializedService[];
+  prepGuidePdfUrl?: string;
+  prepGuidePdfPublicId?: string;
   clinicClosedMessageEn?: string;
   clinicClosedMessageUr?: string;
   generalAnnouncementMessageEn?: string;
@@ -111,6 +113,8 @@ export interface CmsProfile {
   servicesTitle: string;
   servicesSubtitle: string;
   specializedServices: CmsSpecializedService[];
+  prepGuidePdfUrl?: string;
+  prepGuidePdfPublicId?: string;
   clinicClosedMessageEn: string;
   clinicClosedMessageUr: string;
   generalAnnouncementMessageEn: string;
@@ -304,7 +308,11 @@ function buildSeed(): CmsInput {
 
 async function loadCmsProfile(): Promise<CmsProfile> {
   await connectDB();
-  const existing = await Cms.findOne({}).lean();
+  // Sorted so reads/writes deterministically target the same document even if
+  // duplicate CMS docs exist (e.g. from a past seeding race) — an unsorted
+  // `findOne({})`/`findOneAndUpdate({})` can otherwise return different docs
+  // between calls, making saved changes appear to silently not take effect.
+  const existing = await Cms.findOne({}).sort({ createdAt: 1 }).lean();
   if (existing) {
     // Backfills homepage-section fields for CMS docs created before they existed.
     const needsWhyChooseBackfill = !existing.whyChooseFeatures || existing.whyChooseFeatures.length === 0;
@@ -368,6 +376,8 @@ export const getCmsProfile = cache(loadCmsProfile);
 
 export async function updateCmsProfile(patch: Partial<CmsInput>): Promise<CmsProfile> {
   await connectDB();
-  const updated = await Cms.findOneAndUpdate({}, patch, { new: true, upsert: true }).lean();
+  // See loadCmsProfile — same deterministic sort so this always updates the
+  // document reads resolve to, not an arbitrary duplicate.
+  const updated = await Cms.findOneAndUpdate({}, patch, { new: true, upsert: true, sort: { createdAt: 1 } }).lean();
   return serialize(updated);
 }

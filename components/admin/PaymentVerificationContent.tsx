@@ -193,8 +193,43 @@ export default function PaymentVerificationContent() {
       const info = appointmentInfo(r.appointmentId);
       return [info.name, info.phone, info.number, METHOD_LABEL[r.method], r.transactionRef ?? "—", r.amountPkr.toLocaleString(), r.status, r.createdAt?.slice(0, 10) ?? "—"];
     });
-    const { doc, headerHeight, renderTable, drawFooter } = await createLetterheadPdf(doctor, { title: "Payments" });
-    renderTable({ startY: headerHeight + 6, headers: header, rows: bodyRows, badgeColumns: ["Status"] });
+
+    // Payment Method Summary — same breakdown shape as the Reports PDF export.
+    const methodGroups = new Map<PaymentMethod, { count: number; paid: number; pending: number }>();
+    for (const r of filtered) {
+      const entry = methodGroups.get(r.method) ?? { count: 0, paid: 0, pending: 0 };
+      entry.count += 1;
+      if (r.status === "verified") entry.paid += r.amountPkr;
+      else if (r.status === "pending" || r.status === "submitted") entry.pending += r.amountPkr;
+      methodGroups.set(r.method, entry);
+    }
+    const summaryRows = [...methodGroups.entries()].map(([method, v]) => [
+      METHOD_LABEL[method],
+      v.count,
+      v.paid.toLocaleString(),
+      v.pending.toLocaleString(),
+      (v.paid + v.pending).toLocaleString(),
+    ]);
+    const summaryTotal = [...methodGroups.values()].reduce(
+      (acc, v) => ({ count: acc.count + v.count, paid: acc.paid + v.paid, pending: acc.pending + v.pending }),
+      { count: 0, paid: 0, pending: 0 }
+    );
+    summaryRows.push([
+      "Total",
+      summaryTotal.count,
+      summaryTotal.paid.toLocaleString(),
+      summaryTotal.pending.toLocaleString(),
+      (summaryTotal.paid + summaryTotal.pending).toLocaleString(),
+    ]);
+
+    const { doc, headerHeight, renderTable, drawSectionTitle, drawFooter } = await createLetterheadPdf(doctor, { title: "Payments" });
+    const tableEndY = renderTable({ startY: headerHeight + 6, headers: header, rows: bodyRows, badgeColumns: ["Status"] });
+    const summaryTitleY = drawSectionTitle("Payment Method Summary", tableEndY + 10);
+    renderTable({
+      startY: summaryTitleY,
+      headers: ["Payment Method", "Transactions", "Paid Amount (PKR)", "Pending Amount (PKR)", "Total Amount (PKR)"],
+      rows: summaryRows,
+    });
     drawFooter();
     const label = dateFrom && dateTo ? `${dateFrom}_to_${dateTo}` : "all";
     doc.save(`payments_${label}.pdf`);

@@ -8,8 +8,9 @@ export interface PdfDoctorInfo {
 }
 
 export const PDF_COLORS = {
-  navy: [10, 36, 71] as [number, number, number],
-  navyLight: [24, 60, 105] as [number, number, number],
+  // Matches the Reports PDF export's teal brand color (app primary), not a literal navy.
+  navy: [19, 78, 74] as [number, number, number],
+  navyLight: [15, 118, 110] as [number, number, number],
   textDark: [24, 28, 38] as [number, number, number],
   textMuted: [110, 114, 130] as [number, number, number],
   border: [226, 230, 238] as [number, number, number],
@@ -129,7 +130,9 @@ export async function createLetterheadPdf(
       styles: { fontSize, cellPadding: 2.5, textColor: textDark, lineColor: border, lineWidth: 0.1 },
       headStyles: { fillColor: navy, textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: rowAlt },
-      margin: { left: margin, right: margin, top: HEADER_H + 4 },
+      // Only page 1 gets the top margin reserved for the letterhead header
+      // (drawn once, see didDrawPage below) — later pages start near the top.
+      margin: { left: margin, right: margin, top: 16 },
       didParseCell: (data) => {
         if (data.section === "body" && badgeCols.has(data.column.index)) {
           data.cell.text = [""];
@@ -154,7 +157,10 @@ export async function createLetterheadPdf(
         doc.text(raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: "center" });
         doc.setTextColor(...textDark);
       },
-      didDrawPage: drawHeader,
+      // Letterhead header only on the first page, matching the Reports PDF export.
+      didDrawPage: () => {
+        if (doc.getCurrentPageInfo().pageNumber === 1) drawHeader();
+      },
     });
 
     return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
