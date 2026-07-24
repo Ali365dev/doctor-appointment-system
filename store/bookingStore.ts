@@ -5,6 +5,12 @@ import { persist } from "zustand/middleware";
 import type { WeeklySchedule } from "@/types/clinic";
 import type { ProcedureSnapshot } from "@/types/appointment";
 
+
+
+
+
+
+
 export interface SelectedClinic {
   id: string;
   name: string;
