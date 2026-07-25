@@ -1,91 +1,88 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import type { ConfirmationResult } from "firebase/auth";
-import { sendPhoneOtp, resetRecaptcha } from "@/services/firebase/phone-auth";
 
-const RECAPTCHA_CONTAINER_ID = "recaptcha-container";
+const RESEND_COOLDOWN_SECONDS = 60;
 const MIN_PASSWORD_LENGTH = 8;
 
-type Step = "phone" | "otp" | "newPassword";
+type Step = "email" | "reset";
 
-interface ForgotPasswordFormProps {
-  initialPhone?: string;
-  redirectTo?: string;
-  onBack: () => void;
-}
-
-export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }: ForgotPasswordFormProps) {
+export default function ForgotPasswordForm() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState(initialPhone ?? "");
-  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<Step>("email");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
-  const [idToken, setIdToken] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => setCooldown((prev) => Math.max(0, prev - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const inputCls =
     "w-full pl-12 pr-4 py-3 rounded-lg border border-outline-variant bg-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-body-md";
 
-  const handleSendOtp = async () => {
-    if (!phone.trim().startsWith("+")) {
-      toast.error("Enter your phone number in international format, e.g. +923001234567");
+  const handleSendCode = async () => {
+    if (!email.trim()) {
+      toast.error("Enter your email address.");
       return;
     }
     setLoading(true);
     try {
-      const checkRes = await fetch("/api/auth/forgot-password", {
+      await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ email: email.trim() }),
       });
-      const checkData = await checkRes.json();
-
-      if (!checkData.exists) {
-        toast.error("No account found for this phone number.");
-        return;
-      }
-
-      resetRecaptcha();
-      const result = await sendPhoneOtp(phone.trim(), RECAPTCHA_CONTAINER_ID);
-      setConfirmation(result);
-      setStep("otp");
-      toast.success("OTP sent via SMS.");
+      // Always proceed — the endpoint never reveals whether the email exists.
+      toast.success("If an account exists for that email, a code has been sent.");
+      setStep("reset");
+      setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch {
-      resetRecaptcha();
-      toast.error("Could not send OTP. Check the number and try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!confirmation) return;
-    if (otp.trim().length !== 6) {
-      toast.error("Enter the 6-digit OTP sent to your phone.");
-      return;
-    }
-
-    setLoading(true);
+  const handleResend = async () => {
+    if (cooldown > 0) return;
+    setResending(true);
     try {
-      const credential = await confirmation.confirm(otp.trim());
-      const token = await credential.user.getIdToken();
-      setIdToken(token);
-      setStep("newPassword");
+      const res = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), purpose: "password_reset" }),
+      });
+      if (res.ok) {
+        toast.success("A new code has been sent.");
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Could not resend code.");
+      }
     } catch {
-      toast.error("Invalid or expired OTP. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
-      setLoading(false);
+      setResending(false);
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (code.trim().length !== 6) {
+      toast.error("Enter the 6-digit code sent to your email.");
+      return;
+    }
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
@@ -100,7 +97,7 @@ export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }:
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, newPassword }),
+        body: JSON.stringify({ email: email.trim(), code: code.trim(), newPassword, confirmPassword }),
       });
       const data = await res.json();
 
@@ -110,7 +107,7 @@ export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }:
       }
 
       toast.success("Password updated. You're logged in!");
-      router.push(redirectTo ?? (data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard"));
+      router.push(data.user.role === "doctor" ? "/admin/dashboard" : "/patient/dashboard");
       router.refresh();
     } catch {
       toast.error("Network error. Please try again.");
@@ -119,30 +116,64 @@ export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }:
     }
   };
 
-  if (step === "newPassword") {
+  if (step === "reset") {
     return (
       <form className="space-y-4" onSubmit={handleResetPassword}>
-        <p className="text-body-md text-text-secondary">Set a new password for your account.</p>
+        <p className="text-body-md text-text-secondary">
+          Enter the code sent to <span className="font-semibold text-text">{email}</span> and choose a new password.
+        </p>
+
+        <div className="space-y-2">
+          <label className="block text-label-lg font-semibold text-text-secondary px-1">Verification Code</label>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Enter 6-digit code"
+            maxLength={6}
+            className={`${inputCls.replace("pl-12", "pl-4")} tracking-[0.5em]`}
+          />
+        </div>
+
         <div className="space-y-2">
           <label className="block text-label-lg font-semibold text-text-secondary px-1">New Password</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="••••••••"
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="••••••••"
+              className={`${inputCls.replace("pl-12", "pl-4")} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword((prev) => !prev)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-text"
+            >
+              <span className="material-symbols-outlined">{showNewPassword ? "visibility_off" : "visibility"}</span>
+            </button>
+          </div>
         </div>
         <div className="space-y-2">
           <label className="block text-label-lg font-semibold text-text-secondary px-1">Confirm Password</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="••••••••"
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              className={`${inputCls.replace("pl-12", "pl-4")} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-text"
+            >
+              <span className="material-symbols-outlined">{showConfirmPassword ? "visibility_off" : "visibility"}</span>
+            </button>
+          </div>
         </div>
+
         <button
           type="submit"
           disabled={loading}
@@ -150,34 +181,14 @@ export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }:
         >
           {loading ? "Saving…" : "Reset Password"}
         </button>
-      </form>
-    );
-  }
 
-  if (step === "otp") {
-    return (
-      <form className="space-y-4" onSubmit={handleVerifyOtp}>
-        <p className="text-body-md text-text-secondary">
-          Enter the 6-digit code sent to <span className="font-semibold text-text">{phone}</span>
-        </p>
-        <div className="space-y-2">
-          <label className="block text-label-lg font-semibold text-text-secondary px-1">Verification Code</label>
-          <input
-            type="text"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            placeholder="Enter 6-digit OTP"
-            maxLength={6}
-            className={`${inputCls} tracking-[0.5em]`}
-          />
-        </div>
-        <div id={RECAPTCHA_CONTAINER_ID} />
         <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-primary hover:bg-primary-container text-on-primary text-label-lg font-semibold rounded-xl transition-all active:scale-[0.98] shadow-md shadow-primary/20 disabled:opacity-60"
+          type="button"
+          onClick={handleResend}
+          disabled={resending || cooldown > 0}
+          className="w-full text-label-lg font-semibold text-primary hover:underline transition-all disabled:opacity-60 disabled:no-underline"
         >
-          {loading ? "Verifying…" : "Verify Code"}
+          {cooldown > 0 ? `Resend Code (${cooldown}s)` : resending ? "Sending…" : "Resend Code"}
         </button>
       </form>
     );
@@ -186,33 +197,25 @@ export default function ForgotPasswordForm({ initialPhone, redirectTo, onBack }:
   return (
     <div className="space-y-4">
       <p className="text-body-md text-text-secondary">
-        Enter your phone number and we&apos;ll send you a verification code to reset your password.
+        Enter your email address and we&apos;ll send you a verification code to reset your password.
       </p>
       <div className="space-y-2">
-        <label className="block text-label-lg font-semibold text-text-secondary px-1">Phone Number</label>
+        <label className="block text-label-lg font-semibold text-text-secondary px-1">Email Address</label>
         <input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+923001234567"
-          className={inputCls}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className={inputCls.replace("pl-12", "pl-4")}
         />
       </div>
-      <div id={RECAPTCHA_CONTAINER_ID} />
       <button
         type="button"
-        onClick={handleSendOtp}
+        onClick={handleSendCode}
         disabled={loading}
         className="w-full py-3 bg-primary hover:bg-primary-container text-on-primary text-label-lg font-semibold rounded-xl transition-all active:scale-[0.98] shadow-md shadow-primary/20 disabled:opacity-60"
       >
-        {loading ? "Sending…" : "Send OTP"}
-      </button>
-      <button
-        type="button"
-        onClick={onBack}
-        className="w-full text-label-lg font-semibold text-text-secondary hover:underline transition-all"
-      >
-        Back to login
+        {loading ? "Sending…" : "Send Code"}
       </button>
     </div>
   );

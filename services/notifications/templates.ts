@@ -1,4 +1,5 @@
 import { APP_NAME } from "@/lib/constants";
+import { OTP_EXPIRY_MINUTES } from "@/lib/otp";
 
 const NAVY = "#0A2447";
 const NAVY_LIGHT = "#183C69";
@@ -185,6 +186,74 @@ export function welcomeEmail(params: WelcomeEmailParams): { subject: string; tex
     rows: [],
     ctaLabel: "Book an Appointment",
     ctaUrl: appUrl("/appointment"),
+  });
+  return { subject, text, html };
+}
+
+export interface EmailVerificationOtpParams {
+  name: string;
+  code: string;
+}
+
+export function emailVerificationOtpEmail(params: EmailVerificationOtpParams): { subject: string; text: string; html: string } {
+  const subject = "Verify your email";
+  const text = `Hi ${params.name}, your email verification code is ${params.code}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`;
+  const html = renderEmailLayout({
+    heading: "Verify your email",
+    intro: `Hi ${params.name}, use the code below to verify your email address. This code expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+    rows: [{ label: "Verification Code", value: params.code }],
+    note: "If you didn't request this, you can safely ignore this email.",
+  });
+  return { subject, text, html };
+}
+
+export interface PasswordResetOtpParams {
+  name: string;
+  code: string;
+}
+
+export function passwordResetOtpEmail(params: PasswordResetOtpParams): { subject: string; text: string; html: string } {
+  const subject = "Reset your password";
+  const text = `Hi ${params.name}, your password reset code is ${params.code}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`;
+  const html = renderEmailLayout({
+    heading: "Reset your password",
+    intro: `Hi ${params.name}, use the code below to reset your password. This code expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+    rows: [{ label: "Reset Code", value: params.code }],
+    note: "If you didn't request this, you can safely ignore this email — your password will remain unchanged.",
+  });
+  return { subject, text, html };
+}
+
+export interface GoogleAccountPasswordParams {
+  name: string;
+  generatedPassword: string;
+}
+
+export function googleAccountPasswordEmail(params: GoogleAccountPasswordParams): { subject: string; text: string; html: string } {
+  const subject = "Welcome! Your Account Password";
+  const text = `Hi ${params.name}, welcome to ${APP_NAME}! Your account was created using Google Sign-In. We've also generated a password so you can log in with Email & Password in addition to Google: ${params.generatedPassword}. We recommend changing this password from Account Settings after logging in.`;
+  const html = renderEmailLayout({
+    heading: `Welcome, ${params.name}!`,
+    intro: `Your ${APP_NAME} account was created using Google Sign-In. We've generated a password for your account so you can also log in using Email & Password, in addition to Google Sign-In.`,
+    rows: [{ label: "Your Password", value: params.generatedPassword }],
+    ctaLabel: "Go to Account Settings",
+    ctaUrl: appUrl("/patient/settings"),
+    note: "For your security, we recommend changing this password from Account Settings after logging in.",
+  });
+  return { subject, text, html };
+}
+
+export interface PasswordChangedParams {
+  name: string;
+}
+
+export function passwordChangedEmail(params: PasswordChangedParams): { subject: string; text: string; html: string } {
+  const subject = "Your password was changed";
+  const text = `Hi ${params.name}, this confirms your ${APP_NAME} account password was just changed. If you didn't make this change, please contact support immediately.`;
+  const html = renderEmailLayout({
+    heading: "Password changed",
+    intro: `Hi ${params.name}, this confirms your account password was just changed. If you didn't make this change, please contact support immediately.`,
+    rows: [],
   });
   return { subject, text, html };
 }

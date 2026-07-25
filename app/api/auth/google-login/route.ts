@@ -1,13 +1,34 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/services/firebase/admin";
-import { findUserByFirebaseUid, createGooglePatient, touchLastLogin } from "@/services/mongodb/repositories/user.repository";
+import {
+  findUserByFirebaseUid,
+  findUserByEmail,
+  createGoogleUser,
+  linkGoogleToUser,
+  markEmailVerified,
+  markTemporaryPasswordSent,
+  touchLastLogin,
+} from "@/services/mongodb/repositories/user.repository";
 import { signSession, sessionCookieOptions } from "@/lib/session";
+import { generateTemporaryPassword, hashPassword } from "@/lib/password";
 import { sendNotification } from "@/services/notifications";
-import { welcomeEmail } from "@/services/notifications/templates";
+import { welcomeEmail, googleAccountPasswordEmail } from "@/services/notifications/templates";
+import { enforceRateLimit, rateLimitKey, getRequestIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const rate = await enforceRateLimit(rateLimitKey("google-login", "ip", getRequestIp(req)), {
+      limit: 30,
+      windowSeconds: 15 * 60,
+    });
+    if (!rate.ok) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+      );
+    }
+
     const { idToken } = await req.json();
 
     if (!idToken || typeof idToken !== "string") {
@@ -21,6 +42,7 @@ export async function POST(req: NextRequest) {
     if (!email) {
       return NextResponse.json({ error: "No email on this Google account" }, { status: 400 });
     }
+    const normalizedEmail = email.trim().toLowerCase();
 
     // Google Login can only ever resolve to a patient — doctor accounts are
     // seeded directly in MongoDB and are never created or matched here.
@@ -28,15 +50,47 @@ export async function POST(req: NextRequest) {
     let isNew = false;
 
     if (!user) {
-      user = await createGooglePatient({
-        firebaseUid,
-        email,
-        name: decoded.name ?? "Google User",
-        avatar: decoded.picture,
-      });
-      isNew = true;
-      // Best-effort — a missing SMTP config must never block signup.
-      void sendNotification({ email: user.email }, welcomeEmail({ patientName: user.name }));
+      // Account linking: one account per email — if an email/password account
+      // already exists with this (Google-confirmed) email, link Google to it
+      // instead of creating a duplicate (email is a unique index).
+      const existingByEmail = await findUserByEmail(normalizedEmail);
+
+      if (existingByEmail) {
+        user = await linkGoogleToUser(String(existingByEmail._id), firebaseUid);
+        if (user && !user.emailVerified) {
+          await markEmailVerified(String(user._id));
+          user.emailVerified = true;
+        }
+      } else {
+        const generatedPassword = generateTemporaryPassword();
+        const passwordHash = await hashPassword(generatedPassword);
+        user = await createGoogleUser({
+          firebaseUid,
+          email: normalizedEmail,
+          name: decoded.name ?? "Google User",
+          avatar: decoded.picture,
+          passwordHash,
+        });
+        isNew = true;
+
+        // Best-effort — a missing SMTP config must never block signup. Only
+        // flip temporaryPasswordSent once the send actually succeeds, so this
+        // email is never sent more than once.
+        void (async () => {
+          const result = await sendNotification(
+            { email: user!.email },
+            googleAccountPasswordEmail({ name: user!.name, generatedPassword })
+          );
+          if (result.sent) {
+            await markTemporaryPasswordSent(String(user!._id));
+          }
+        })();
+        void sendNotification({ email: user.email }, welcomeEmail({ patientName: user.name }));
+      }
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: "Could not resolve account" }, { status: 500 });
     }
 
     if (!user.isActive) {
@@ -47,9 +101,8 @@ export async function POST(req: NextRequest) {
 
     const token = await signSession({
       userId: String(user._id),
-      firebaseUid: user.firebaseUid,
-      phone: user.phone ?? "",
       role: "patient",
+      email: user.email,
     });
 
     const response = NextResponse.json({

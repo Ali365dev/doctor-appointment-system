@@ -8,9 +8,8 @@ export type UserRole = "doctor" | "patient";
 
 export interface SessionPayload {
   userId: string;
-  firebaseUid: string;
-  phone: string;
   role: UserRole;
+  email: string;
   [key: string]: unknown;
 }
 

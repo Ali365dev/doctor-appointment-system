@@ -5,6 +5,7 @@ import { useState, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { uploadWithProgress } from "@/lib/uploadWithProgress";
+import ChangePasswordSection from "./ChangePasswordSection";
 
 export interface ProfileData {
   name: string;
@@ -357,6 +358,9 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
           {field("medications", "Current Medications", "text", "e.g. Lisinopril 10mg")}
         </div>
       </section>
+
+      {/* Change Password */}
+      <ChangePasswordSection />
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-sm pb-xl">

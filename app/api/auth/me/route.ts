@@ -10,14 +10,18 @@ export async function GET() {
   }
 
   const user = await findUserById(session.userId);
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
   return NextResponse.json({
     user: {
-      id: session.userId,
-      phone: session.phone,
-      role: session.role,
-      name: user?.name ?? null,
-      avatar: user?.avatar ?? null,
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      role: user.role,
+      avatar: user.avatar ?? null,
     },
   });
 }

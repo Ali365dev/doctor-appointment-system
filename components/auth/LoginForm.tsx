@@ -1,20 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import PhoneLoginForm from "./PhoneLoginForm";
-import PasswordLoginForm from "./PasswordLoginForm";
-import ForgotPasswordForm from "./ForgotPasswordForm";
+import EmailLoginForm from "./EmailLoginForm";
 import GoogleLoginButton from "./GoogleLoginButton";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
-type Mode = "otp" | "password" | "forgot";
-
 export default function LoginForm() {
   const doctor = useDoctorProfile();
-  const [mode, setMode] = useState<Mode>("otp");
-  const [phoneHandoff, setPhoneHandoff] = useState("");
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? undefined;
 
@@ -48,50 +41,10 @@ export default function LoginForm() {
           <div className="h-px flex-1 bg-outline-variant/30" />
         </div>
 
-        {mode === "otp" && (
-          <PhoneLoginForm
-            redirectTo={redirectTo}
-            onRegistered={(phone) => {
-              setPhoneHandoff(phone);
-              setMode("password");
-            }}
-          />
-        )}
-
-        {mode === "password" && (
-          <PasswordLoginForm
-            initialPhone={phoneHandoff}
-            redirectTo={redirectTo}
-            onForgotPassword={(phone) => {
-              setPhoneHandoff(phone);
-              setMode("forgot");
-            }}
-            onUseOtpInstead={() => setMode("otp")}
-          />
-        )}
-
-        {mode === "forgot" && (
-          <ForgotPasswordForm initialPhone={phoneHandoff} redirectTo={redirectTo} onBack={() => setMode("password")} />
-        )}
-
-        {mode === "otp" && (
-          <p className="text-center text-label-md text-text-secondary">
-            Already have a password?{" "}
-            <button
-              type="button"
-              onClick={() => setMode("password")}
-              className="text-primary font-bold hover:underline"
-            >
-              Login with password
-            </button>
-          </p>
-        )}
+        <EmailLoginForm redirectTo={redirectTo} />
 
         {/* Footer */}
         <div className="pt-10 border-t border-outline-variant/30 text-center space-y-4">
-          <p className="text-body-md text-text-secondary">
-            First time here? Verifying your phone number above automatically creates your account.
-          </p>
           <div className="flex justify-center gap-4 text-label-md text-outline">
             <Link href="#" className="hover:text-text transition-colors">
               Privacy Policy

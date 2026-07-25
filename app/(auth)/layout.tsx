@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../(public)/globals.css";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 import { DoctorProfileProvider } from "@/lib/context/DoctorProfileContext";
@@ -39,6 +41,7 @@ export default async function AuthLayout({
         className={`${inter.className} min-h-screen bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden`}
       >
         <DoctorProfileProvider profile={profile}>{children}</DoctorProfileProvider>
+        <ToastContainer position="bottom-right" autoClose={4000} theme="colored" />
       </body>
     </html>
   );

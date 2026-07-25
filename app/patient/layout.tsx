@@ -45,7 +45,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
               user={
                 user
                   ? { name: user.name, phone: user.phone ?? undefined, avatar: user.avatar ?? undefined }
-                  : { name: "Patient", phone: session.phone }
+                  : { name: "Patient", phone: undefined }
               }
             />
             <div className="flex-1 pb-16 md:pb-0">

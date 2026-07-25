@@ -3,24 +3,21 @@
 // "role: doctor" user document gets created.
 //
 // Usage (Node 20.6+, needs --env-file to load MONGODB_URI):
-//   node --env-file=.env.local scripts/seed-doctor.mjs <firebaseUid> <phone> <name>
+//   node --env-file=.env.local scripts/seed-doctor.mjs <email> <password> <phone> <name>
 //
-// <firebaseUid> is the Firebase Auth UID for the doctor's phone number.
-// Sign in once via the normal /login phone+OTP flow with the doctor's
-// number (it will be created as a "patient" by default), then either:
-//   a) copy the uid from the Firebase Console > Authentication > Users, or
-//   b) run this script first to create the doctor doc, then have the
-//      doctor log in — verify-otp will find the existing doc by
-//      firebaseUid and log them in with role "doctor" instead of
-//      creating a new patient.
+// The doctor logs in via the normal /login email+password flow using the
+// credentials given here.
 
 import { MongoClient } from "mongodb";
+import bcrypt from "bcryptjs";
 
-const [, , firebaseUid, phone, ...nameParts] = process.argv;
+const [, , emailArg, passwordArg, phone, ...nameParts] = process.argv;
+const email = emailArg?.trim().toLowerCase();
+const password = passwordArg;
 const name = nameParts.join(" ");
 
-if (!firebaseUid || !phone || !name) {
-  console.error("Usage: node --env-file=.env.local scripts/seed-doctor.mjs <firebaseUid> <phone> <name>");
+if (!email || !password || !phone || !name) {
+  console.error("Usage: node --env-file=.env.local scripts/seed-doctor.mjs <email> <password> <phone> <name>");
   process.exit(1);
 }
 
@@ -29,6 +26,9 @@ if (!uri) {
   console.error("Missing MONGODB_URI environment variable.");
   process.exit(1);
 }
+
+const SALT_ROUNDS = 12;
+const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
 const client = new MongoClient(uri);
 
@@ -39,12 +39,15 @@ try {
 
   const now = new Date();
   const result = await users.findOneAndUpdate(
-    { firebaseUid },
+    { email },
     {
       $set: {
-        firebaseUid,
+        email,
         phone,
         name,
+        passwordHash,
+        mustChangePassword: false,
+        emailVerified: true,
         role: "doctor",
         isActive: true,
         updatedAt: now,

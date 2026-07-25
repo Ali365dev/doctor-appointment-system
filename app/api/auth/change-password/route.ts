@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/getSession";
 import { findUserById, updatePasswordAndClearMustChange } from "@/services/mongodb/repositories/user.repository";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { sendNotification } from "@/services/notifications";
+import { passwordChangedEmail } from "@/services/notifications/templates";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -37,6 +39,9 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await hashPassword(newPassword);
     await updatePasswordAndClearMustChange(session.userId, passwordHash);
+    if (user.email) {
+      void sendNotification({ email: user.email }, passwordChangedEmail({ name: user.name }));
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
