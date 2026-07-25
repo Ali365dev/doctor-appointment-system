@@ -65,6 +65,7 @@ function QrUploadField({
 const tabs = [
   { id: "payment", label: "Payment Settings", icon: "payments" },
   { id: "notifications", label: "Notifications", icon: "notifications" },
+  { id: "digest", label: "Daily Digest", icon: "mail" },
   { id: "security", label: "Security", icon: "lock" },
 ];
 
@@ -119,6 +120,56 @@ export default function SettingsContent() {
       toast.error("Network error while updating password");
     } finally {
       setChangingPassword(false);
+    }
+  }
+
+  const [digestLoading, setDigestLoading] = useState(true);
+  const [digestEnabled, setDigestEnabled] = useState(true);
+  const [digestSendTime, setDigestSendTime] = useState("08:00");
+  const [digestEmail, setDigestEmail] = useState("");
+  const [savingDigest, setSavingDigest] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/digest-settings");
+        const data = await res.json();
+        if (res.ok) {
+          setDigestEnabled(data.settings.enabled);
+          setDigestSendTime(data.settings.sendTime);
+          setDigestEmail(data.settings.email ?? "");
+        } else {
+          toast.error(data.error ?? "Could not load digest settings");
+        }
+      } catch {
+        toast.error("Network error loading digest settings");
+      } finally {
+        setDigestLoading(false);
+      }
+    })();
+  }, []);
+
+  async function handleSaveDigest(patch: { enabled?: boolean; sendTime?: string; email?: string | null }) {
+    setSavingDigest(true);
+    try {
+      const res = await fetch("/api/digest-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not save digest settings");
+        return;
+      }
+      setDigestEnabled(data.settings.enabled);
+      setDigestSendTime(data.settings.sendTime);
+      setDigestEmail(data.settings.email ?? "");
+      toast.success("Digest settings saved");
+    } catch {
+      toast.error("Network error saving digest settings");
+    } finally {
+      setSavingDigest(false);
     }
   }
 
@@ -440,6 +491,85 @@ export default function SettingsContent() {
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Tab: Daily Digest */}
+        {activeTab === "digest" && (
+          <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
+            <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
+              <span className="material-symbols-outlined text-primary">mail</span> Daily Appointment Digest
+            </h3>
+            {digestLoading ? (
+              <div className="text-center text-on-surface-variant py-lg">
+                <span className="material-symbols-outlined animate-spin align-middle mr-xs">progress_activity</span>
+                Loading digest settings…
+              </div>
+            ) : (
+              <div className="space-y-md max-w-md">
+                <p className="text-caption text-on-surface-variant">
+                  Sends today&apos;s and tomorrow&apos;s full appointment lists to the admin email once a day.
+                </p>
+
+                <div className="flex items-center justify-between p-md bg-surface-container-lowest rounded-xl border border-outline-variant">
+                  <div>
+                    <p className="font-semibold text-on-surface">Enable Daily Digest</p>
+                    <p className="text-caption text-on-surface-variant">Turn the daily email on or off.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      checked={digestEnabled}
+                      onChange={(e) => handleSaveDigest({ enabled: e.target.checked })}
+                      disabled={savingDigest}
+                      type="checkbox"
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-label-md text-on-surface-variant mb-xs">Send Time (Asia/Karachi)</label>
+                  <div className="flex items-center gap-sm">
+                    <input
+                      type="time"
+                      value={digestSendTime}
+                      onChange={(e) => setDigestSendTime(e.target.value)}
+                      className="bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                    />
+                    <button
+                      onClick={() => handleSaveDigest({ sendTime: digestSendTime })}
+                      disabled={savingDigest}
+                      className="bg-primary text-on-primary px-md py-sm rounded-xl font-bold hover:brightness-110 transition-all shadow-sm disabled:opacity-60"
+                    >
+                      {savingDigest ? "Saving…" : "Save Time"}
+                    </button>
+                  </div>
+                  <p className="text-caption text-outline mt-xs">Takes effect on the next check, usually within 15 minutes.</p>
+                </div>
+
+                <div>
+                  <label className="block text-label-md text-on-surface-variant mb-xs">Recipient Email</label>
+                  <div className="flex items-center gap-sm">
+                    <input
+                      type="email"
+                      value={digestEmail}
+                      onChange={(e) => setDigestEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-on-surface"
+                    />
+                    <button
+                      onClick={() => handleSaveDigest({ email: digestEmail.trim() || null })}
+                      disabled={savingDigest}
+                      className="bg-primary text-on-primary px-md py-sm rounded-xl font-bold hover:brightness-110 transition-all shadow-sm disabled:opacity-60"
+                    >
+                      {savingDigest ? "Saving…" : "Save Email"}
+                    </button>
+                  </div>
+                  <p className="text-caption text-outline mt-xs">Leave blank to use the server default recipient.</p>
+                </div>
+              </div>
+            )}
           </section>
         )}
 

@@ -1,7 +1,7 @@
 import { DAYS_OF_WEEK, type DayOfWeek, type WeeklySchedule } from "@/types/clinic";
 
 /** Converts "HH:MM AM/PM" to minutes since midnight. */
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   const [timePart, period] = time.trim().split(" ");
   const [h, m] = timePart.split(":").map(Number);
   let hours = h % 12;

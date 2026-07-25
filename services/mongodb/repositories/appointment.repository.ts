@@ -4,6 +4,7 @@ import "../models/Clinic"; // registers the "Clinic" model so populate("clinicId
 import "../models/Payment"; // registers the "Payment" model so populate("paymentId") below can resolve it
 import type { AppointmentStatus, AppointmentType, PatientSnapshot, VisitType } from "@/types/appointment";
 import type { PaymentMethod } from "@/types/payment";
+import { timeToMinutes } from "@/lib/slots";
 
 const PAYMENT_POPULATE_FIELDS =
   "method status amountPkr transactionRef receiptUrl receiptUploadedAt rejectionReason verifiedAt refundedAt";
@@ -119,6 +120,16 @@ export async function linkAppointmentPayment(
 ): Promise<void> {
   await connectDB();
   await Appointment.updateOne({ _id: appointmentId }, { $set: { paymentId } });
+}
+
+export async function findAppointmentsByDate(date: string): Promise<AppointmentDoc[]> {
+  await connectDB();
+  const rows = await Appointment.find({ date, status: { $nin: ["cancelled", "rejected"] } })
+    .populate("clinicId", "name")
+    .lean<AppointmentDoc[]>();
+  // "HH:MM AM/PM" doesn't sort correctly as a string (e.g. "02:00 PM" < "09:00 AM"
+  // lexicographically), so sort chronologically in application code instead.
+  return rows.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 }
 
 export async function countAppointmentsForDate(date: string): Promise<number> {
