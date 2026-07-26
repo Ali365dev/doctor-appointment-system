@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/getSession";
 import { uploadPrepGuidePdf, deleteUploadedAsset } from "@/services/cloudinary";
 import { getCmsProfile, updateCmsProfile } from "@/services/mongodb/repositories/cms.repository";
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     const previous = await getCmsProfile();
     const uploaded = await uploadPrepGuidePdf(file);
     const cms = await updateCmsProfile({ prepGuidePdfUrl: uploaded.secureUrl, prepGuidePdfPublicId: uploaded.publicId });
+    revalidatePath("/", "layout");
 
     if (previous.prepGuidePdfPublicId) {
       await deleteUploadedAsset(previous.prepGuidePdfPublicId, "raw");

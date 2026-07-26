@@ -1,12 +1,15 @@
 import { APP_NAME } from "@/lib/constants";
 import { OTP_EXPIRY_MINUTES } from "@/lib/otp";
 
-const NAVY = "#0A2447";
-const NAVY_LIGHT = "#183C69";
-const TEXT_DARK = "#181C26";
+// Matches the site's "Clinical Precision" theme (app/(public)/globals.css --color-primary etc.)
+// and the Reports PDF export's brand color (lib/pdf/letterhead.ts PDF_COLORS).
+const NAVY = "#0F766E";
+const NAVY_LIGHT = "#0D9488";
+const TEXT_DARK = "#1A1C1E";
 const TEXT_MUTED = "#6E7282";
 const BORDER = "#E2E6EE";
 const ROW_ALT = "#F4F7FA";
+const PAGE_BG = "#F7F9FB";
 
 export function appUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -57,8 +60,8 @@ export function renderEmailLayout({ heading, intro, rows, ctaLabel, ctaUrl, note
 
   return `<!doctype html>
 <html>
-  <body style="margin:0;padding:0;background:#EEF1F6;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF1F6;padding:24px 0;">
+  <body style="margin:0;padding:0;background:${PAGE_BG};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE_BG};padding:24px 0;">
       <tr>
         <td align="center">
           <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
@@ -318,8 +321,8 @@ export function dailyAppointmentDigestEmail(params: DailyAppointmentDigestParams
     : "";
   const html = `<!doctype html>
 <html>
-  <body style="margin:0;padding:0;background:#EEF1F6;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF1F6;padding:24px 0;">
+  <body style="margin:0;padding:0;background:${PAGE_BG};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE_BG};padding:24px 0;">
       <tr>
         <td align="center">
           <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:640px;width:100%;">

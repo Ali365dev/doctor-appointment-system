@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/getSession";
 import { uploadCareGalleryImage, deleteUploadedAsset } from "@/services/cloudinary";
 import { getCmsProfile, updateCmsProfile } from "@/services/mongodb/repositories/cms.repository";
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cms = await updateCmsProfile({ careGalleryImages: images });
+    revalidatePath("/", "layout");
 
     if (oldPublicId) {
       await deleteUploadedAsset(oldPublicId);

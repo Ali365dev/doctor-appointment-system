@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/getSession";
 import { validateCmsBody } from "@/lib/validators";
 import { getCmsProfile, updateCmsProfile } from "@/services/mongodb/repositories/cms.repository";
@@ -27,6 +28,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const cms = await updateCmsProfile(body);
+    revalidatePath("/", "layout");
     return NextResponse.json({ cms });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal error";

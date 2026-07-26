@@ -40,6 +40,11 @@ export async function POST(req: NextRequest) {
 
     const session = await getSession();
 
+    const patient = {
+      ...body.patient,
+      email: body.patient?.email || (session?.role === "patient" ? session.email : undefined),
+    };
+
     const appointment = await createAppointment({
       patientId: session?.role === "patient" ? session.userId : undefined,
       clinicId: body.clinicId,
@@ -47,7 +52,7 @@ export async function POST(req: NextRequest) {
       date: body.date,
       time: body.time,
       reason: body.reason,
-      patient: body.patient,
+      patient,
       paymentMethod: body.paymentMethod,
       appointmentType: body.appointmentType,
       procedureId: body.procedureId,
