@@ -124,6 +124,7 @@ export async function touchLastLogin(userId: string): Promise<void> {
 export interface UpdateProfileInput {
   name?: string;
   email?: string;
+  phone?: string;
   gender?: "Male" | "Female" | "Other";
   dob?: string;
   bloodType?: string;

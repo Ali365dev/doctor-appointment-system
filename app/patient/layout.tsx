@@ -67,21 +67,26 @@ export default async function PatientLayout({ children }: { children: React.Reac
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 z-50 flex justify-around items-center py-sm">
-          <a href="/patient/dashboard" className="flex flex-col items-center text-primary">
-            <span className="material-symbols-outlined">dashboard</span>
-            <span className="text-caption">Home</span>
+        <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 z-50 flex justify-around items-center py-sm px-1">
+          <a href="/patient/dashboard" className="flex flex-col items-center text-primary min-w-0">
+            <span className="material-symbols-outlined text-[20px]">dashboard</span>
+            <span className="text-[10px]">Home</span>
           </a>
-          <a href="/patient/appointments" className="flex flex-col items-center text-on-surface-variant">
-            <span className="material-symbols-outlined">calendar_month</span>
-            <span className="text-caption">Appts</span>
+          <a href="/patient/appointments" className="flex flex-col items-center text-on-surface-variant min-w-0">
+            <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span className="text-[10px]">Appts</span>
           </a>
-          <a href="/book-appointment/step-1" className="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center -mt-8 shadow-lg border-4 border-surface">
-            <span className="material-symbols-outlined">add</span>
+          <a href="/patient/procedures" className="flex flex-col items-center text-on-surface-variant min-w-0">
+            <span className="material-symbols-outlined text-[20px]">medical_services</span>
+            <span className="text-[10px]">Procedures</span>
           </a>
-          <a href="/patient/profile" className="flex flex-col items-center text-on-surface-variant">
-            <span className="material-symbols-outlined">person</span>
-            <span className="text-caption">Profile</span>
+          <a href="/patient/medical-records" className="flex flex-col items-center text-on-surface-variant min-w-0">
+            <span className="material-symbols-outlined text-[20px]">folder_shared</span>
+            <span className="text-[10px]">Records</span>
+          </a>
+          <a href="/patient/profile" className="flex flex-col items-center text-on-surface-variant min-w-0">
+            <span className="material-symbols-outlined text-[20px]">person</span>
+            <span className="text-[10px]">Profile</span>
           </a>
         </nav>
         </DoctorProfileProvider>

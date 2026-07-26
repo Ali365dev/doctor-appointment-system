@@ -55,6 +55,9 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
     if (data.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
       newErrors.email = "Enter a valid email address.";
     }
+    if (data.phone.trim() && !/^\+?[0-9]{7,15}$/.test(data.phone.trim())) {
+      newErrors.phone = "Enter a valid phone number.";
+    }
     return newErrors;
   }
 
@@ -73,6 +76,7 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
         body: JSON.stringify({
           name: data.name,
           email: data.email || undefined,
+          phone: data.phone || undefined,
           gender: data.gender,
           dob: data.dob || undefined,
           bloodType: data.bloodType || undefined,
@@ -292,7 +296,7 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
         <div className="p-md grid grid-cols-1 md:grid-cols-2 gap-md">
           {field("name", "Full Name", "text", "Full name")}
           {field("email", "Email Address", "email", "you@email.com")}
-          {field("phone", "Phone Number", "tel", "", true)}
+          {field("phone", "Phone Number", "tel", "+92 300 0000000")}
           {field("dob", "Date of Birth", "date")}
           <div>
             <label className="block text-label-md text-on-surface-variant mb-xs">Gender</label>

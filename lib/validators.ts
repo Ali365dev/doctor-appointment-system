@@ -104,6 +104,7 @@ const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export interface UpdateProfileRequestBody {
   name?: string;
   email?: string;
+  phone?: string;
   gender?: string;
   dob?: string;
   bloodType?: string;
@@ -127,6 +128,7 @@ export function validateProfileUpdateBody(body: unknown): string | null {
 
   if (b.name !== undefined && !b.name.trim()) return "Name cannot be empty";
   if (b.email !== undefined && b.email !== "" && !isValidEmail(b.email)) return "Enter a valid email address";
+  if (b.phone !== undefined && b.phone !== "" && !isValidPhone(b.phone)) return "Enter a valid phone number";
   if (b.gender !== undefined && !isValidGender(b.gender)) return "Gender must be Male, Female, or Other";
   if (b.dob !== undefined && b.dob !== "" && !isValidDateString(b.dob)) return "Date of birth must be a valid date";
   if (b.bloodType !== undefined && b.bloodType !== "" && !BLOOD_TYPES.includes(b.bloodType)) {

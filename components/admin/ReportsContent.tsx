@@ -224,11 +224,33 @@ export default function ReportsContent() {
 
   const clinicMap = useMemo(() => new Map(clinics.map((c) => [c._id, c])), [clinics]);
   const patientMap = useMemo(() => new Map(patients.map((p) => [p.id, p])), [patients]);
+  // Fallback phone from booking history — Google-signup accounts often have
+  // no phone on the account itself, but every booking captures one.
+  const snapshotPhoneByPatientId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of appointments) {
+      if (a.patientId && a.patientSnapshot.phone && !map.has(a.patientId)) {
+        map.set(a.patientId, a.patientSnapshot.phone);
+      }
+    }
+    return map;
+  }, [appointments]);
   const patientOptions = useMemo(() => {
-    const sorted = [...patients].sort((a, b) => a.name.localeCompare(b.name));
+    const withPhone = patients.map((p) => ({
+      ...p,
+      phone: p.phone && p.phone !== "—" ? p.phone : snapshotPhoneByPatientId.get(p.id),
+    }));
+    const sorted = withPhone.sort((a, b) => a.name.localeCompare(b.name));
     const q = patientQuery.trim().toLowerCase();
-    return q ? sorted.filter((p) => p.name.toLowerCase().includes(q)) : sorted;
-  }, [patients, patientQuery]);
+    return q
+      ? sorted.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.phone?.toLowerCase().includes(q) ||
+            p.email?.toLowerCase().includes(q)
+        )
+      : sorted;
+  }, [patients, patientQuery, snapshotPhoneByPatientId]);
   const locations = useMemo(() => [...new Set(clinics.map((c) => c.city))].sort(), [clinics]);
   const procedures = useMemo(() => [...new Set(appointments.map(serviceLabel))].sort(), [appointments]);
 
@@ -1326,7 +1348,7 @@ export default function ReportsContent() {
                 setPatientDropdownOpen(true);
               }}
               onFocus={() => setPatientDropdownOpen(true)}
-              placeholder="Search patient by name…"
+              placeholder="Search by name, phone, or email…"
               className="px-sm py-xs bg-surface-container-low border border-outline-variant/30 rounded-lg text-body-md min-w-48 w-full"
             />
             {patientFilter !== "All" && (
@@ -1359,7 +1381,8 @@ export default function ReportsContent() {
                         }}
                         className="w-full text-left px-sm py-xs text-body-md hover:bg-surface-container-high transition-colors"
                       >
-                        {p.name}
+                        <span>{p.name}</span>
+                        {p.phone && p.phone !== "—" && <span className="ml-2 text-caption text-outline">{p.phone}</span>}
                       </button>
                     ))
                   )}

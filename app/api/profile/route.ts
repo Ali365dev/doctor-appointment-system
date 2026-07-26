@@ -23,9 +23,10 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ user: updated });
   } catch (err) {
-    // Duplicate email (unique index) surfaces as a Mongo E11000 error.
+    // Duplicate email/phone (unique indexes) surfaces as a Mongo E11000 error.
     if (err instanceof Error && "code" in err && (err as { code?: number }).code === 11000) {
-      return NextResponse.json({ error: "That email is already in use by another account" }, { status: 409 });
+      const field = err.message.includes("phone") ? "phone number" : "email";
+      return NextResponse.json({ error: `That ${field} is already in use by another account` }, { status: 409 });
     }
     const message = err instanceof Error ? err.message : "Internal error";
     return NextResponse.json({ error: message }, { status: 500 });
