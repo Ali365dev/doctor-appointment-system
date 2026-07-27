@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import type { AppointmentStatus, VisitType } from "@/types/appointment";
 import type { PaymentStatus } from "@/types/payment";
+import { getClinicDateString, getClinicDateLabel } from "@/lib/timezone";
 
 interface ApiAppointment {
   _id: string;
@@ -66,13 +67,18 @@ function getCalendarCells(year: number, month: number) {
   return [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 }
 
-const today = new Date();
-const todayStr = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-const todayIso = today.toISOString().slice(0, 10);
-
 export default function DashboardContent({ appointments, payments }: DashboardContentProps) {
-  const [calMonth, setCalMonth] = useState(today.getMonth());
-  const [calYear, setCalYear] = useState(today.getFullYear());
+  // Computed per render (not module scope) and pinned to the clinic's own
+  // timezone — a module-level `new Date()` would freeze "today" at whatever
+  // moment the server first loaded this module, and `.toISOString()` (UTC)
+  // disagrees with Pakistan's local date during early morning hours (PKT is
+  // UTC+5). Either would cause a server/client hydration mismatch.
+  const todayIso = getClinicDateString();
+  const todayStr = getClinicDateLabel();
+  const [todayYear, todayMonth, todayDay] = todayIso.split("-").map((n) => Number(n));
+
+  const [calMonth, setCalMonth] = useState(todayMonth - 1);
+  const [calYear, setCalYear] = useState(todayYear);
   const [selectedDate, setSelectedDate] = useState(todayIso);
 
   const cells = getCalendarCells(calYear, calMonth);
@@ -125,12 +131,10 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
     const pendingPayments = payments.filter((p) => p.status === "pending" || p.status === "submitted");
     const urgentPayments = payments.filter((p) => p.status === "submitted").length;
 
-    const now = new Date();
     const monthlyRevenue = payments
       .filter((p) => {
         if (p.status !== "verified") return false;
-        const d = new Date(p.createdAt);
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        return getClinicDateString(new Date(p.createdAt)).slice(0, 7) === todayIso.slice(0, 7);
       })
       .reduce((sum, p) => sum + p.amountPkr, 0);
 
@@ -142,7 +146,7 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
       { label: "Revenue This Month", value: `Rs. ${monthlyRevenue.toLocaleString()}`, sub: "From verified payments", icon: "trending_up", color: "bg-secondary/10 text-secondary", href: "/admin/payments" },
       { label: "Total Patients", value: totalPatients, sub: "Registered bookings", icon: "person_add", color: "bg-surface-container-high text-on-surface", href: "/admin/patients" },
     ];
-  }, [todaysSchedule, payments, appointments]);
+  }, [todaysSchedule, payments, appointments, todayIso]);
 
   // Per-day revenue for whichever month the mini calendar is currently
   // browsing — mirrors dailyAppointmentsInMonth so both charts stay in sync.
@@ -387,9 +391,9 @@ export default function DashboardContent({ appointments, payments }: DashboardCo
               ))}
               {cells.map((day, i) => {
                 const isToday =
-                  day === today.getDate() &&
-                  calMonth === today.getMonth() &&
-                  calYear === today.getFullYear();
+                  day === todayDay &&
+                  calMonth === todayMonth - 1 &&
+                  calYear === todayYear;
                 const cellIso =
                   day !== null
                     ? `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`

@@ -85,6 +85,9 @@ export function validateCreateAppointmentBody(body: unknown): string | null {
   if (!isValidGender(patient.gender)) return "Patient gender must be Male, Female, or Other";
   if (!patient.city || !patient.city.trim()) return "Patient city is required";
   if (patient.email && !isValidEmail(patient.email)) return "Patient email is invalid";
+  if (b.visitType === "online" && !patient.email) {
+    return "Email is required for online consultations so we can send your video call link";
+  }
 
   if (b.paymentMethod !== undefined && !isValidPaymentMethod(b.paymentMethod)) {
     return "paymentMethod must be one of bank, jazzcash, easypaisa, reception";

@@ -94,11 +94,13 @@ interface Confirmation {
   feeSnapshotPkr: number;
   paymentMethod?: string;
   paymentStatus?: PaymentStatus;
+  visitType?: string;
+  meetingLink?: string;
 }
 
 export default function SuccessContent() {
   const doctor = useDoctorProfile();
-  const { patientInfo, reset } = useBookingStore();
+  const { patientInfo, visitType, reset } = useBookingStore();
   const searchParams = useSearchParams();
   const paymentParam = searchParams.get("payment");
   const appointmentId = searchParams.get("appointmentId");
@@ -154,6 +156,7 @@ export default function SuccessContent() {
     : { label: method === "reception" ? "Pay at Reception" : "Processing…", icon: "schedule", className: "bg-surface-container-highest text-on-surface-variant" };
 
   const isReception = method === "reception";
+  const isOnline = (confirmation?.visitType ?? visitType) === "online";
 
   const handleDownload = async () => {
     const { default: jsPDF } = await import("jspdf");
@@ -244,8 +247,9 @@ export default function SuccessContent() {
 
     drawSection("Appointment Details", [
       ["Doctor", doctor.name],
-      ["Clinic", clinicName],
-      ["Location", [doctor.city, doctor.country].filter(Boolean).join(", ") || "—"],
+      ["Visit Type", isOnline ? "Online Consultation" : "In-Clinic Consultation"],
+      isOnline ? ["Video Call Link", confirmation?.meetingLink || "Sent by email once confirmed"] : ["Clinic", clinicName],
+      ...(isOnline ? [] : [["Location", [doctor.city, doctor.country].filter(Boolean).join(", ") || "—"] as [string, string]]),
       ["Date", formattedDate],
       ["Time", confirmation?.time ?? "—"],
       ["Procedure", confirmation?.procedureName ?? "Consultation"],
@@ -264,13 +268,20 @@ export default function SuccessContent() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...TEXT_DARK);
-    const instructions = [
-      "Please arrive 15 minutes before your appointment.",
-      "Bring previous reports and medications.",
-      "Wear a face mask if required.",
-      "Carry your original CNIC.",
-      "Late arrival may require rescheduling.",
-    ];
+    const instructions = isOnline
+      ? [
+          "Check your email for the Google Meet link once your appointment is confirmed.",
+          "Join the call a few minutes before your scheduled time.",
+          "Ensure a stable internet connection, camera, and microphone.",
+          "Keep previous reports and medications handy for reference during the call.",
+        ]
+      : [
+          "Please arrive 15 minutes before your appointment.",
+          "Bring previous reports and medications.",
+          "Wear a face mask if required.",
+          "Carry your original CNIC.",
+          "Late arrival may require rescheduling.",
+        ];
     for (const line of instructions) {
       doc.text(`•  ${line}`, margin, y);
       y += 5.5;
@@ -407,14 +418,30 @@ export default function SuccessContent() {
           {/* Actions */}
           <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-10 shadow-sm flex flex-col items-center text-center space-y-6">
             <span className="material-symbols-outlined text-primary text-[64px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-              event_available
+              {isOnline ? "videocam" : "event_available"}
             </span>
             <div>
-              <h3 className="text-headline-md font-bold text-on-surface mb-2">Your slot is reserved</h3>
+              <h3 className="text-headline-md font-bold text-on-surface mb-2">
+                {isOnline ? "Your online consultation is reserved" : "Your slot is reserved"}
+              </h3>
               <p className="text-body-md text-on-surface-variant max-w-md">
-                Present your reference number <strong>{refNumber}</strong> at the clinic for check-in.
+                {isOnline
+                  ? "Once confirmed, we'll email you a Google Meet link — check your inbox around your appointment time to join."
+                  : (<>Present your reference number <strong>{refNumber}</strong> at the clinic for check-in.</>)}
               </p>
             </div>
+
+            {isOnline && confirmation?.meetingLink && (
+              <a
+                href={confirmation.meetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-secondary text-on-secondary text-[14px] font-semibold px-10 py-4 rounded-xl hover:opacity-90 transition-all active:scale-[0.98] shadow-md flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined">videocam</span>
+                Join Google Meet
+              </a>
+            )}
 
             <button
               onClick={handleDownload}
@@ -482,6 +509,18 @@ export default function SuccessContent() {
                   {isReception ? "PAY AT CLINIC" : "PRE-PAID"}
                 </span>
               </div>
+
+              {confirmation?.visitType === "online" && confirmation.meetingLink && (
+                <a
+                  href={confirmation.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-xs bg-secondary text-on-secondary font-bold py-sm rounded-lg hover:opacity-90 transition-all"
+                >
+                  <span className="material-symbols-outlined text-body-lg">videocam</span>
+                  Join Google Meet
+                </a>
+              )}
             </div>
             <div className="p-6 bg-surface-container-low border-t border-outline-variant/20 flex gap-3">
               <a href={buildWhatsappLink(doctor.contactWhatsapp)} target="_blank" rel="noopener noreferrer"

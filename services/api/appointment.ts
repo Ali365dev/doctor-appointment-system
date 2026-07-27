@@ -7,6 +7,7 @@ import { findAssignment } from "@/services/mongodb/repositories/clinicProcedure.
 import { generateSlotsForDate } from "@/lib/slots";
 import { sendNotification } from "@/services/notifications";
 import { bookingConfirmationEmail, cancellationEmail, appointmentConfirmedEmail } from "@/services/notifications/templates";
+import { createGoogleMeetEvent, isGoogleCalendarConfigured } from "@/services/google/calendar";
 import {
   createAppointment as createAppointmentRecord,
   findAppointmentByClinicDateTime,
@@ -16,6 +17,7 @@ import {
   findBookedTimesForClinicDate,
   updateAppointmentStatus,
   linkAppointmentPayment,
+  setAppointmentMeetingLink,
 } from "@/services/mongodb/repositories/appointment.repository";
 import type { AppointmentDoc } from "@/services/mongodb/models/Appointment";
 import type { AppointmentStatus, AppointmentType, PatientSnapshot, VisitType } from "@/types/appointment";
@@ -194,6 +196,27 @@ export async function changeAppointmentStatus(
   } else if (status === "confirmed") {
     // Covers every path to "confirmed" — payment verified, pay-at-reception,
     // and an admin manually confirming from the appointments panel.
+    let meetingLink = updated.meetingLink ?? undefined;
+    if (updated.visitType === "online" && !meetingLink && isGoogleCalendarConfigured()) {
+      // Best-effort — a Calendar API hiccup must never block confirming the
+      // appointment; the doctor can still share a link manually if this fails.
+      try {
+        const link = await createGoogleMeetEvent({
+          appointmentNumber: updated.appointmentNumber,
+          patientName: updated.patientSnapshot.fullName,
+          date: updated.date,
+          time: updated.time,
+          durationMinutes: updated.durationMinutes,
+        });
+        if (link) {
+          await setAppointmentMeetingLink(appointmentId, link);
+          meetingLink = link;
+        }
+      } catch (err) {
+        console.warn("[google-calendar] Failed to create Meet link:", err);
+      }
+    }
+
     void sendNotification(
       { email: updated.patientSnapshot.email, phone: updated.patientSnapshot.phone },
       appointmentConfirmedEmail({
@@ -202,6 +225,7 @@ export async function changeAppointmentStatus(
         appointmentId: String(updated._id),
         date: updated.date,
         time: updated.time,
+        meetingLink,
       })
     );
   }
@@ -240,6 +264,8 @@ export interface AppointmentConfirmation {
   appointmentType: AppointmentType;
   procedureName?: string;
   durationMinutes: number;
+  visitType: VisitType;
+  meetingLink?: string;
 }
 
 /**
@@ -273,5 +299,7 @@ export async function getAppointmentConfirmation(appointmentId: string): Promise
     appointmentType: appointment.appointmentType as AppointmentType,
     procedureName: appointment.procedureNameSnapshot ?? undefined,
     durationMinutes: appointment.durationMinutes,
+    visitType: appointment.visitType as VisitType,
+    meetingLink: appointment.meetingLink ?? undefined,
   };
 }

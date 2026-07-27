@@ -154,24 +154,34 @@ export interface AppointmentConfirmedParams {
   appointmentId: string;
   date: string;
   time: string;
+  meetingLink?: string;
 }
 
 /** Sent for every path that flips an appointment to "confirmed" — payment verified, pay-at-reception, or an admin manually confirming it. */
 export function appointmentConfirmedEmail(params: AppointmentConfirmedParams): { subject: string; text: string; html: string } {
   const subject = "Appointment Confirmed";
-  const text = `Hi ${params.patientName}, your appointment ${params.appointmentNumber} on ${params.date} at ${params.time} is now confirmed. View/download your appointment: ${appUrl(`/book-appointment/success?appointmentId=${params.appointmentId}`)}`;
+  const text = `Hi ${params.patientName}, your appointment ${params.appointmentNumber} on ${params.date} at ${params.time} is now confirmed.${
+    params.meetingLink ? ` Join your video consultation: ${params.meetingLink}` : ""
+  } View/download your appointment: ${appUrl(`/book-appointment/success?appointmentId=${params.appointmentId}`)}`;
   const html = renderEmailLayout({
     heading: `Hi ${params.patientName}, your appointment is confirmed`,
-    intro: "Your appointment is confirmed. We look forward to seeing you.",
+    intro: params.meetingLink
+      ? "Your online consultation is confirmed. Join the video call below at your scheduled time."
+      : "Your appointment is confirmed. We look forward to seeing you.",
     rows: [
       { label: "Reference", value: params.appointmentNumber },
       { label: "Date", value: params.date },
       { label: "Time", value: params.time },
       { label: "Status", value: "Confirmed" },
+      ...(params.meetingLink
+        ? [{ label: "Video Call", value: `<a href="${params.meetingLink}" target="_blank" style="color:${NAVY};font-weight:bold;">Join Google Meet</a>` }]
+        : []),
     ],
-    ctaLabel: "View & Download Appointment",
-    ctaUrl: appUrl(`/book-appointment/success?appointmentId=${params.appointmentId}`),
-    note: "Please bring a downloaded or printed copy of your appointment to the clinic.",
+    ctaLabel: params.meetingLink ? "Join Google Meet" : "View & Download Appointment",
+    ctaUrl: params.meetingLink ?? appUrl(`/book-appointment/success?appointmentId=${params.appointmentId}`),
+    note: params.meetingLink
+      ? "The Google Meet link opens in your browser at the time of your appointment — no account or app install needed. You can still view/download your full appointment details from your confirmation page."
+      : "Please bring a downloaded or printed copy of your appointment to the clinic.",
   });
   return { subject, text, html };
 }

@@ -33,17 +33,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const validationError = validateCreateAppointmentBody(body);
-    if (validationError) {
-      return NextResponse.json({ error: validationError }, { status: 400 });
-    }
-
     const session = await getSession();
 
     const patient = {
       ...body.patient,
       email: body.patient?.email || (session?.role === "patient" ? session.email : undefined),
     };
+    const bodyWithResolvedEmail = { ...body, patient };
+
+    const validationError = validateCreateAppointmentBody(bodyWithResolvedEmail);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
 
     const appointment = await createAppointment({
       patientId: session?.role === "patient" ? session.userId : undefined,

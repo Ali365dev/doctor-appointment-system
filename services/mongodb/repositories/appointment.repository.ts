@@ -122,6 +122,11 @@ export async function linkAppointmentPayment(
   await Appointment.updateOne({ _id: appointmentId }, { $set: { paymentId } });
 }
 
+export async function setAppointmentMeetingLink(appointmentId: string, meetingLink: string): Promise<void> {
+  await connectDB();
+  await Appointment.updateOne({ _id: appointmentId }, { $set: { meetingLink } });
+}
+
 export async function findAppointmentsByDate(date: string): Promise<AppointmentDoc[]> {
   await connectDB();
   const rows = await Appointment.find({ date, status: { $nin: ["cancelled", "rejected"] } })

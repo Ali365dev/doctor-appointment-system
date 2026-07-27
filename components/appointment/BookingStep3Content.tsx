@@ -62,7 +62,9 @@ export default function BookingStep3Content() {
     if (!form.age.trim()) e.age = "Age is required";
     else if (Number(form.age) < 1 || Number(form.age) > 120) e.age = "Enter a valid age";
     if (!form.city.trim()) e.city = "Please enter your city";
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+    if (visitType === "online" && !form.email.trim())
+      e.email = "Email is required for online consultations so we can send your video call link";
+    else if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
       e.email = "Enter a valid email address";
     setErrors(e as Partial<typeof form>);
     return e;
@@ -175,10 +177,16 @@ export default function BookingStep3Content() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[14px] font-semibold text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[18px]">mail</span>Email (Optional)
+                  <span className="material-symbols-outlined text-[18px]">mail</span>
+                  Email{visitType === "online" ? "" : " (Optional)"}
+                  {visitType === "online" && <span className="text-error">*</span>}
                 </label>
                 <input type="email" name="email" value={form.email} onChange={(e) => set("email", e.target.value)}
-                  placeholder="example@email.com" aria-invalid={!!(errors as Record<string, string>).email} className={inputCls("email")} />
+                  placeholder="example@email.com" required={visitType === "online"}
+                  aria-invalid={!!(errors as Record<string, string>).email} className={inputCls("email")} />
+                {visitType === "online" && !(errors as Record<string, string>).email && (
+                  <p className="text-caption text-on-surface-variant">Required for online consultations — we'll email your video call link here.</p>
+                )}
                 {(errors as Record<string, string>).email && <p className="text-caption text-error">{(errors as Record<string, string>).email}</p>}
               </div>
               <div className="space-y-2">

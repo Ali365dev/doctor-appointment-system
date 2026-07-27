@@ -1,4 +1,4 @@
-const CLINIC_TIMEZONE = "Asia/Karachi";
+export const CLINIC_TIMEZONE = "Asia/Karachi";
 
 /** Current date in the clinic's timezone, as "YYYY-MM-DD". */
 export function getClinicDateString(now: Date = new Date()): string {
@@ -7,6 +7,17 @@ export function getClinicDateString(now: Date = new Date()): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+  }).format(now);
+}
+
+/** Current date in the clinic's timezone, as a long display label — e.g. "Monday, July 27, 2026". */
+export function getClinicDateLabel(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: CLINIC_TIMEZONE,
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   }).format(now);
 }
 

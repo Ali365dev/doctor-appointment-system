@@ -60,6 +60,7 @@ interface ApiAppointment {
   procedureNameSnapshot?: string;
   status: AppointmentStatus;
   statusHistory: StatusHistoryEntry[];
+  meetingLink?: string;
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -394,6 +395,23 @@ export default function AppointmentVerificationDetailContent({ appointmentId }: 
                     {appointment.procedureNameSnapshot ?? (appointment.visitType === "online" ? "Online Consultation" : "Clinic Consultation")}
                   </p>
                 </div>
+                {appointment.visitType === "online" && (
+                  appointment.meetingLink ? (
+                    <a
+                      href={appointment.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1 text-caption font-semibold text-secondary hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">videocam</span>
+                      Join Google Meet
+                    </a>
+                  ) : (
+                    <p className="text-caption text-outline mt-1">
+                      Meet link generates automatically once confirmed
+                    </p>
+                  )
+                )}
               </div>
               <div className="space-y-1">
                 <p className="text-caption text-on-surface-variant">Status</p>

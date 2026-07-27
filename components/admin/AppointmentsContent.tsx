@@ -36,6 +36,7 @@ interface ApiAppointment {
   durationMinutes: number;
   referralDoctor?: string;
   medicalReportUrl?: string;
+  meetingLink?: string;
 }
 
 const APPOINTMENT_TYPE_LABEL: Record<AppointmentType, string> = {
@@ -655,6 +656,22 @@ export default function AppointmentsContent() {
                       </td>
                       <td className="px-md py-xs text-right sticky right-0 bg-surface-container-lowest group-hover:bg-surface-container-low transition-colors">
                         <div className="flex items-center justify-end gap-xs">
+                          {apt.visitType === "online" && apt.meetingLink && (
+                            <div className="relative group/tip">
+                              <a
+                                href={apt.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-xs rounded-full bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors inline-flex"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">videocam</span>
+                              </a>
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50">
+                                Join at {apt.time}, {apt.date}
+                              </span>
+                            </div>
+                          )}
                           {payment && (payment.status === "submitted" || (payment.status === "pending" && payment.method === "reception")) && (
                             <div className="relative group/tip">
                               <button
@@ -664,7 +681,7 @@ export default function AppointmentsContent() {
                               >
                                 <span className="material-symbols-outlined text-[16px]">verified</span>
                               </button>
-                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50">
                                 Confirm Payment
                               </span>
                             </div>
@@ -678,7 +695,7 @@ export default function AppointmentsContent() {
                               >
                                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
                               </button>
-                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50">
                                 Confirm
                               </span>
                             </div>
@@ -692,7 +709,7 @@ export default function AppointmentsContent() {
                               >
                                 <span className="material-symbols-outlined text-[16px]">task_alt</span>
                               </button>
-                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50">
                                 Mark Completed
                               </span>
                             </div>
@@ -704,7 +721,7 @@ export default function AppointmentsContent() {
                             >
                               <span className="material-symbols-outlined text-[16px]">receipt_long</span>
                             </button>
-                            <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                            <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50">
                               View Receipt
                             </span>
                           </div>
@@ -716,7 +733,7 @@ export default function AppointmentsContent() {
                               >
                                 <span className="material-symbols-outlined text-[16px]">delete</span>
                               </button>
-                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-10">
+                              <span className="pointer-events-none absolute bottom-full right-0 mb-xs whitespace-nowrap rounded-md bg-on-surface px-sm py-0.5 text-caption text-surface opacity-0 scale-95 transition-all group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50">
                                 Cancel
                               </span>
                             </div>

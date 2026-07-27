@@ -48,6 +48,8 @@ const appointmentSchema = new Schema(
     medicalReportUrl: { type: String },
     paymentMethod: { type: String, enum: PAYMENT_METHODS },
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
+    // Google Meet link, auto-generated when an online consultation is confirmed.
+    meetingLink: { type: String },
     status: { type: String, enum: APPOINTMENT_STATUSES, required: true, default: "pending_payment" },
     statusHistory: { type: [statusHistorySchema], required: true, default: [] },
   },
