@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import { getClinicDateString, addDaysToDateString } from "@/lib/timezone";
+import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
+import { createLetterheadPdf } from "@/lib/pdf/letterhead";
 
 type QrMethod = "bank" | "jazzcash" | "easypaisa";
 
@@ -67,11 +70,61 @@ const tabs = [
   { id: "notifications", label: "Notifications", icon: "notifications" },
   { id: "digest", label: "Daily Digest", icon: "mail" },
   { id: "security", label: "Security", icon: "lock" },
+  { id: "cleanup", label: "Data Cleanup", icon: "delete_sweep" },
 ];
+
+interface CleanupAppointmentRow {
+  _id: string;
+  appointmentNumber: string;
+  date: string;
+  time: string;
+  status: string;
+  feeSnapshotPkr: number;
+  patientSnapshot: { fullName: string; phone: string; email?: string };
+  clinicId: { name?: string } | string;
+  paymentId?: { method?: string; status?: string; amountPkr?: number } | string;
+}
+
+interface CleanupPreview {
+  appointmentCount: number;
+  paymentCount: number;
+  totalAmountPkr: number;
+  appointments: CleanupAppointmentRow[];
+}
+
+// Uses the clinic's own timezone (Asia/Karachi) rather than the browser's/server's local
+// clock or raw UTC — otherwise "today" can silently land on the wrong calendar day
+// depending on where this page happens to be viewed from or rendered.
+function isoDaysAgo(days: number): string {
+  return addDaysToDateString(getClinicDateString(), -days);
+}
+
+const CLEANUP_PRESETS = [
+  { label: "Last Week", days: 7 },
+  { label: "Last Month", days: 30 },
+  { label: "Last 3 Months", days: 90 },
+  { label: "Last 6 Months", days: 180 },
+  { label: "Last Year", days: 365 },
+  { label: "Last 2 Years", days: 730 },
+];
+
+function downloadCsv(filename: string, headers: string[], rows: (string | number)[][], preamble: string[][] = []) {
+  const csv = [...preamble, headers, ...rows]
+    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function SettingsContent() {
+  const doctor = useDoctorProfile();
   const [activeTab, setActiveTab] = useState("payment");
   const [notifications, setNotifications] = useState({
     confirmEmail: true, confirmSMS: true,
@@ -86,6 +139,146 @@ export default function SettingsContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState({ current: false, new: false, confirm: false });
   const [changingPassword, setChangingPassword] = useState(false);
+
+  const EARLIEST_RECORD_DATE = "2000-01-01"; // stand-in for "no start limit" — Mongo query lower bound
+  const [cleanupFrom, setCleanupFrom] = useState(EARLIEST_RECORD_DATE);
+  const [cleanupFromAllTime, setCleanupFromAllTime] = useState(true);
+  const [cleanupTo, setCleanupTo] = useState(isoDaysAgo(0));
+  const [cleanupPreview, setCleanupPreview] = useState<CleanupPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  function applyCleanupPreset(days: number) {
+    // A preset targets just that trailing window (e.g. "Last Week" = the last
+    // 7 days) — for a true "delete everything before some date" wipe, use the
+    // "All time" toggle on the From field instead.
+    setCleanupFromAllTime(false);
+    setCleanupFrom(isoDaysAgo(days));
+    setCleanupTo(isoDaysAgo(0));
+    setCleanupPreview(null);
+  }
+
+  async function handlePreviewCleanup() {
+    if (!cleanupFrom || !cleanupTo) {
+      toast.error("Choose a date range first");
+      return;
+    }
+    setPreviewLoading(true);
+    setCleanupPreview(null);
+    try {
+      const res = await fetch(`/api/admin/data-cleanup?from=${cleanupFrom}&to=${cleanupTo}`);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not load preview");
+        return;
+      }
+      setCleanupPreview(data.preview);
+      if (data.preview.appointmentCount === 0) {
+        toast.info("No records found in that date range");
+      }
+    } catch {
+      toast.error("Network error loading preview");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function handleExportCleanupCsv() {
+    if (!cleanupPreview) return;
+    const clinicName = (c: CleanupAppointmentRow["clinicId"]) => (typeof c === "string" ? c : c?.name ?? "—");
+    const payment = (p: CleanupAppointmentRow["paymentId"]) => (typeof p === "object" && p ? p : null);
+
+    downloadCsv(
+      `appointments-payments_${cleanupFrom}_to_${cleanupTo}.csv`,
+      ["Appointment #", "Date", "Time", "Patient", "Phone", "Email", "Clinic", "Status", "Fee (Rs.)", "Payment Method", "Payment Status", "Payment Amount (Rs.)"],
+      cleanupPreview.appointments.map((a) => {
+        const p = payment(a.paymentId);
+        return [
+          a.appointmentNumber,
+          a.date,
+          a.time,
+          a.patientSnapshot.fullName,
+          a.patientSnapshot.phone,
+          a.patientSnapshot.email ?? "—",
+          clinicName(a.clinicId),
+          a.status,
+          a.feeSnapshotPkr,
+          p?.method ?? "—",
+          p?.status ?? "—",
+          p?.amountPkr ?? "—",
+        ];
+      }),
+      [
+        ["Date Range", `${cleanupFromAllTime ? "All time" : cleanupFrom} to ${cleanupTo}`],
+        ["Generated", new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })],
+        [],
+      ]
+    );
+    toast.success("Exported — you can now safely delete these records");
+  }
+
+  async function handleExportCleanupPdf() {
+    if (!cleanupPreview) return;
+    const clinicName = (c: CleanupAppointmentRow["clinicId"]) => (typeof c === "string" ? c : c?.name ?? "—");
+    const payment = (p: CleanupAppointmentRow["paymentId"]) => (typeof p === "object" && p ? p : null);
+
+    const { doc, headerHeight, renderTable, drawSectionTitle, drawFooter } = await createLetterheadPdf(doctor, {
+      title: "Deleted Records Backup",
+    });
+    const range = cleanupFromAllTime ? `All time to ${cleanupTo}` : `${cleanupFrom} to ${cleanupTo}`;
+    const tableStartY = drawSectionTitle(`Date Range: ${range}`, headerHeight + 6);
+    renderTable({
+      startY: tableStartY,
+      headers: ["Appointment #", "Date", "Time", "Patient", "Phone", "Email", "Clinic", "Status", "Fee (Rs.)", "Payment Method", "Payment Status", "Payment Amount (Rs.)"],
+      rows: cleanupPreview.appointments.map((a) => {
+        const p = payment(a.paymentId);
+        return [
+          a.appointmentNumber,
+          a.date,
+          a.time,
+          a.patientSnapshot.fullName,
+          a.patientSnapshot.phone,
+          a.patientSnapshot.email ?? "—",
+          clinicName(a.clinicId),
+          a.status,
+          a.feeSnapshotPkr.toLocaleString(),
+          p?.method ?? "—",
+          p?.status ?? "—",
+          p?.amountPkr != null ? p.amountPkr.toLocaleString() : "—",
+        ];
+      }),
+      badgeColumns: ["Status", "Payment Status"],
+    });
+    drawFooter();
+    doc.save(`appointments-payments_${cleanupFrom}_to_${cleanupTo}.pdf`);
+    toast.success("Exported — you can now safely delete these records");
+  }
+
+  async function handleConfirmDeleteCleanup() {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/admin/data-cleanup", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from: cleanupFrom, to: cleanupTo }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not delete records");
+        return;
+      }
+      toast.success(
+        `Deleted ${data.result.appointmentsDeleted} appointment(s) and ${data.result.paymentsDeleted} payment(s)`
+      );
+      setCleanupPreview(null);
+      setShowDeleteConfirm(false);
+    } catch {
+      toast.error("Network error deleting records");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleChangePassword() {
     if (!currentPassword) {
@@ -619,7 +812,160 @@ export default function SettingsContent() {
             </section>
           </div>
         )}
+
+        {/* Tab: Data Cleanup */}
+        {activeTab === "cleanup" && (
+          <div className="space-y-lg">
+            <section className="bg-surface border border-outline-variant rounded-2xl p-md shadow-sm">
+              <h3 className="text-headline-md font-semibold mb-md flex items-center gap-sm">
+                <span className="material-symbols-outlined text-error">delete_sweep</span> Delete Old Records
+              </h3>
+             
+
+              <div className="flex flex-wrap gap-xs mb-md">
+                {CLEANUP_PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    onClick={() => applyCleanupPreset(p.days)}
+                    className="px-sm py-xs rounded-full border border-outline-variant text-label-md font-semibold hover:bg-surface-container-high transition-colors"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md max-w-lg mb-md">
+                <div>
+                  <label className="block text-label-md text-on-surface-variant mb-xs">To</label>
+                  <input
+                    type="date"
+                    value={cleanupTo}
+                    onChange={(e) => { setCleanupTo(e.target.value); setCleanupPreview(null); }}
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-label-md text-on-surface-variant mb-xs">From</label>
+                  {cleanupFromAllTime ? (
+                    <div className="flex items-center gap-sm h-10.5">
+                      <span className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-sm text-on-surface-variant">
+                        All time (earliest record)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => { setCleanupFromAllTime(false); setCleanupFrom(""); setCleanupPreview(null); }}
+                        className="text-label-md font-semibold text-primary hover:underline whitespace-nowrap"
+                      >
+                        Set date
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-sm">
+                      <input
+                        type="date"
+                        value={cleanupFrom}
+                        onChange={(e) => { setCleanupFrom(e.target.value); setCleanupPreview(null); }}
+                        className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setCleanupFromAllTime(true); setCleanupFrom(EARLIEST_RECORD_DATE); setCleanupPreview(null); }}
+                        className="text-label-md font-semibold text-primary hover:underline whitespace-nowrap"
+                      >
+                        All time
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handlePreviewCleanup}
+                disabled={previewLoading}
+                className="bg-surface-container-high text-on-surface border border-outline-variant px-md py-sm rounded-xl font-bold hover:bg-surface-container-highest transition-all disabled:opacity-60"
+              >
+                {previewLoading ? "Loading…" : "Preview Records"}
+              </button>
+
+              {cleanupPreview && (
+                <div className="mt-lg space-y-md">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                    <div className="bg-surface-container-low rounded-xl p-md">
+                      <p className="text-caption text-on-surface-variant">Appointments</p>
+                      <p className="text-headline-md font-bold text-on-surface">{cleanupPreview.appointmentCount}</p>
+                    </div>
+                    <div className="bg-surface-container-low rounded-xl p-md">
+                      <p className="text-caption text-on-surface-variant">Payments</p>
+                      <p className="text-headline-md font-bold text-on-surface">{cleanupPreview.paymentCount}</p>
+                    </div>
+                    <div className="bg-surface-container-low rounded-xl p-md">
+                      <p className="text-caption text-on-surface-variant">Total Fee Value</p>
+                      <p className="text-headline-md font-bold text-on-surface">Rs. {cleanupPreview.totalAmountPkr.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {cleanupPreview.appointmentCount > 0 && (
+                    <div className="flex flex-wrap gap-sm">
+                      <button
+                        onClick={handleExportCleanupCsv}
+                        className="flex items-center gap-xs bg-surface-container-high text-on-surface border border-outline-variant px-md py-sm rounded-xl font-bold hover:bg-surface-container-highest transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">download</span>
+                        Export CSV
+                      </button>
+                      <button
+                        onClick={handleExportCleanupPdf}
+                        className="flex items-center gap-xs bg-surface-container-high text-on-surface border border-outline-variant px-md py-sm rounded-xl font-bold hover:bg-surface-container-highest transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+                        Export PDF
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="flex items-center gap-xs bg-error text-on-error px-md py-sm rounded-xl font-bold hover:brightness-110 transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete_forever</span>
+                        Delete Records
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
       </div>
+
+      {/* Confirm Deletion Modal */}
+      {showDeleteConfirm && cleanupPreview && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-2xl p-lg shadow-2xl max-w-md w-full mx-md">
+            <h3 className="text-headline-md font-bold text-on-surface mb-sm">Delete these records permanently?</h3>
+            <p className="text-body-md text-on-surface-variant mb-lg">
+              This will permanently delete <strong>{cleanupPreview.appointmentCount} appointment(s)</strong> and{" "}
+              <strong>{cleanupPreview.paymentCount} payment(s)</strong> dated between{" "}
+              <strong>{cleanupFromAllTime ? "the earliest record" : cleanupFrom}</strong> and{" "}
+              <strong>{cleanupTo}</strong>. This action cannot be undone — make sure you've exported a copy first.
+            </p>
+            <div className="flex gap-sm">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 px-md py-sm rounded-xl border border-outline-variant text-on-surface font-bold hover:bg-surface-container-high transition-colors disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeleteCleanup}
+                disabled={deleting}
+                className="flex-1 px-md py-sm rounded-xl bg-error text-on-error font-bold hover:brightness-110 transition-colors disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

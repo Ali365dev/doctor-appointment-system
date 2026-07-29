@@ -46,6 +46,14 @@ export async function findAllPayments(filter?: { status?: PaymentStatus }): Prom
     .lean<PaymentDoc[]>();
 }
 
+/** Deletes payments belonging to the given appointment ids. Returns the number actually deleted. */
+export async function deletePaymentsByAppointmentIds(appointmentIds: string[]): Promise<number> {
+  if (appointmentIds.length === 0) return 0;
+  await connectDB();
+  const result = await Payment.deleteMany({ appointmentId: { $in: appointmentIds } });
+  return result.deletedCount ?? 0;
+}
+
 export async function updatePaymentStatus(
   paymentId: string,
   status: PaymentStatus,

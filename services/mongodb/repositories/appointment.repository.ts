@@ -142,6 +142,24 @@ export async function countAppointmentsForDate(date: string): Promise<number> {
   return Appointment.countDocuments({ date, status: { $nin: ["cancelled", "rejected"] } });
 }
 
+/** Appointments with `date` (a "YYYY-MM-DD" string) between from/to, inclusive. Used by the admin data-cleanup tool. */
+export async function findAppointmentsInDateRange(from: string, to: string): Promise<AppointmentDoc[]> {
+  await connectDB();
+  return Appointment.find({ date: { $gte: from, $lte: to } })
+    .populate("clinicId", "name")
+    .populate("paymentId", PAYMENT_POPULATE_FIELDS)
+    .sort({ date: 1 })
+    .lean<AppointmentDoc[]>();
+}
+
+/** Deletes appointments by id. Returns the number actually deleted. */
+export async function deleteAppointmentsByIds(appointmentIds: string[]): Promise<number> {
+  if (appointmentIds.length === 0) return 0;
+  await connectDB();
+  const result = await Appointment.deleteMany({ _id: { $in: appointmentIds } });
+  return result.deletedCount ?? 0;
+}
+
 export interface AppointmentStatsRow {
   patientId?: string;
   status: AppointmentStatus;
