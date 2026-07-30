@@ -513,13 +513,14 @@ export default function ReportsContent() {
         const p = getPayment(a);
         return p?.status === "verified" ? sum + p.amountPkr : sum;
       }, 0);
-      return { type: APPOINTMENT_TYPE_LABEL[type], patients: ids.size, appointments: apts.length, revenue };
+      const pending = apts.reduce((sum, a) => sum + pendingAmount(a), 0);
+      return { type: APPOINTMENT_TYPE_LABEL[type], patients: ids.size, appointments: apts.length, revenue, pending };
     });
 
     return {
       table: {
-        headers: ["Type", "Patients", "Appointments", "Revenue (Rs.)"],
-        rows: rows.map((r) => [r.type, r.patients, r.appointments, r.revenue]),
+        headers: ["Type", "Patients", "Appointments", "Revenue (Rs.)", "Pending (Rs.)"],
+        rows: rows.map((r) => [r.type, r.patients, r.appointments, r.revenue, r.pending]),
       },
       chart: rows.map((r) => ({ label: r.type, value: r.appointments })),
     };

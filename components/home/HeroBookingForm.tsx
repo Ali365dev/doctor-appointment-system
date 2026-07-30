@@ -120,7 +120,7 @@ export default function HeroBookingForm() {
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              placeholder="+92 300 0000000"
+              placeholder="0300 0000000"
               className={inputCls("phone")}
             />
             {errors.phone && <p className="text-caption text-error mt-xs">{errors.phone}</p>}

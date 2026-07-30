@@ -103,7 +103,7 @@ export default function RegisterForm() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="+923001234567"
+            placeholder="03001234567"
             className={inputCls}
           />
         </div>

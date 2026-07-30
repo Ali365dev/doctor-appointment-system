@@ -137,7 +137,7 @@ export default function BookingStep3Content() {
                   <span className="text-error">*</span>
                 </label>
                 <input type="tel" name="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+92 300 0000000" required aria-invalid={!!(errors as Record<string, string>).phone} className={inputCls("phone")} />
+                  placeholder="300 0000000" required aria-invalid={!!(errors as Record<string, string>).phone} className={inputCls("phone")} />
                 {(errors as Record<string, string>).phone && <p className="text-caption text-error">{(errors as Record<string, string>).phone}</p>}
               </div>
             </div>

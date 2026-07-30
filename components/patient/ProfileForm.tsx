@@ -296,7 +296,7 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
         <div className="p-md grid grid-cols-1 md:grid-cols-2 gap-md">
           {field("name", "Full Name", "text", "Full name")}
           {field("email", "Email Address", "email", "you@email.com")}
-          {field("phone", "Phone Number", "tel", "+92 300 0000000")}
+          {field("phone", "Phone Number", "tel", "0300 0000000")}
           {field("dob", "Date of Birth", "date")}
           <div>
             <label className="block text-label-md text-on-surface-variant mb-xs">Gender</label>
@@ -347,7 +347,7 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
         </div>
         <div className="p-md grid grid-cols-1 md:grid-cols-2 gap-md">
           {field("emergencyContactName", "Contact Name", "text", "Full name")}
-          {field("emergencyContactPhone", "Contact Phone", "tel", "+92 300 0000000")}
+          {field("emergencyContactPhone", "Contact Phone", "tel", "0300 0000000")}
         </div>
       </section>
 
