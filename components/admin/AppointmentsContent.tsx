@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { APPOINTMENT_STATUSES, type AppointmentStatus, type AppointmentType, type VisitType } from "@/types/appointment";
+import { type AppointmentStatus, type AppointmentType, type VisitType } from "@/types/appointment";
 import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from "@/types/payment";
 import { PAYMENT_METHOD_LABEL } from "@/lib/appointmentDisplay";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
@@ -118,6 +118,7 @@ export default function AppointmentsContent() {
   const [clinicFilter, setClinicFilter] = useState("All");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState("All");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
+  const [appointmentStatusFilter, setAppointmentStatusFilter] = useState<AppointmentStatus | "All">("All");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -177,12 +178,13 @@ export default function AppointmentsContent() {
       const payment = getPayment(a);
       const matchPaymentType = paymentTypeFilter === "All" || payment?.method === paymentTypeFilter;
       const matchPaymentStatus = paymentStatusFilter === "All" || payment?.status === paymentStatusFilter;
+      const matchAppointmentStatus = appointmentStatusFilter === "All" || a.status === appointmentStatusFilter;
       return (
         matchTab && matchSearch && matchType && matchAppointmentType && matchClinic && matchDateFrom && matchDateTo &&
-        matchPaymentType && matchPaymentStatus
+        matchPaymentType && matchPaymentStatus && matchAppointmentStatus
       );
     });
-  }, [appointments, tab, search, visitTypeFilter, appointmentTypeFilter, clinicFilter, dateFrom, dateTo, paymentTypeFilter, paymentStatusFilter]);
+  }, [appointments, tab, search, visitTypeFilter, appointmentTypeFilter, clinicFilter, dateFrom, dateTo, paymentTypeFilter, paymentStatusFilter, appointmentStatusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -532,6 +534,18 @@ export default function AppointmentsContent() {
             <option value="All">All Payment Statuses</option>
             {PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>{PAYMENT_STATUS_META[s].label}</option>
+            ))}
+          </select>
+
+          {/* Appointment status select */}
+          <select
+            value={appointmentStatusFilter}
+            onChange={(e) => { setAppointmentStatusFilter(e.target.value as AppointmentStatus | "All"); setPage(1); }}
+            className="bg-surface-container-low border-none rounded-xl pl-md pr-10 py-xs text-label-md font-medium focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="All">All Appointment Statuses</option>
+            {(["confirmed", "completed", "cancelled", "rejected"] as AppointmentStatus[]).map((s) => (
+              <option key={s} value={s}>{STATUS_META[s].label}</option>
             ))}
           </select>
 

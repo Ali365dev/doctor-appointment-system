@@ -1062,6 +1062,7 @@ export default function ReportsContent() {
           head: [headers],
           body: rows,
           foot: totalsRow ? [totalsRow] : undefined,
+          showFoot: "lastPage",
           theme: "striped",
           styles: { fontSize, cellPadding: 2.5, textColor: TEXT_DARK, lineColor: CARD_BORDER, lineWidth: 0.1 },
           headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
