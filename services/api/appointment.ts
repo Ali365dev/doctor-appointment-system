@@ -15,6 +15,7 @@ import {
   findAppointmentsByPatientId,
   findAllAppointments,
   findBookedTimesForClinicDate,
+  findStalePendingPaymentAppointments,
   updateAppointmentStatus,
   linkAppointmentPayment,
   setAppointmentMeetingLink,
@@ -239,6 +240,29 @@ export async function cancelAppointment(
   note?: string
 ): Promise<AppointmentDoc> {
   return changeAppointmentStatus(appointmentId, "cancelled", changedBy, note);
+}
+
+// Patients pick a payment method on a separate step after the appointment
+// (and its slot lock) is already created — if they abandon the flow there,
+// the slot would otherwise stay booked forever. Cancel those after a grace
+// window so the slot frees up for other patients.
+const PENDING_PAYMENT_GRACE_MS = 30 * 60 * 1000;
+
+export async function expireStalePendingPaymentAppointments(): Promise<{ expiredCount: number; expiredIds: string[] }> {
+  await connectDB();
+  const cutoff = new Date(Date.now() - PENDING_PAYMENT_GRACE_MS);
+  const stale = await findStalePendingPaymentAppointments(cutoff);
+  const expiredIds: string[] = [];
+  for (const appointment of stale) {
+    await changeAppointmentStatus(
+      String(appointment._id),
+      "cancelled",
+      "system",
+      "Auto-cancelled — no payment method selected within the grace window"
+    );
+    expiredIds.push(String(appointment._id));
+  }
+  return { expiredCount: expiredIds.length, expiredIds };
 }
 
 export async function attachPaymentToAppointment(appointmentId: string, paymentId: string): Promise<void> {

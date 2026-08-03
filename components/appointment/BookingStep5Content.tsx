@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import QRCode from "react-qr-code";
-import { useBookingStore } from "@/store/bookingStore";
+import { useBookingStore, type PatientInfo } from "@/store/bookingStore";
 import { doctor as staticDoctor } from "@/lib/data";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
@@ -147,10 +147,22 @@ function WalletTab({
 export default function BookingStep5Content() {
   const doctor = useDoctorProfile();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get("resume");
   const { selectedClinic, selectedProcedure, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
     useBookingStore();
+  const setClinic = useBookingStore((s) => s.setClinic);
+  const setProcedure = useBookingStore((s) => s.setProcedure);
+  const clearProcedure = useBookingStore((s) => s.clearProcedure);
+  const setVisitType = useBookingStore((s) => s.setVisitType);
+  const setReason = useBookingStore((s) => s.setReason);
+  const setDate = useBookingStore((s) => s.setDate);
+  const setTime = useBookingStore((s) => s.setTime);
+  const setPatientInfo = useBookingStore((s) => s.setPatientInfo);
+  const setAppointment = useBookingStore((s) => s.setAppointment);
   const [activeTab, setActiveTab] = useState<Tab>("bank");
   const [receptionLoading, setReceptionLoading] = useState(false);
+  const [resuming, setResuming] = useState(!!resumeId);
   const [paymentSettings, setPaymentSettings] = useState({
     jazzcashNumber: "",
     jazzcashAccountTitle: "",
@@ -164,12 +176,78 @@ export default function BookingStep5Content() {
     bankQrUrl: undefined as string | undefined,
   });
 
-  // Payment requires an appointment to already exist (created at the end of Step 4).
+  // "Continue Booking" from the patient dashboard links here with ?resume=<id>
+  // instead of relying on client store state, since the dashboard and the public
+  // booking pages sit under separate root layouts — navigating between them is a
+  // full page reload, which wipes the in-memory-only appointmentId/appointmentNumber
+  // (see store/bookingStore.ts's partialize comment). Re-fetch the appointment from
+  // the server here and re-hydrate the store from it instead.
   useEffect(() => {
+    if (!resumeId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/appointments/${resumeId}`);
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error ?? "Could not load this appointment");
+          router.replace("/book-appointment/step-4");
+          return;
+        }
+        const appt = data.appointment;
+        const clinic = appt.clinicId;
+        setClinic({
+          id: typeof clinic === "string" ? clinic : String(clinic._id),
+          name: typeof clinic === "string" ? "" : clinic.name ?? "",
+          address: typeof clinic === "string" ? null : clinic.address ?? null,
+          fee_pkr: appt.feeSnapshotPkr,
+          timings: {},
+        });
+        if (appt.procedureId && appt.procedureNameSnapshot) {
+          setProcedure({
+            procedureId: String(appt.procedureId),
+            name: appt.procedureNameSnapshot,
+            pricePkr: appt.feeSnapshotPkr,
+            durationMinutes: appt.durationMinutes ?? 30,
+          });
+        } else {
+          clearProcedure();
+        }
+        setVisitType(appt.visitType);
+        setReason(appt.reason ?? "");
+        setDate(appt.date);
+        setTime(appt.time);
+        setPatientInfo({
+          fullName: appt.patientSnapshot.fullName,
+          phone: appt.patientSnapshot.phone,
+          gender: (appt.patientSnapshot.gender as PatientInfo["gender"]) ?? "Male",
+          age: String(appt.patientSnapshot.age),
+          cnic: appt.patientSnapshot.cnic ?? "",
+          email: appt.patientSnapshot.email ?? "",
+          city: appt.patientSnapshot.city,
+          isExisting: appt.patientSnapshot.isExisting ?? false,
+          condition: appt.patientSnapshot.condition ?? "",
+          notes: appt.patientSnapshot.notes ?? "",
+        });
+        setAppointment(String(appt._id), appt.appointmentNumber);
+      } catch {
+        toast.error("Network error loading appointment");
+        router.replace("/book-appointment/step-4");
+      } finally {
+        setResuming(false);
+      }
+    })();
+    // Only ever needs to run once per landing on this page with a resume id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeId]);
+
+  // Payment requires an appointment to already exist (created at the end of Step 4,
+  // or hydrated above from ?resume=). Skip the check while that hydration is in flight.
+  useEffect(() => {
+    if (resuming) return;
     if (!appointmentId) {
       router.replace("/book-appointment/step-4");
     }
-  }, [appointmentId, router]);
+  }, [appointmentId, resuming, router]);
 
   useEffect(() => {
     (async () => {
@@ -252,6 +330,14 @@ export default function BookingStep5Content() {
     ...(visitType === "online" ? [] : [{ id: "reception" as Tab, label: "Pay at Reception", icon: "storefront" }]),
     { id: "whatsapp", label: "WhatsApp", icon: "chat" },
   ];
+
+  if (resuming) {
+    return (
+      <div className="flex items-center justify-center py-24 text-on-surface-variant text-body-lg">
+        Loading your appointment…
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
