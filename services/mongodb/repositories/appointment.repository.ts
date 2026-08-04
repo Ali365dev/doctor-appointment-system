@@ -168,16 +168,6 @@ export interface AppointmentStatsRow {
   patientSnapshot: { age?: number; gender?: string };
 }
 
-/** "pending_payment" appointments with no linked payment, created before `cutoff` — candidates for auto-expiry. */
-export async function findStalePendingPaymentAppointments(cutoff: Date): Promise<AppointmentDoc[]> {
-  await connectDB();
-  return Appointment.find({
-    status: "pending_payment",
-    paymentId: null,
-    createdAt: { $lt: cutoff },
-  }).lean<AppointmentDoc[]>();
-}
-
 /** Lean per-patient appointment history used to compute Patient Directory stats. */
 export async function findAppointmentStatsForPatients(): Promise<AppointmentStatsRow[]> {
   await connectDB();

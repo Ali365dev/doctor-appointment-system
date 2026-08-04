@@ -40,16 +40,82 @@ export default function UploadReceiptContent() {
     selectedProcedure,
     selectedDate,
     selectedTime,
+    visitType,
+    reason,
+    patientInfo,
+    referralDoctor,
+    medicalReportUrl,
     appointmentId: storeAppointmentId,
     appointmentNumber: storeAppointmentNumber,
     paymentMethod: storePaymentMethod,
   } = useBookingStore();
+  const setAppointment = useBookingStore((s) => s.setAppointment);
 
   // Falls back to the URL when arriving from "Upload New Receipt" on the
   // dashboard (a rejected payment retry) rather than the live booking flow —
   // the Zustand store may be empty in that case.
   const appointmentId = storeAppointmentId ?? searchParams.get("appointmentId");
   const paymentMethod = storePaymentMethod ?? (searchParams.get("method") as "bank" | "jazzcash" | "easypaisa" | null);
+
+  // For a fresh booking (no appointmentId yet, e.g. store has clinic/date/time
+  // but the "retry a rejected receipt" URL param path doesn't apply), the
+  // appointment isn't created until the receipt is actually submitted below —
+  // that's the real moment the patient has "entered" a wallet payment method,
+  // not just picked a tab on Step 5.
+  async function ensureAppointmentCreated(): Promise<string | null> {
+    if (appointmentId) return appointmentId;
+
+    if (!selectedClinic || !selectedDate || !selectedTime) {
+      toast.error("Missing booking details — please restart from Step 1.");
+      router.replace("/book-appointment/step-1");
+      return null;
+    }
+
+    try {
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId: selectedClinic.id,
+          visitType,
+          date: selectedDate,
+          time: selectedTime,
+          reason,
+          patient: {
+            fullName: patientInfo.fullName,
+            phone: patientInfo.phone,
+            gender: patientInfo.gender,
+            age: Number(patientInfo.age),
+            cnic: patientInfo.cnic || undefined,
+            email: patientInfo.email || undefined,
+            city: patientInfo.city,
+            isExisting: patientInfo.isExisting,
+            condition: patientInfo.condition || undefined,
+            notes: patientInfo.notes || undefined,
+          },
+          appointmentType: selectedProcedure ? "procedure" : "consultation",
+          procedureId: selectedProcedure?.procedureId,
+          referralDoctor: referralDoctor || undefined,
+          medicalReportUrl: medicalReportUrl || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not create appointment. Please try again.");
+        // The slot was taken by someone else while this patient was still
+        // deciding how to pay — send them back to re-pick a date/time.
+        if (res.status === 409) {
+          router.push("/book-appointment/step-3");
+        }
+        return null;
+      }
+      setAppointment(data.appointment._id, data.appointment.appointmentNumber);
+      return data.appointment._id;
+    } catch {
+      toast.error("Network error. Please try again.");
+      return null;
+    }
+  }
 
   const [remoteSummary, setRemoteSummary] = useState<AppointmentSummary | null>(null);
 
@@ -111,7 +177,7 @@ export default function UploadReceiptContent() {
       toast.error(validationError);
       return;
     }
-    if (!appointmentId || !paymentMethod || (paymentMethod !== "jazzcash" && paymentMethod !== "easypaisa" && paymentMethod !== "bank")) {
+    if (!paymentMethod || (paymentMethod !== "jazzcash" && paymentMethod !== "easypaisa" && paymentMethod !== "bank")) {
       toast.error("Missing booking details — please restart the payment step.");
       return;
     }
@@ -124,8 +190,14 @@ export default function UploadReceiptContent() {
     setProgress(0);
 
     try {
+      const resolvedAppointmentId = await ensureAppointmentCreated();
+      if (!resolvedAppointmentId) {
+        setUploadState("idle");
+        return;
+      }
+
       const formData = new FormData();
-      formData.append("appointmentId", appointmentId);
+      formData.append("appointmentId", resolvedAppointmentId);
       formData.append("method", paymentMethod);
       formData.append("file", file);
 

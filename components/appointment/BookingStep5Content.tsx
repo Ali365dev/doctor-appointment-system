@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import QRCode from "react-qr-code";
-import { useBookingStore, type PatientInfo } from "@/store/bookingStore";
+import { useBookingStore } from "@/store/bookingStore";
 import { doctor as staticDoctor } from "@/lib/data";
 import { useDoctorProfile } from "@/lib/context/DoctorProfileContext";
 
@@ -42,6 +42,10 @@ function WalletTab({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // The appointment itself isn't created yet — only once the receipt is
+  // actually submitted on the next screen (see UploadReceiptContent), since
+  // that's the real point the patient has "entered" a payment method for a
+  // wallet transfer, not just picked a tab.
   const handleContinueToReceipt = () => {
     setPaymentMethod(method);
     router.push("/book-appointment/upload-receipt");
@@ -147,22 +151,22 @@ function WalletTab({
 export default function BookingStep5Content() {
   const doctor = useDoctorProfile();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const resumeId = searchParams.get("resume");
-  const { selectedClinic, selectedProcedure, selectedDate, selectedTime, visitType, patientInfo, appointmentId, appointmentNumber } =
-    useBookingStore();
-  const setClinic = useBookingStore((s) => s.setClinic);
-  const setProcedure = useBookingStore((s) => s.setProcedure);
-  const clearProcedure = useBookingStore((s) => s.clearProcedure);
-  const setVisitType = useBookingStore((s) => s.setVisitType);
-  const setReason = useBookingStore((s) => s.setReason);
-  const setDate = useBookingStore((s) => s.setDate);
-  const setTime = useBookingStore((s) => s.setTime);
-  const setPatientInfo = useBookingStore((s) => s.setPatientInfo);
+  const {
+    selectedClinic,
+    selectedProcedure,
+    selectedDate,
+    selectedTime,
+    visitType,
+    reason,
+    patientInfo,
+    referralDoctor,
+    medicalReportUrl,
+    appointmentId,
+    appointmentNumber,
+  } = useBookingStore();
   const setAppointment = useBookingStore((s) => s.setAppointment);
   const [activeTab, setActiveTab] = useState<Tab>("bank");
   const [receptionLoading, setReceptionLoading] = useState(false);
-  const [resuming, setResuming] = useState(!!resumeId);
   const [paymentSettings, setPaymentSettings] = useState({
     jazzcashNumber: "",
     jazzcashAccountTitle: "",
@@ -176,78 +180,65 @@ export default function BookingStep5Content() {
     bankQrUrl: undefined as string | undefined,
   });
 
-  // "Continue Booking" from the patient dashboard links here with ?resume=<id>
-  // instead of relying on client store state, since the dashboard and the public
-  // booking pages sit under separate root layouts — navigating between them is a
-  // full page reload, which wipes the in-memory-only appointmentId/appointmentNumber
-  // (see store/bookingStore.ts's partialize comment). Re-fetch the appointment from
-  // the server here and re-hydrate the store from it instead.
-  useEffect(() => {
-    if (!resumeId) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/appointments/${resumeId}`);
-        const data = await res.json();
-        if (!res.ok) {
-          toast.error(data.error ?? "Could not load this appointment");
-          router.replace("/book-appointment/step-4");
-          return;
-        }
-        const appt = data.appointment;
-        const clinic = appt.clinicId;
-        setClinic({
-          id: typeof clinic === "string" ? clinic : String(clinic._id),
-          name: typeof clinic === "string" ? "" : clinic.name ?? "",
-          address: typeof clinic === "string" ? null : clinic.address ?? null,
-          fee_pkr: appt.feeSnapshotPkr,
-          timings: {},
-        });
-        if (appt.procedureId && appt.procedureNameSnapshot) {
-          setProcedure({
-            procedureId: String(appt.procedureId),
-            name: appt.procedureNameSnapshot,
-            pricePkr: appt.feeSnapshotPkr,
-            durationMinutes: appt.durationMinutes ?? 30,
-          });
-        } else {
-          clearProcedure();
-        }
-        setVisitType(appt.visitType);
-        setReason(appt.reason ?? "");
-        setDate(appt.date);
-        setTime(appt.time);
-        setPatientInfo({
-          fullName: appt.patientSnapshot.fullName,
-          phone: appt.patientSnapshot.phone,
-          gender: (appt.patientSnapshot.gender as PatientInfo["gender"]) ?? "Male",
-          age: String(appt.patientSnapshot.age),
-          cnic: appt.patientSnapshot.cnic ?? "",
-          email: appt.patientSnapshot.email ?? "",
-          city: appt.patientSnapshot.city,
-          isExisting: appt.patientSnapshot.isExisting ?? false,
-          condition: appt.patientSnapshot.condition ?? "",
-          notes: appt.patientSnapshot.notes ?? "",
-        });
-        setAppointment(String(appt._id), appt.appointmentNumber);
-      } catch {
-        toast.error("Network error loading appointment");
-        router.replace("/book-appointment/step-4");
-      } finally {
-        setResuming(false);
-      }
-    })();
-    // Only ever needs to run once per landing on this page with a resume id.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumeId]);
+  // The appointment is only created once the patient commits to a payment
+  // method here — Step 4 no longer books anything. Reuses an existing
+  // appointmentId if one was already created earlier in this same session
+  // (e.g. patient switched tabs before finishing) so retrying never double-books.
+  async function ensureAppointmentCreated(): Promise<{ id: string; created: boolean } | null> {
+    if (appointmentId) return { id: appointmentId, created: false };
 
-  // Payment requires an appointment to already exist (created at the end of Step 4,
-  // or hydrated above from ?resume=). Skip the check while that hydration is in flight.
-  useEffect(() => {
-    if (resuming) return;
-    if (!appointmentId) {
-      router.replace("/book-appointment/step-4");
+    if (!selectedClinic || !selectedDate || !selectedTime) {
+      toast.error("Missing booking details — please restart from Step 1.");
+      router.replace("/book-appointment/step-1");
+      return null;
     }
-  }, [appointmentId, resuming, router]);
+
+    try {
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId: selectedClinic.id,
+          visitType,
+          date: selectedDate,
+          time: selectedTime,
+          reason,
+          patient: {
+            fullName: patientInfo.fullName,
+            phone: patientInfo.phone,
+            gender: patientInfo.gender,
+            age: Number(patientInfo.age),
+            cnic: patientInfo.cnic || undefined,
+            email: patientInfo.email || undefined,
+            city: patientInfo.city,
+            isExisting: patientInfo.isExisting,
+            condition: patientInfo.condition || undefined,
+            notes: patientInfo.notes || undefined,
+          },
+          appointmentType: selectedProcedure ? "procedure" : "consultation",
+          procedureId: selectedProcedure?.procedureId,
+          referralDoctor: referralDoctor || undefined,
+          medicalReportUrl: medicalReportUrl || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not create appointment. Please try again.");
+        // The slot was taken by someone else while this patient was still on
+        // Steps 4/5 — send them back to re-pick a date/time instead of
+        // stalling on a payment screen for a slot that no longer exists.
+        if (res.status === 409) {
+          router.push("/book-appointment/step-3");
+        }
+        return null;
+      }
+      setAppointment(data.appointment._id, data.appointment.appointmentNumber);
+      return { id: data.appointment._id, created: true };
+    } catch {
+      toast.error("Network error. Please try again.");
+      return null;
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -273,20 +264,27 @@ export default function BookingStep5Content() {
 
   // ── Pay at Reception ──
   const handleReceptionConfirm = async () => {
-    if (!appointmentId) return;
     setReceptionLoading(true);
     try {
+      const appointment = await ensureAppointmentCreated();
+      if (!appointment) return;
+
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appointmentId, method: "reception" }),
+        body: JSON.stringify({ appointmentId: appointment.id, method: "reception" }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error ?? "Could not confirm booking. Please try again.");
+        // Don't leave an unpaid appointment behind if we just created it and
+        // attaching the payment failed right after.
+        if (appointment.created) {
+          fetch(`/api/appointments/${appointment.id}/cancel`, { method: "PATCH" }).catch(() => {});
+        }
         return;
       }
-      router.push(`/book-appointment/success?payment=reception&appointmentId=${appointmentId}`);
+      router.push(`/book-appointment/success?payment=reception&appointmentId=${appointment.id}`);
     } catch {
       toast.error("Network error. Please try again.");
     } finally {
@@ -330,14 +328,6 @@ export default function BookingStep5Content() {
     ...(visitType === "online" ? [] : [{ id: "reception" as Tab, label: "Pay at Reception", icon: "storefront" }]),
     { id: "whatsapp", label: "WhatsApp", icon: "chat" },
   ];
-
-  if (resuming) {
-    return (
-      <div className="flex items-center justify-center py-24 text-on-surface-variant text-body-lg">
-        Loading your appointment…
-      </div>
-    );
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">

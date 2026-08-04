@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import BookingStepper from "@/components/appointment/BookingStepper";
 import BookingStep5Content from "@/components/appointment/BookingStep5Content";
 import ClinicClosedBanner from "@/components/appointment/ClinicClosedBanner";
@@ -17,9 +16,7 @@ export default function BookAppointmentStep5() {
     <main className="grow pt-32 pb-16 px-8 lg:px-20 max-w-[1280px] mx-auto w-full min-h-screen">
       <BookingStepper currentStep={5} />
       <ClinicClosedBanner />
-      <Suspense>
-        <BookingStep5Content />
-      </Suspense>
+      <BookingStep5Content />
     </main>
   );
 }

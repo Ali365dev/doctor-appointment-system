@@ -202,15 +202,6 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
     }
   }
 
-  // The patient dashboard and the public booking pages sit under separate root
-  // layouts, so navigating between them is a full page reload — any client-side
-  // store hydration done here would be wiped before Step 5 ever reads it. Pass
-  // the appointment id instead; Step 5 re-fetches it from the server and
-  // rehydrates the booking store itself once it lands.
-  function resumeBooking(appt: ApiAppointment) {
-    router.push(`/book-appointment/step-5?resume=${appt._id}`);
-  }
-
   async function confirmCancel() {
     if (!cancelId) return;
     setBusy(true);
@@ -327,7 +318,6 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                   const payment = getPayment(appt);
                   const paymentStatus = payment ? toPatientPaymentStatus(payment.status) : "Pending";
                   const canCancel = patientStatus === "Pending" || patientStatus === "Confirmed";
-                  const canContinueBooking = appt.status === "pending_payment" && !payment;
                   const canReupload =
                     payment &&
                     (payment.method === "jazzcash" || payment.method === "easypaisa" || payment.method === "bank") &&
@@ -372,15 +362,6 @@ export default function AppointmentTable({ limit, showSearch = false, onlyProced
                           >
                             <span className="material-symbols-outlined text-[20px]">visibility</span>
                           </button>
-                          {canContinueBooking && (
-                            <button
-                              onClick={() => resumeBooking(appt)}
-                              className="text-primary hover:bg-primary/10 p-xs rounded transition-colors"
-                              title="Continue Booking"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">play_arrow</span>
-                            </button>
-                          )}
                           {canReupload && (
                             <button
                               onClick={() => router.push(`/book-appointment/upload-receipt?appointmentId=${appt._id}&method=${payment!.method}`)}
