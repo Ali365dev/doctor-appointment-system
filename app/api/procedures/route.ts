@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/getSession";
 import { validateProcedureBody, deriveProcedurePrice, slugify } from "@/lib/validators";
+import { sanitizeRichText } from "@/lib/sanitizeHtml";
 import {
   findActiveProcedures,
   findAllProcedures,
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       name: body.name.trim(),
       slug,
       shortDescription: body.shortDescription?.trim() ?? "",
-      fullDescription: body.fullDescription?.trim() ?? "",
+      fullDescription: body.fullDescription ? sanitizeRichText(body.fullDescription) : "",
       location: body.location.trim(),
       pricePkr,
       originalPricePkr: body.originalPricePkr,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/getSession";
 import { isValidObjectId, validateProcedureBody, deriveProcedurePrice, slugify } from "@/lib/validators";
+import { sanitizeRichText } from "@/lib/sanitizeHtml";
 import {
   findProcedureById,
   updateProcedure,
@@ -49,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const update: Record<string, unknown> = {};
     if (body.name !== undefined) update.name = body.name.trim();
     if (body.shortDescription !== undefined) update.shortDescription = body.shortDescription.trim();
-    if (body.fullDescription !== undefined) update.fullDescription = body.fullDescription.trim();
+    if (body.fullDescription !== undefined) update.fullDescription = sanitizeRichText(body.fullDescription);
     if (body.location !== undefined) update.location = body.location.trim();
     if (body.originalPricePkr !== undefined) update.originalPricePkr = body.originalPricePkr;
     if (body.discountPercent !== undefined) update.discountPercent = body.discountPercent;

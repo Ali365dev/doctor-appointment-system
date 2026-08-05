@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface ProcedureFaq {
   question: string;
@@ -46,9 +47,9 @@ const EMPTY_FORM = {
   discountPercent: "",
   isActive: true,
   durationMinutes: "30",
-  benefits: "",
-  risks: "",
-  preparationInstructions: "",
+  benefits: [] as string[],
+  risks: [] as string[],
+  preparationInstructions: [] as string[],
   recoveryTime: "",
   faqs: [] as ProcedureFaq[],
 };
@@ -59,6 +60,53 @@ function slugify(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/** Add/edit/remove list of plain-text lines — used for Benefits, Risks, and Preparation Instructions. */
+function LineListEditor({
+  items,
+  onAdd,
+  onRemove,
+  onChange,
+  placeholder,
+  addLabel,
+}: {
+  items: string[];
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+  onChange: (index: number, value: string) => void;
+  placeholder?: string;
+  addLabel: string;
+}) {
+  return (
+    <div className="space-y-xs">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-xs">
+          <input
+            type="text"
+            value={item}
+            onChange={(e) => onChange(i, e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 px-sm py-xs rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+          />
+          <button
+            type="button"
+            onClick={() => onRemove(i)}
+            className="p-xs text-error hover:bg-error/10 rounded-lg transition-colors shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={onAdd}
+        className="w-full py-xs border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+      >
+        + {addLabel}
+      </button>
+    </div>
+  );
 }
 
 export default function ProceduresContent() {
@@ -124,9 +172,9 @@ export default function ProceduresContent() {
       discountPercent: p.discountPercent ? String(p.discountPercent) : "",
       isActive: p.isActive,
       durationMinutes: String(p.durationMinutes ?? 30),
-      benefits: (p.benefits ?? []).join("\n"),
-      risks: (p.risks ?? []).join("\n"),
-      preparationInstructions: p.preparationInstructions ?? "",
+      benefits: p.benefits ?? [],
+      risks: p.risks ?? [],
+      preparationInstructions: (p.preparationInstructions ?? "").split("\n").map((s) => s.trim()).filter(Boolean),
       recoveryTime: p.recoveryTime ?? "",
       faqs: p.faqs ?? [],
     });
@@ -159,6 +207,13 @@ export default function ProceduresContent() {
   const removeFaq = (i: number) => setForm((f) => ({ ...f, faqs: f.faqs.filter((_, idx) => idx !== i) }));
   const updateFaq = (i: number, field: "question" | "answer", value: string) =>
     setForm((f) => ({ ...f, faqs: f.faqs.map((faq, idx) => (idx === i ? { ...faq, [field]: value } : faq)) }));
+
+  type LineListField = "benefits" | "risks" | "preparationInstructions";
+  const addLine = (field: LineListField) => setForm((f) => ({ ...f, [field]: [...f[field], ""] }));
+  const removeLine = (field: LineListField, i: number) =>
+    setForm((f) => ({ ...f, [field]: f[field].filter((_, idx) => idx !== i) }));
+  const updateLine = (field: LineListField, i: number, value: string) =>
+    setForm((f) => ({ ...f, [field]: f[field].map((v, idx) => (idx === i ? value : v)) }));
 
   // Discount is optional; price with no discount is just the original price.
   const discountValue = form.discountPercent === "" ? 0 : Number(form.discountPercent);
@@ -198,9 +253,9 @@ export default function ProceduresContent() {
         discountPercent: discountValue,
         isActive: form.isActive,
         durationMinutes: Number(form.durationMinutes) || 30,
-        benefits: form.benefits.split("\n").map((s) => s.trim()).filter(Boolean),
-        risks: form.risks.split("\n").map((s) => s.trim()).filter(Boolean),
-        preparationInstructions: form.preparationInstructions.trim(),
+        benefits: form.benefits.map((s) => s.trim()).filter(Boolean),
+        risks: form.risks.map((s) => s.trim()).filter(Boolean),
+        preparationInstructions: form.preparationInstructions.map((s) => s.trim()).filter(Boolean).join("\n"),
         recoveryTime: form.recoveryTime.trim(),
         faqs: form.faqs.filter((f) => f.question.trim() && f.answer.trim()),
       };
@@ -385,11 +440,14 @@ export default function ProceduresContent() {
         </div>
       </div>
 
-      {/* Add/Edit modal */}
+      {/* Add/Edit slide-over */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
-          <div className="bg-surface rounded-2xl shadow-2xl max-w-lg w-full mx-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant/30 sticky top-0 bg-surface z-10">
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-end" onClick={() => setModalOpen(false)}>
+          <div
+            className="w-full max-w-2xl h-full bg-surface flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant/30 shrink-0">
               <h3 className="text-headline-md font-bold text-on-surface">
                 {editId ? "Edit Procedure" : "Add Procedure"}
               </h3>
@@ -401,7 +459,8 @@ export default function ProceduresContent() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate className="p-lg space-y-md">
+            <form onSubmit={handleSubmit} noValidate className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-lg space-y-md">
               <div className="space-y-xs">
                 <label className="text-label-md font-semibold text-on-surface-variant">
                   Procedure Name <span className="text-error">*</span>
@@ -444,12 +503,11 @@ export default function ProceduresContent() {
                   <label className="text-label-md font-semibold text-on-surface-variant">
                     Full Description <span className="text-caption text-outline">(Optional)</span>
                   </label>
-                  <textarea
-                    rows={3}
+                  <RichTextEditor
+                    key={editId ?? "new"}
                     value={form.fullDescription}
-                    onChange={(e) => setForm((f) => ({ ...f, fullDescription: e.target.value }))}
+                    onChange={(html) => setForm((f) => ({ ...f, fullDescription: html }))}
                     placeholder="Longer explanation for a procedure detail page"
-                    className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
                   />
                 </div>
               </div>
@@ -555,26 +613,28 @@ export default function ProceduresContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
                 <div className="space-y-xs">
                   <label className="text-label-md font-semibold text-on-surface-variant">
-                    Benefits <span className="text-caption text-outline">(one per line, optional)</span>
+                    Benefits <span className="text-caption text-outline">(Optional)</span>
                   </label>
-                  <textarea
-                    rows={3}
-                    value={form.benefits}
-                    onChange={(e) => setForm((f) => ({ ...f, benefits: e.target.value }))}
-                    placeholder={"Faster recovery\nMinimally invasive"}
-                    className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  <LineListEditor
+                    items={form.benefits}
+                    onAdd={() => addLine("benefits")}
+                    onRemove={(i) => removeLine("benefits", i)}
+                    onChange={(i, v) => updateLine("benefits", i, v)}
+                    placeholder="e.g. Faster recovery"
+                    addLabel="Add Benefit"
                   />
                 </div>
                 <div className="space-y-xs">
                   <label className="text-label-md font-semibold text-on-surface-variant">
-                    Risks <span className="text-caption text-outline">(one per line, optional)</span>
+                    Risks <span className="text-caption text-outline">(Optional)</span>
                   </label>
-                  <textarea
-                    rows={3}
-                    value={form.risks}
-                    onChange={(e) => setForm((f) => ({ ...f, risks: e.target.value }))}
-                    placeholder={"Mild discomfort\nRare bleeding"}
-                    className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  <LineListEditor
+                    items={form.risks}
+                    onAdd={() => addLine("risks")}
+                    onRemove={(i) => removeLine("risks", i)}
+                    onChange={(i, v) => updateLine("risks", i, v)}
+                    placeholder="e.g. Mild discomfort"
+                    addLabel="Add Risk"
                   />
                 </div>
               </div>
@@ -583,11 +643,13 @@ export default function ProceduresContent() {
                 <label className="text-label-md font-semibold text-on-surface-variant">
                   Preparation Instructions <span className="text-caption text-outline">(Optional)</span>
                 </label>
-                <textarea
-                  rows={2}
-                  value={form.preparationInstructions}
-                  onChange={(e) => setForm((f) => ({ ...f, preparationInstructions: e.target.value }))}
-                  className="w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                <LineListEditor
+                  items={form.preparationInstructions}
+                  onAdd={() => addLine("preparationInstructions")}
+                  onRemove={(i) => removeLine("preparationInstructions", i)}
+                  onChange={(i, v) => updateLine("preparationInstructions", i, v)}
+                  placeholder="e.g. Fast for 8 hours before the procedure"
+                  addLabel="Add Instruction"
                 />
               </div>
 
@@ -660,8 +722,9 @@ export default function ProceduresContent() {
                   Visible on public Services page
                 </span>
               </label>
+            </div>
 
-              <div className="flex gap-sm justify-end pt-md">
+              <div className="flex gap-sm justify-end px-lg py-md border-t border-outline-variant/30 shrink-0">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}

@@ -196,9 +196,11 @@ export default function ProcedureDetailContent({
             {procedure.fullDescription && (
               <div>
                 <h2 className="text-headline-md font-bold text-on-surface mb-xs">About the Procedure</h2>
-                <p className="text-body-md text-on-surface-variant leading-relaxed whitespace-pre-line">
-                  {procedure.fullDescription}
-                </p>
+                <div
+                  className="text-body-md text-on-surface-variant leading-relaxed [&_ul]:list-disc [&_ul]:pl-lg [&_ol]:list-decimal [&_ol]:pl-lg [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-outline-variant [&_blockquote]:pl-sm [&_blockquote]:italic [&_p]:mb-sm last:[&_p]:mb-0"
+                  // Sanitized server-side (sanitizeRichText) before it's ever persisted — see app/api/procedures routes.
+                  dangerouslySetInnerHTML={{ __html: procedure.fullDescription }}
+                />
               </div>
             )}
 
