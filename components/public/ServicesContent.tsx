@@ -183,7 +183,7 @@ export default function ServicesContent({ procedures }: { procedures: Procedure[
               <ProcedureCard
                 key={t.id}
                 treatment={t}
-                featured={i === 0}
+                // featured={i === 0}
               />
             ))}
           </div>
