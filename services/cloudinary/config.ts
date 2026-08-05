@@ -39,4 +39,6 @@ export const CLOUDINARY_FOLDERS = {
   whyChoose: "doctor-clinic/why-choose",
   careGallery: "doctor-clinic/care-gallery",
   prepGuide: "doctor-clinic/prep-guide",
+  proceduresHero: "doctor-clinic/procedures-hero",
+  prepGuideTiles: "doctor-clinic/prep-guide-tiles",
 } as const;

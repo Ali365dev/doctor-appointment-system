@@ -4,7 +4,16 @@ import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useDoctorProfile, useSetDoctorProfile } from "@/lib/context/DoctorProfileContext";
-import type { CmsEducationEntry, CmsJourneyEntry, CmsWhyChooseFeature, CmsGalleryImage, CmsSpecializedService } from "@/services/mongodb/repositories/cms.repository";
+import type {
+  CmsEducationEntry,
+  CmsJourneyEntry,
+  CmsWhyChooseFeature,
+  CmsGalleryImage,
+  CmsSpecializedService,
+  CmsPrepGuideStep,
+  CmsPrepGuideTile,
+  CmsFooterLink,
+} from "@/services/mongodb/repositories/cms.repository";
 
 /** Curated set of doctor/medical-themed Material Symbols icons for feature & service cards. */
 const ICON_OPTIONS = [
@@ -102,6 +111,8 @@ export default function CmsContent() {
   const [uploadingGalleryIndex, setUploadingGalleryIndex] = useState<number | null>(null);
   const [uploadingPrepGuide, setUploadingPrepGuide] = useState(false);
   const prepGuideInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingProceduresHero, setUploadingProceduresHero] = useState(false);
+  const [uploadingPrepGuideTileIndex, setUploadingPrepGuideTileIndex] = useState<number | null>(null);
 
   function buildFormState() {
     return {
@@ -132,6 +143,20 @@ export default function CmsContent() {
       servicesTitle: doctorProfile.servicesTitle,
       servicesSubtitle: doctorProfile.servicesSubtitle,
       specializedServices: doctorProfile.specializedServices,
+      proceduresHeroBadge: doctorProfile.proceduresHeroBadge,
+      proceduresHeroTitle: doctorProfile.proceduresHeroTitle,
+      proceduresHeroDescription: doctorProfile.proceduresHeroDescription,
+      proceduresHeroCtaLabel: doctorProfile.proceduresHeroCtaLabel,
+      prepGuideTitle: doctorProfile.prepGuideTitle,
+      prepGuideDescription: doctorProfile.prepGuideDescription,
+      prepGuideSteps: doctorProfile.prepGuideSteps,
+      prepGuideTiles: doctorProfile.prepGuideTiles,
+      footerDescription: doctorProfile.footerDescription,
+      footerQuickLinksHeading: doctorProfile.footerQuickLinksHeading,
+      footerQuickLinks: doctorProfile.footerQuickLinks,
+      footerContactHeading: doctorProfile.footerContactHeading,
+      footerLegalLinks: doctorProfile.footerLegalLinks,
+      footerCopyrightText: doctorProfile.footerCopyrightText,
       clinicClosedMessageEn: doctorProfile.clinicClosedMessageEn,
       clinicClosedMessageUr: doctorProfile.clinicClosedMessageUr,
       generalAnnouncementMessageEn: doctorProfile.generalAnnouncementMessageEn,
@@ -302,6 +327,119 @@ export default function CmsContent() {
     }
   }
 
+  function updatePrepGuideStep(index: number, patch: Partial<CmsPrepGuideStep>) {
+    setForm((prev) => ({
+      ...prev,
+      prepGuideSteps: prev.prepGuideSteps.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addPrepGuideStep() {
+    setForm((prev) => ({ ...prev, prepGuideSteps: [...prev.prepGuideSteps, { title: "", desc: "" }] }));
+  }
+
+  function removePrepGuideStep(index: number) {
+    setForm((prev) => ({ ...prev, prepGuideSteps: prev.prepGuideSteps.filter((_, i) => i !== index) }));
+  }
+
+  function updatePrepGuideTile(index: number, patch: Partial<CmsPrepGuideTile>) {
+    setForm((prev) => ({
+      ...prev,
+      prepGuideTiles: prev.prepGuideTiles.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addPrepGuideTile() {
+    setForm((prev) => ({
+      ...prev,
+      prepGuideTiles: [...prev.prepGuideTiles, { icon: "verified_user", label: "", image: "" }],
+    }));
+  }
+
+  function removePrepGuideTile(index: number) {
+    setForm((prev) => ({ ...prev, prepGuideTiles: prev.prepGuideTiles.filter((_, i) => i !== index) }));
+  }
+
+  async function handlePrepGuideTileImageChange(index: number, file: File) {
+    setUploadingPrepGuideTileIndex(index);
+    try {
+      const formData = new FormData();
+      formData.append("index", String(index));
+      formData.append("file", file);
+      const res = await fetch("/api/cms/prep-guide-tile-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload image");
+        return;
+      }
+      setDoctorProfile(data.cms);
+      const updatedTile: CmsPrepGuideTile = data.cms.prepGuideTiles[index];
+      setForm((prev) => ({
+        ...prev,
+        // Patch only this index — see the equivalent comment in handleWhyChooseImageChange.
+        prepGuideTiles: prev.prepGuideTiles.map((entry, i) => (i === index ? updatedTile : entry)),
+      }));
+      toast.success("Tile image updated");
+    } catch {
+      toast.error("Network error while uploading image");
+    } finally {
+      setUploadingPrepGuideTileIndex(null);
+    }
+  }
+
+  async function handleProceduresHeroImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingProceduresHero(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/cms/procedures-hero-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not upload image");
+        return;
+      }
+      setDoctorProfile(data.cms);
+      toast.success("Hero image updated");
+    } catch {
+      toast.error("Network error while uploading image");
+    } finally {
+      setUploadingProceduresHero(false);
+      e.target.value = "";
+    }
+  }
+
+  function updateFooterQuickLink(index: number, patch: Partial<CmsFooterLink>) {
+    setForm((prev) => ({
+      ...prev,
+      footerQuickLinks: prev.footerQuickLinks.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addFooterQuickLink() {
+    setForm((prev) => ({ ...prev, footerQuickLinks: [...prev.footerQuickLinks, { label: "", href: "#" }] }));
+  }
+
+  function removeFooterQuickLink(index: number) {
+    setForm((prev) => ({ ...prev, footerQuickLinks: prev.footerQuickLinks.filter((_, i) => i !== index) }));
+  }
+
+  function updateFooterLegalLink(index: number, patch: Partial<CmsFooterLink>) {
+    setForm((prev) => ({
+      ...prev,
+      footerLegalLinks: prev.footerLegalLinks.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    }));
+  }
+
+  function addFooterLegalLink() {
+    setForm((prev) => ({ ...prev, footerLegalLinks: [...prev.footerLegalLinks, { label: "", href: "#" }] }));
+  }
+
+  function removeFooterLegalLink(index: number) {
+    setForm((prev) => ({ ...prev, footerLegalLinks: prev.footerLegalLinks.filter((_, i) => i !== index) }));
+  }
+
   function handleDiscard() {
     setForm(buildFormState());
     toast.info("Changes discarded");
@@ -334,6 +472,20 @@ export default function CmsContent() {
           servicesTitle: form.servicesTitle,
           servicesSubtitle: form.servicesSubtitle,
           specializedServices: form.specializedServices.filter((s) => s.title.trim()),
+          proceduresHeroBadge: form.proceduresHeroBadge,
+          proceduresHeroTitle: form.proceduresHeroTitle,
+          proceduresHeroDescription: form.proceduresHeroDescription,
+          proceduresHeroCtaLabel: form.proceduresHeroCtaLabel,
+          prepGuideTitle: form.prepGuideTitle,
+          prepGuideDescription: form.prepGuideDescription,
+          prepGuideSteps: form.prepGuideSteps.filter((s) => s.title.trim()),
+          prepGuideTiles: form.prepGuideTiles.filter((t) => t.label.trim()),
+          footerDescription: form.footerDescription,
+          footerQuickLinksHeading: form.footerQuickLinksHeading,
+          footerQuickLinks: form.footerQuickLinks.filter((l) => l.label.trim()),
+          footerContactHeading: form.footerContactHeading,
+          footerLegalLinks: form.footerLegalLinks.filter((l) => l.label.trim()),
+          footerCopyrightText: form.footerCopyrightText,
           clinicClosedMessageEn: form.clinicClosedMessageEn,
           clinicClosedMessageUr: form.clinicClosedMessageUr,
           generalAnnouncementMessageEn: form.generalAnnouncementMessageEn,
@@ -1019,6 +1171,310 @@ export default function CmsContent() {
                 className="w-full mt-md py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
               >
                 + Add Service
+              </button>
+            </div>
+
+            {/* Procedures Page Hero */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">medical_information</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Procedures Page Hero</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-md items-start">
+                <div className="space-y-sm">
+                  <div>
+                    <label className="block text-caption text-on-surface-variant mb-xs">Badge Text</label>
+                    <input
+                      value={form.proceduresHeroBadge}
+                      onChange={(e) => setForm((p) => ({ ...p, proceduresHeroBadge: e.target.value }))}
+                      placeholder="PREMIUM CLINICAL SERVICES"
+                      className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-caption text-on-surface-variant mb-xs">Heading</label>
+                    <input
+                      value={form.proceduresHeroTitle}
+                      onChange={(e) => setForm((p) => ({ ...p, proceduresHeroTitle: e.target.value }))}
+                      placeholder="Procedures & Transparency"
+                      className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-caption text-on-surface-variant mb-xs">Description</label>
+                    <textarea
+                      value={form.proceduresHeroDescription}
+                      onChange={(e) => setForm((p) => ({ ...p, proceduresHeroDescription: e.target.value }))}
+                      placeholder="Specialized gastroenterology care with transparent pricing..."
+                      rows={3}
+                      className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-caption text-on-surface-variant mb-xs">Button Label</label>
+                    <input
+                      value={form.proceduresHeroCtaLabel}
+                      onChange={(e) => setForm((p) => ({ ...p, proceduresHeroCtaLabel: e.target.value }))}
+                      placeholder="Book a Procedure"
+                      className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                    />
+                  </div>
+                </div>
+                <label className="relative block w-full md:w-48 h-32 rounded-lg overflow-hidden bg-surface border border-outline-variant cursor-pointer group shrink-0">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleProceduresHeroImageChange}
+                  />
+                  {doctorProfile.proceduresHeroImage ? (
+                    <Image src={doctorProfile.proceduresHeroImage} alt="Procedures hero" fill className="object-cover" unoptimized />
+                  ) : (
+                    <span className="w-full h-full flex items-center justify-center text-outline">
+                      <span className="material-symbols-outlined">add_photo_alternate</span>
+                    </span>
+                  )}
+                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-[18px]">
+                      {uploadingProceduresHero ? "progress_activity" : "upload"}
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Preparation Guide */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">checklist</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Preparation Guide</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm mb-md">
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Heading</label>
+                  <input
+                    value={form.prepGuideTitle}
+                    onChange={(e) => setForm((p) => ({ ...p, prepGuideTitle: e.target.value }))}
+                    placeholder="Preparation Guide"
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-caption text-on-surface-variant mb-xs">Description</label>
+                  <input
+                    value={form.prepGuideDescription}
+                    onChange={(e) => setForm((p) => ({ ...p, prepGuideDescription: e.target.value }))}
+                    placeholder="Accurate results depend on proper preparation..."
+                    className="w-full bg-surface border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+                  />
+                </div>
+              </div>
+
+              <p className="text-caption text-on-surface-variant mb-xs font-semibold">Numbered Steps</p>
+              <div className="space-y-sm mb-md">
+                {form.prepGuideSteps.map((step, i) => (
+                  <div key={i} className="flex gap-sm items-start p-sm border border-outline-variant rounded-lg">
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-semibold text-caption">
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <div className="flex-1 space-y-sm">
+                      <input
+                        value={step.title}
+                        onChange={(e) => updatePrepGuideStep(i, { title: e.target.value })}
+                        placeholder="Step title"
+                        className="w-full bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <textarea
+                        value={step.desc ?? ""}
+                        onChange={(e) => updatePrepGuideStep(i, { desc: e.target.value })}
+                        placeholder="Step description"
+                        rows={2}
+                        className="w-full bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePrepGuideStep(i)}
+                      className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addPrepGuideStep}
+                className="w-full mb-lg py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Step
+              </button>
+
+              <p className="text-caption text-on-surface-variant mb-xs font-semibold">Feature Tiles</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                {form.prepGuideTiles.map((tile, i) => (
+                  <div key={i} className="flex gap-sm items-start p-sm border border-outline-variant rounded-lg">
+                    <label className="relative w-16 h-16 rounded-lg overflow-hidden bg-surface border border-outline-variant shrink-0 cursor-pointer group">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePrepGuideTileImageChange(i, file);
+                        }}
+                      />
+                      {tile.image ? (
+                        <Image src={tile.image} alt={tile.label || "Tile"} fill className="object-cover" unoptimized />
+                      ) : (
+                        <span className="w-full h-full flex items-center justify-center text-outline">
+                          <span className="material-symbols-outlined">add_photo_alternate</span>
+                        </span>
+                      )}
+                      <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                        <span className="material-symbols-outlined text-[18px]">
+                          {uploadingPrepGuideTileIndex === i ? "progress_activity" : "upload"}
+                        </span>
+                      </span>
+                    </label>
+                    <div className="flex-1 grid grid-cols-2 gap-sm">
+                      <IconPicker
+                        value={tile.icon}
+                        onChange={(icon) => updatePrepGuideTile(i, { icon })}
+                      />
+                      <input
+                        value={tile.label}
+                        onChange={(e) => updatePrepGuideTile(i, { label: e.target.value })}
+                        placeholder="Label"
+                        className="bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePrepGuideTile(i)}
+                      className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addPrepGuideTile}
+                className="w-full mt-md py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Tile
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-xs mb-md">
+                <span className="material-symbols-outlined text-primary">web_asset</span>
+                <h3 className="text-[18px] font-bold text-on-surface">Footer</h3>
+              </div>
+
+              <label className="block text-caption text-on-surface-variant mb-xs">Brand Description</label>
+              <textarea
+                value={form.footerDescription}
+                onChange={(e) => setForm((p) => ({ ...p, footerDescription: e.target.value }))}
+                placeholder="Consultant Gastroenterologist & Hepatologist providing world-class medical care..."
+                rows={3}
+                className="w-full bg-surface border border-outline-variant rounded-lg p-sm mb-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md resize-none"
+              />
+
+              <label className="block text-caption text-on-surface-variant mb-xs">Copyright Text</label>
+              <input
+                value={form.footerCopyrightText}
+                onChange={(e) => setForm((p) => ({ ...p, footerCopyrightText: e.target.value }))}
+                placeholder="All rights reserved."
+                className="w-full bg-surface border border-outline-variant rounded-lg p-sm mb-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+              />
+              <p className="text-caption text-on-surface-variant mb-lg -mt-sm">
+                Shown as: &quot;© {new Date().getFullYear()} {form.fullName || "Doctor Name"}. {form.footerCopyrightText || "All rights reserved."}&quot;
+              </p>
+
+              <label className="block text-caption text-on-surface-variant mb-xs">Quick Links Heading</label>
+              <input
+                value={form.footerQuickLinksHeading}
+                onChange={(e) => setForm((p) => ({ ...p, footerQuickLinksHeading: e.target.value }))}
+                placeholder="Quick Links"
+                className="w-full bg-surface border border-outline-variant rounded-lg p-sm mb-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+              />
+              <div className="space-y-sm mb-md">
+                {form.footerQuickLinks.map((link, i) => (
+                  <div key={i} className="flex gap-sm items-center">
+                    <input
+                      value={link.label}
+                      onChange={(e) => updateFooterQuickLink(i, { label: e.target.value })}
+                      placeholder="Label (e.g. Book Appointment)"
+                      className="flex-1 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                    <input
+                      value={link.href}
+                      onChange={(e) => updateFooterQuickLink(i, { href: e.target.value })}
+                      placeholder="Link (e.g. #hero)"
+                      className="flex-1 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeFooterQuickLink(i)}
+                      className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addFooterQuickLink}
+                className="w-full mb-lg py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Quick Link
+              </button>
+
+              <label className="block text-caption text-on-surface-variant mb-xs">Contact Section Heading</label>
+              <input
+                value={form.footerContactHeading}
+                onChange={(e) => setForm((p) => ({ ...p, footerContactHeading: e.target.value }))}
+                placeholder="Contact & Locations"
+                className="w-full bg-surface border border-outline-variant rounded-lg p-sm mb-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md"
+              />
+
+              <p className="text-caption text-on-surface-variant mb-xs font-semibold">Legal Links</p>
+              <div className="space-y-sm mb-md">
+                {form.footerLegalLinks.map((link, i) => (
+                  <div key={i} className="flex gap-sm items-center">
+                    <input
+                      value={link.label}
+                      onChange={(e) => updateFooterLegalLink(i, { label: e.target.value })}
+                      placeholder="Label (e.g. Privacy Policy)"
+                      className="flex-1 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                    <input
+                      value={link.href}
+                      onChange={(e) => updateFooterLegalLink(i, { href: e.target.value })}
+                      placeholder="Link (e.g. /privacy-policy)"
+                      className="flex-1 bg-surface border border-outline-variant rounded-lg p-sm text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeFooterLegalLink(i)}
+                      className="p-xs hover:bg-error/10 rounded-full text-error transition-colors shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addFooterLegalLink}
+                className="w-full py-sm border border-dashed border-outline-variant rounded-lg text-on-surface-variant text-caption hover:border-primary hover:text-primary transition-all"
+              >
+                + Add Legal Link
               </button>
             </div>
 

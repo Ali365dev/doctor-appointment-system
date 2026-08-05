@@ -4,17 +4,6 @@ import { buildWhatsappLink } from "@/lib/data";
 import { getCmsProfile } from "@/services/mongodb/repositories/cms.repository";
 import { findActiveClinics } from "@/services/mongodb/repositories/clinic.repository";
 
-const quickLinks = [
-  { href: "#about", label: "About Dr. Zaid Gul" },
-  { href: "#services", label: "Our Services" },
-  { href: "#conditions", label: "Conditions Treated" },
-  { href: "#treatments", label: "Treatments & Pricing" },
-  { href: "#clinic-info", label: "Practice Locations" },
-  { href: "#hero", label: "Book Appointment" },
-];
-
-const legalLinks = ["Privacy Policy", "Terms of Service", "Disclaimer"];
-
 const SocialSvg: Record<string, (props: { className?: string }) => JSX.Element> = {
   facebook: ({ className }) => (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -42,7 +31,20 @@ const SocialSvg: Record<string, (props: { className?: string }) => JSX.Element> 
 };
 
 export default async function Footer() {
-  const { name, contactEmail, contactPhone, contactWhatsapp, social, verification } = await getCmsProfile();
+  const {
+    name,
+    contactEmail,
+    contactPhone,
+    contactWhatsapp,
+    social,
+    verification,
+    footerDescription,
+    footerQuickLinksHeading,
+    footerQuickLinks,
+    footerContactHeading,
+    footerLegalLinks,
+    footerCopyrightText,
+  } = await getCmsProfile();
   const clinics = await findActiveClinics();
   const firstLocation = clinics[0];
   const socialLinks = Object.entries(social ?? {}).filter(
@@ -73,8 +75,7 @@ export default async function Footer() {
         <div className="md:col-span-5 flex flex-col space-y-md">
           <h2 className="text-primary text-headline-md font-bold tracking-tight">{name}</h2>
           <p className="text-body-md text-on-surface-variant max-w-md leading-relaxed">
-            Consultant Gastroenterologist &amp; Hepatologist providing world-class medical care for liver
-            and digestive disorders. Committed to clinical excellence and patient well-being.
+            {footerDescription}
           </p>
           {/* Quick action buttons */}
           <div className="flex flex-wrap gap-sm pt-sm">
@@ -123,11 +124,11 @@ export default async function Footer() {
           <div className="flex items-center gap-xs">
             <div className="w-1 h-6 bg-primary rounded-full" />
             <h3 className="text-label-md font-semibold text-on-surface uppercase tracking-widest">
-              Quick Links
+              {footerQuickLinksHeading}
             </h3>
           </div>
           <nav className="flex flex-col space-y-sm">
-            {quickLinks.map(({ href, label }) => (
+            {footerQuickLinks.map(({ href, label }) => (
               <Link
                 key={label}
                 href={href}
@@ -144,7 +145,7 @@ export default async function Footer() {
           <div className="flex items-center gap-xs">
             <div className="w-1 h-6 bg-primary rounded-full" />
             <h3 className="text-label-md font-semibold text-on-surface uppercase tracking-widest">
-              Contact &amp; Locations
+              {footerContactHeading}
             </h3>
           </div>
           <div className="flex flex-col space-y-md">
@@ -216,19 +217,19 @@ export default async function Footer() {
       {/* Bottom Bar */}
       <div className="max-w-[1280px] mx-auto px-lg py-md flex flex-col md:flex-row justify-between items-center gap-sm">
         <div className="text-caption text-outline">
-          © 2024 {name}. All rights reserved.{" "}
+          © {new Date().getFullYear()} {name}. {footerCopyrightText}{" "}
           <span className="ml-2 px-2 py-0.5 bg-surface-container-high rounded-full border border-outline-variant/20">
             {verification}
           </span>
         </div>
         <div className="flex gap-md">
-          {legalLinks.map((item) => (
+          {footerLegalLinks.map(({ label, href }) => (
             <Link
-              key={item}
-              href="#"
+              key={label}
+              href={href}
               className="text-caption text-on-surface-variant hover:text-primary transition-colors hover:underline"
             >
-              {item}
+              {label}
             </Link>
           ))}
         </div>

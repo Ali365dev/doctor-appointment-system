@@ -61,6 +61,32 @@ const specializedServiceSchema = new Schema(
   { _id: false }
 );
 
+const prepGuideStepSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    desc: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const prepGuideTileSchema = new Schema(
+  {
+    icon: { type: String, default: "" },
+    label: { type: String, required: true },
+    image: { type: String, default: "" },
+    imagePublicId: { type: String },
+  },
+  { _id: false }
+);
+
+const footerLinkSchema = new Schema(
+  {
+    label: { type: String, required: true },
+    href: { type: String, default: "#" },
+  },
+  { _id: false }
+);
+
 const cmsSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -93,6 +119,22 @@ const cmsSchema = new Schema(
     specializedServices: { type: [specializedServiceSchema], default: [] },
     prepGuidePdfUrl: { type: String, default: "" },
     prepGuidePdfPublicId: { type: String },
+    proceduresHeroBadge: { type: String, default: "" },
+    proceduresHeroTitle: { type: String, default: "" },
+    proceduresHeroDescription: { type: String, default: "" },
+    proceduresHeroCtaLabel: { type: String, default: "" },
+    proceduresHeroImage: { type: String, default: "" },
+    proceduresHeroImagePublicId: { type: String },
+    prepGuideTitle: { type: String, default: "" },
+    prepGuideDescription: { type: String, default: "" },
+    prepGuideSteps: { type: [prepGuideStepSchema], default: [] },
+    prepGuideTiles: { type: [prepGuideTileSchema], default: [] },
+    footerDescription: { type: String, default: "" },
+    footerQuickLinksHeading: { type: String, default: "" },
+    footerQuickLinks: { type: [footerLinkSchema], default: [] },
+    footerContactHeading: { type: String, default: "" },
+    footerLegalLinks: { type: [footerLinkSchema], default: [] },
+    footerCopyrightText: { type: String, default: "" },
     // Shown on the booking flow when the selected clinic is closed today
     // (per its weekly schedule). Blank falls back to a built-in default message.
     clinicClosedMessageEn: { type: String, default: "" },

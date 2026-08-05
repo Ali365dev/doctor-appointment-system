@@ -129,6 +129,28 @@ export async function uploadCareGalleryImage(file: File): Promise<CloudinaryUplo
   return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.careGallery, resourceType: "image" });
 }
 
+/** Validates and uploads the Procedures page hero image to the procedures-hero folder. */
+export async function uploadProceduresHeroImage(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Image must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.proceduresHero, resourceType: "image" });
+}
+
+/** Validates and uploads a Preparation Guide feature tile image to the prep-guide-tiles folder. */
+export async function uploadPrepGuideTileImage(file: File): Promise<CloudinaryUploadResult> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error("Only JPG, PNG, or WEBP images are allowed");
+  }
+  if (file.size > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error("Image must be 5 MB or smaller");
+  }
+  return uploadToCloudinary(file, { folder: CLOUDINARY_FOLDERS.prepGuideTiles, resourceType: "image" });
+}
+
 /** Validates and uploads the "Download Guide (PDF)" preparation guide to the prep-guide folder. */
 export async function uploadPrepGuidePdf(file: File): Promise<CloudinaryUploadResult> {
   if (file.type !== "application/pdf") {

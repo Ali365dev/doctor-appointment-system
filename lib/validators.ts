@@ -388,6 +388,23 @@ interface CmsSpecializedServiceBody {
   desc?: string;
 }
 
+interface CmsPrepGuideStepBody {
+  title?: string;
+  desc?: string;
+}
+
+interface CmsPrepGuideTileBody {
+  icon?: string;
+  label?: string;
+  image?: string;
+  imagePublicId?: string;
+}
+
+interface CmsFooterLinkBody {
+  label?: string;
+  href?: string;
+}
+
 interface CmsRequestBody {
   name?: string;
   designation?: string;
@@ -415,6 +432,20 @@ interface CmsRequestBody {
   servicesTitle?: string;
   servicesSubtitle?: string;
   specializedServices?: CmsSpecializedServiceBody[];
+  proceduresHeroBadge?: string;
+  proceduresHeroTitle?: string;
+  proceduresHeroDescription?: string;
+  proceduresHeroCtaLabel?: string;
+  prepGuideTitle?: string;
+  prepGuideDescription?: string;
+  prepGuideSteps?: CmsPrepGuideStepBody[];
+  prepGuideTiles?: CmsPrepGuideTileBody[];
+  footerDescription?: string;
+  footerQuickLinksHeading?: string;
+  footerQuickLinks?: CmsFooterLinkBody[];
+  footerContactHeading?: string;
+  footerLegalLinks?: CmsFooterLinkBody[];
+  footerCopyrightText?: string;
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -506,6 +537,42 @@ export function validateCmsBody(body: unknown, partial = false): string | null {
     for (const entry of b.specializedServices) {
       if (!entry || typeof entry !== "object" || !entry.title || !entry.title.trim()) {
         return "Each specialized service requires a title";
+      }
+    }
+  }
+
+  if (b.prepGuideSteps !== undefined) {
+    if (!Array.isArray(b.prepGuideSteps)) return "prepGuideSteps must be an array";
+    for (const entry of b.prepGuideSteps) {
+      if (!entry || typeof entry !== "object" || !entry.title || !entry.title.trim()) {
+        return "Each preparation guide step requires a title";
+      }
+    }
+  }
+
+  if (b.prepGuideTiles !== undefined) {
+    if (!Array.isArray(b.prepGuideTiles)) return "prepGuideTiles must be an array";
+    for (const entry of b.prepGuideTiles) {
+      if (!entry || typeof entry !== "object" || !entry.label || !entry.label.trim()) {
+        return "Each preparation guide tile requires a label";
+      }
+    }
+  }
+
+  if (b.footerQuickLinks !== undefined) {
+    if (!Array.isArray(b.footerQuickLinks)) return "footerQuickLinks must be an array";
+    for (const entry of b.footerQuickLinks) {
+      if (!entry || typeof entry !== "object" || !entry.label || !entry.label.trim()) {
+        return "Each footer quick link requires a label";
+      }
+    }
+  }
+
+  if (b.footerLegalLinks !== undefined) {
+    if (!Array.isArray(b.footerLegalLinks)) return "footerLegalLinks must be an array";
+    for (const entry of b.footerLegalLinks) {
+      if (!entry || typeof entry !== "object" || !entry.label || !entry.label.trim()) {
+        return "Each footer legal link requires a label";
       }
     }
   }

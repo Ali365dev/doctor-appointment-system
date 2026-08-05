@@ -161,6 +161,7 @@ export default function SuccessContent() {
   const handleDownload = async () => {
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
+    const { default: QRCode } = await import("qrcode");
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 16;
@@ -300,12 +301,15 @@ export default function SuccessContent() {
     doc.line(margin, footerY, pageWidth - margin, footerY);
 
     const boxSize = 22;
-    doc.setDrawColor(...BORDER);
-    doc.roundedRect(margin, footerY + 6, boxSize, boxSize, 1.5, 1.5, "S");
+    const qrDataUrl = await QRCode.toDataURL(
+      "https://drzaidgul.com/",
+      { margin: 0, width: 256 }
+    );
+    doc.addImage(qrDataUrl, "PNG", margin, footerY + 6, boxSize, boxSize);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.setTextColor(...TEXT_MUTED);
-    doc.text("QR Code", margin + boxSize / 2, footerY + 6 + boxSize + 4, { align: "center" });
+    doc.text("Scan to Visit Website", margin + boxSize / 2, footerY + 6 + boxSize + 4, { align: "center" });
 
     const sigX = pageWidth - margin - boxSize * 2.4;
     doc.line(sigX, footerY + 6 + boxSize - 4, sigX + boxSize * 2.4, footerY + 6 + boxSize - 4);

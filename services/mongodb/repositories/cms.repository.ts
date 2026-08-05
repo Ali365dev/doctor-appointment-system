@@ -46,6 +46,23 @@ export interface CmsSpecializedService {
   desc?: string;
 }
 
+export interface CmsPrepGuideStep {
+  title: string;
+  desc?: string;
+}
+
+export interface CmsPrepGuideTile {
+  icon: string;
+  label: string;
+  image: string;
+  imagePublicId?: string;
+}
+
+export interface CmsFooterLink {
+  label: string;
+  href: string;
+}
+
 export interface CmsInput {
   name?: string;
   designation?: string;
@@ -77,6 +94,22 @@ export interface CmsInput {
   specializedServices?: CmsSpecializedService[];
   prepGuidePdfUrl?: string;
   prepGuidePdfPublicId?: string;
+  proceduresHeroBadge?: string;
+  proceduresHeroTitle?: string;
+  proceduresHeroDescription?: string;
+  proceduresHeroCtaLabel?: string;
+  proceduresHeroImage?: string;
+  proceduresHeroImagePublicId?: string;
+  prepGuideTitle?: string;
+  prepGuideDescription?: string;
+  prepGuideSteps?: CmsPrepGuideStep[];
+  prepGuideTiles?: CmsPrepGuideTile[];
+  footerDescription?: string;
+  footerQuickLinksHeading?: string;
+  footerQuickLinks?: CmsFooterLink[];
+  footerContactHeading?: string;
+  footerLegalLinks?: CmsFooterLink[];
+  footerCopyrightText?: string;
   clinicClosedMessageEn?: string;
   clinicClosedMessageUr?: string;
   generalAnnouncementMessageEn?: string;
@@ -115,6 +148,22 @@ export interface CmsProfile {
   specializedServices: CmsSpecializedService[];
   prepGuidePdfUrl?: string;
   prepGuidePdfPublicId?: string;
+  proceduresHeroBadge: string;
+  proceduresHeroTitle: string;
+  proceduresHeroDescription: string;
+  proceduresHeroCtaLabel: string;
+  proceduresHeroImage: string;
+  proceduresHeroImagePublicId?: string;
+  prepGuideTitle: string;
+  prepGuideDescription: string;
+  prepGuideSteps: CmsPrepGuideStep[];
+  prepGuideTiles: CmsPrepGuideTile[];
+  footerDescription: string;
+  footerQuickLinksHeading: string;
+  footerQuickLinks: CmsFooterLink[];
+  footerContactHeading: string;
+  footerLegalLinks: CmsFooterLink[];
+  footerCopyrightText: string;
   clinicClosedMessageEn: string;
   clinicClosedMessageUr: string;
   generalAnnouncementMessageEn: string;
@@ -243,6 +292,62 @@ const DEFAULT_SPECIALIZED_SERVICES: CmsSpecializedService[] = (doctor.services ?
   desc: SERVICE_DESCRIPTIONS[name] ?? "",
 }));
 
+const DEFAULT_PROCEDURES_HERO_IMAGE =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD8Fl9bfESyniMxUDMxazH5L5msPPi4PznZ2TzyyUg_pNYKZMY-R57isUNVA5Q9khwloJZY0KzdJHYYre6wsjbKwPpUt2pWRGb63nvLUv095thZFZiilpxMVeUSZP520ZWck58M7G22JiwDG8GIey9sRd0VwrfxesVpyp1qUKL8bC3IEErtQtL03m10SJLs0S9qlqel0N4jR3WstiS8zq9dmTuEWefr0O7FgBtm9JU4enmB9WSmwm4ZLYAniLKu1hFwkpHxFoq7e-Y";
+
+const DEFAULT_PREP_GUIDE_STEPS: CmsPrepGuideStep[] = [
+  {
+    title: "Fast Protocol",
+    desc: "Patients must fast (no food or liquids) for at least 8–12 hours prior to Endoscopy or Colonoscopy procedures.",
+  },
+  {
+    title: "Bowel Cleansing",
+    desc: "A specific laxative regimen will be provided upon booking. Complete the entire preparation to ensure clear visualization.",
+  },
+  {
+    title: "Medication Review",
+    desc: "Inform our staff of any blood thinners or diabetic medications you are currently taking at least 5 days before the procedure.",
+  },
+];
+
+const DEFAULT_PREP_GUIDE_TILES: CmsPrepGuideTile[] = [
+  {
+    icon: "verified_user",
+    label: "Certified Safety",
+    image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "medical_information",
+    label: "Detailed Reports",
+    image: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "psychology",
+    label: "Expert Insight",
+    image: "https://images.unsplash.com/photo-1550831107-1553da8c8464?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    icon: "support_agent",
+    label: "24/7 Support",
+    image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=800&auto=format&fit=crop",
+  },
+];
+
+const DEFAULT_FOOTER_QUICK_LINKS: CmsFooterLink[] = [
+  { href: "#about", label: "About the Doctor" },
+  { href: "#services", label: "Our Services" },
+  { href: "#conditions", label: "Conditions Treated" },
+  { href: "#treatments", label: "Treatments & Pricing" },
+  { href: "#clinic-info", label: "Practice Locations" },
+  { href: "#hero", label: "Book Appointment" },
+];
+
+const DEFAULT_FOOTER_LEGAL_LINKS: CmsFooterLink[] = [
+  { href: "#", label: "Privacy Policy" },
+  { href: "#", label: "Terms of Service" },
+  { href: "#", label: "Disclaimer" },
+];
+
 export const DEFAULT_CLINIC_CLOSED_MESSAGE_EN =
   "📢 This clinic is closed today. Appointments cannot be booked for today. Please select another date or contact the clinic for more information.";
 export const DEFAULT_CLINIC_CLOSED_MESSAGE_UR =
@@ -299,6 +404,23 @@ function buildSeed(): CmsInput {
     servicesSubtitle:
       "Comprehensive care for all digestive health issues using state-of-the-art diagnostic and therapeutic techniques.",
     specializedServices: DEFAULT_SPECIALIZED_SERVICES,
+    proceduresHeroBadge: "PREMIUM CLINICAL SERVICES",
+    proceduresHeroTitle: "Procedures & Transparency",
+    proceduresHeroDescription:
+      "Specialized gastroenterology care with transparent pricing. We prioritize diagnostic accuracy and patient comfort above all else.",
+    proceduresHeroCtaLabel: "Book a Procedure",
+    proceduresHeroImage: DEFAULT_PROCEDURES_HERO_IMAGE,
+    prepGuideTitle: "Preparation Guide",
+    prepGuideDescription:
+      "Accurate results depend on proper preparation. Please follow these clinical protocols carefully prior to your appointment.",
+    prepGuideSteps: DEFAULT_PREP_GUIDE_STEPS,
+    prepGuideTiles: DEFAULT_PREP_GUIDE_TILES,
+    footerDescription: `Consultant ${doctor.specialization.join(" & ")} providing world-class medical care for liver and digestive disorders. Committed to clinical excellence and patient well-being.`,
+    footerQuickLinksHeading: "Quick Links",
+    footerQuickLinks: DEFAULT_FOOTER_QUICK_LINKS,
+    footerContactHeading: "Contact & Locations",
+    footerLegalLinks: DEFAULT_FOOTER_LEGAL_LINKS,
+    footerCopyrightText: "All rights reserved.",
     clinicClosedMessageEn: DEFAULT_CLINIC_CLOSED_MESSAGE_EN,
     clinicClosedMessageUr: DEFAULT_CLINIC_CLOSED_MESSAGE_UR,
     generalAnnouncementMessageEn: DEFAULT_GENERAL_ANNOUNCEMENT_MESSAGE_EN,
@@ -321,7 +443,16 @@ async function loadCmsProfile(): Promise<CmsProfile> {
     // Strict `undefined` check (not falsy) — an admin deliberately clearing this
     // field to "" to hide the ticker must stay hidden, not get reseeded.
     const needsGeneralAnnouncementBackfill = existing.generalAnnouncementMessageUr === undefined;
-    if (needsWhyChooseBackfill || needsServicesBackfill || needsClinicClosedBackfill || needsGeneralAnnouncementBackfill) {
+    const needsProceduresBackfill = !existing.prepGuideSteps || existing.prepGuideSteps.length === 0;
+    const needsFooterBackfill = !existing.footerQuickLinks || existing.footerQuickLinks.length === 0;
+    if (
+      needsWhyChooseBackfill ||
+      needsServicesBackfill ||
+      needsClinicClosedBackfill ||
+      needsGeneralAnnouncementBackfill ||
+      needsProceduresBackfill ||
+      needsFooterBackfill
+    ) {
       const seed = buildSeed();
       const backfilled = await Cms.findOneAndUpdate(
         {},
@@ -356,6 +487,35 @@ async function loadCmsProfile(): Promise<CmsProfile> {
               ? {
                   generalAnnouncementMessageEn: seed.generalAnnouncementMessageEn,
                   generalAnnouncementMessageUr: seed.generalAnnouncementMessageUr,
+                }
+              : {}),
+            ...(needsProceduresBackfill
+              ? {
+                  proceduresHeroBadge: existing.proceduresHeroBadge || seed.proceduresHeroBadge,
+                  proceduresHeroTitle: existing.proceduresHeroTitle || seed.proceduresHeroTitle,
+                  proceduresHeroDescription: existing.proceduresHeroDescription || seed.proceduresHeroDescription,
+                  proceduresHeroCtaLabel: existing.proceduresHeroCtaLabel || seed.proceduresHeroCtaLabel,
+                  proceduresHeroImage: existing.proceduresHeroImage || seed.proceduresHeroImage,
+                  prepGuideTitle: existing.prepGuideTitle || seed.prepGuideTitle,
+                  prepGuideDescription: existing.prepGuideDescription || seed.prepGuideDescription,
+                  prepGuideSteps: seed.prepGuideSteps,
+                  prepGuideTiles:
+                    existing.prepGuideTiles && existing.prepGuideTiles.length > 0
+                      ? existing.prepGuideTiles
+                      : seed.prepGuideTiles,
+                }
+              : {}),
+            ...(needsFooterBackfill
+              ? {
+                  footerDescription: existing.footerDescription || seed.footerDescription,
+                  footerQuickLinksHeading: existing.footerQuickLinksHeading || seed.footerQuickLinksHeading,
+                  footerQuickLinks: seed.footerQuickLinks,
+                  footerContactHeading: existing.footerContactHeading || seed.footerContactHeading,
+                  footerLegalLinks:
+                    existing.footerLegalLinks && existing.footerLegalLinks.length > 0
+                      ? existing.footerLegalLinks
+                      : seed.footerLegalLinks,
+                  footerCopyrightText: existing.footerCopyrightText || seed.footerCopyrightText,
                 }
               : {}),
           },
